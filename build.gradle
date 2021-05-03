@@ -20,7 +20,7 @@ dependencies {
     include "com.enonic.xp:lib-context:${xpVersion}"
     include "com.enonic.xp:lib-portal:${xpVersion}"
     include "com.enonic.lib:lib-http-client:2.0.0"
-    include "com.nimbusds:oauth2-oidc-sdk:9.4"
+    include "com.nimbusds:oauth2-oidc-sdk:9.5"
 }
 
 repositories {
