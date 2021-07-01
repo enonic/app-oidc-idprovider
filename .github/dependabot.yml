@@ -1,4 +1,8 @@
 version: 2
+registries:
+  enonic-public:
+    type: maven-repository
+    url: https://repo.enonic.com/public/
 updates:
 - package-ecosystem: "gradle"
   directory: "/"
@@ -12,7 +16,7 @@ updates:
 - package-ecosystem: "npm"
   directory: "/"
   schedule:
-    interval: "monthly"
+    interval: "weekly"
   open-pull-requests-limit: 10
   assignees:
     - "alansemenov"
