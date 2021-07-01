@@ -3,8 +3,8 @@ registries:
   enonic-public:
     type: maven-repository
     url: https://repo.enonic.com/public/
-    username:
-    password:
+    username: ""
+    password: ""
 updates:
 - package-ecosystem: "gradle"
   directory: "/"
