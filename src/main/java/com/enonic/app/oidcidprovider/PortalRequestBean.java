@@ -1,11 +1,10 @@
 package com.enonic.app.oidcidprovider;
 
-
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.http.HttpSession;
-
-import com.google.common.collect.ImmutableMap;
 
 import com.enonic.app.oidcidprovider.mapper.ContextMapper;
 import com.enonic.xp.portal.PortalRequest;
@@ -29,10 +28,10 @@ public class PortalRequestBean
 
     public void storeContext( final String state, final String nonce, final String originalUrl, final String redirectUri )
     {
-        final ImmutableMap.Builder<String, Context> contextMap = ImmutableMap.builder();
+        final HashMap<String, Map<String, String>> contextMap = new HashMap<>();
 
         final HttpSession session = portalRequest.getRawRequest().getSession( true );
-        Map<String, Context> existingContextMap = (Map<String, Context>) session.getAttribute( CONTEXT_KEY );
+        Map<String, Map<String, String>> existingContextMap = (Map<String, Map<String, String>>) session.getAttribute( CONTEXT_KEY );
         if ( existingContextMap != null )
         {
             contextMap.putAll( existingContextMap );
@@ -44,17 +43,18 @@ public class PortalRequestBean
             originalUrl( originalUrl ).
             redirectUri( redirectUri ).
             build();
-        contextMap.put( state, context );
 
-        session.setAttribute( CONTEXT_KEY, contextMap.build() );
+        contextMap.put( state, context.asMap() );
+
+        session.setAttribute( CONTEXT_KEY, Collections.unmodifiableMap( contextMap ) );
     }
 
     public ContextMapper removeContext( final String state )
     {
         final HttpSession session = portalRequest.getRawRequest().getSession( true );
 
-        final Map<String, Context> contextMap = (Map<String, Context>) session.getAttribute( CONTEXT_KEY );
-        final Context context = contextMap == null ? null : contextMap.get( state );
+        final Map<String, Map<String, String>> contextMap = (Map) session.getAttribute( CONTEXT_KEY );
+        final Context context = contextMap == null ? null : Context.fromMap(contextMap.get( state ));
 
         if ( context != null )
         {
