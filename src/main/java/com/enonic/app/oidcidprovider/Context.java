@@ -1,5 +1,7 @@
 package com.enonic.app.oidcidprovider;
 
+import java.util.Map;
+
 public class Context
 {
     private final String state;
@@ -41,6 +43,19 @@ public class Context
     public String getOriginalUrl()
     {
         return originalUrl;
+    }
+
+    public Map<String, String> asMap() {
+        return Map.of( "state", state, "nonce", nonce, "redirectUri", redirectUri, "originalUrl", originalUrl );
+    }
+
+    public static Context fromMap( final Map<String, String> map ) {
+        return Context.create().
+                state( map.get("state") ).
+                nonce( map.get("nonce") ).
+                redirectUri( map.get("redirectUri") ).
+                originalUrl( map.get("originalUrl") ).
+                build();
     }
 
     public static final class Builder
