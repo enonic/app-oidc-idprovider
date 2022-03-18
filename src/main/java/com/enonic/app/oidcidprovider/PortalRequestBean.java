@@ -1,8 +1,10 @@
 package com.enonic.app.oidcidprovider;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import javax.servlet.http.HttpSession;
 
@@ -10,6 +12,8 @@ import com.enonic.app.oidcidprovider.mapper.ContextMapper;
 import com.enonic.xp.portal.PortalRequest;
 import com.enonic.xp.script.bean.BeanContext;
 import com.enonic.xp.script.bean.ScriptBean;
+import com.enonic.xp.web.HttpStatus;
+import com.enonic.xp.web.WebException;
 import com.enonic.xp.web.servlet.ServletRequestUrlHelper;
 
 public class PortalRequestBean
@@ -18,6 +22,8 @@ public class PortalRequestBean
     private static final String CONTEXT_KEY = "com.enonic.app.oidcidprovider.context";
 
     private static final String ID_TOKEN_KEY = "com.enonic.app.oidcidprovider.idtoken";
+
+    private static final Lock LOCK = new ReentrantLock();
 
     private PortalRequest portalRequest;
 
@@ -28,41 +34,72 @@ public class PortalRequestBean
 
     public void storeContext( final String state, final String nonce, final String originalUrl, final String redirectUri )
     {
-        final HashMap<String, Map<String, String>> contextMap = new HashMap<>();
-
-        final HttpSession session = portalRequest.getRawRequest().getSession( true );
-        Map<String, Map<String, String>> existingContextMap = (Map<String, Map<String, String>>) session.getAttribute( CONTEXT_KEY );
-        if ( existingContextMap != null )
+        LOCK.lock();
+        try
         {
-            contextMap.putAll( existingContextMap );
+            final var contextMap = new ConcurrentHashMap<String, Map<String, String>>();
+
+            final HttpSession session = portalRequest.getRawRequest().getSession( true );
+            Map<String, Map<String, String>> existingContextMap = (Map) session.getAttribute( CONTEXT_KEY );
+
+            if ( existingContextMap != null )
+            {
+                contextMap.putAll( existingContextMap );
+            }
+
+            final Context context =
+                Context.create().state( state ).nonce( nonce ).originalUrl( originalUrl ).redirectUri( redirectUri ).build();
+
+            contextMap.put( state, context.asMap() );
+
+            session.setAttribute( CONTEXT_KEY, Collections.unmodifiableMap( contextMap ) );
+        }
+        finally
+        {
+            LOCK.unlock();
         }
 
-        final Context context = Context.create().
-            state( state ).
-            nonce( nonce ).
-            originalUrl( originalUrl ).
-            redirectUri( redirectUri ).
-            build();
-
-        contextMap.put( state, context.asMap() );
-
-        session.setAttribute( CONTEXT_KEY, Collections.unmodifiableMap( contextMap ) );
     }
 
     public ContextMapper removeContext( final String state )
     {
-        final HttpSession session = portalRequest.getRawRequest().getSession( true );
-
-        final Map<String, Map<String, String>> contextMap = (Map) session.getAttribute( CONTEXT_KEY );
-        final Context context = contextMap == null ? null : Context.fromMap(contextMap.get( state ));
-
-        if ( context != null )
+        LOCK.lock();
+        try
         {
+            final HttpSession session = portalRequest.getRawRequest().getSession( false );
+
+            if ( session == null )
+            {
+                throw new WebException( HttpStatus.UNAUTHORIZED, "No session" );
+            }
+
+            final Map<String, Map<String, String>> contextMap = (Map) session.getAttribute( CONTEXT_KEY );
             session.removeAttribute( CONTEXT_KEY );
-            return ContextMapper.from( context );
+
+            if ( contextMap == null )
+            {
+                throw new WebException( HttpStatus.CONFLICT, "Invalid authentication flow" );
+            }
+
+            final Map<String, String> context = contextMap.remove( state );
+
+            if ( context == null )
+            {
+                throw new WebException( HttpStatus.CONFLICT, "Invalid state parameter" );
+            }
+
+            if ( !state.equals( context.get( "state" ) ) )
+            {
+                throw new IllegalStateException( "Session state mismatch" );
+            }
+
+            return ContextMapper.from( Context.fromMap( context ) );
+        }
+        finally
+        {
+            LOCK.unlock();
         }
 
-        return null;
     }
 
     public void storeIdToken( final String idToken )
@@ -73,14 +110,13 @@ public class PortalRequestBean
 
     public String getIdToken()
     {
-        final HttpSession session = portalRequest.getRawRequest().getSession( true );
-        return (String) session.getAttribute( ID_TOKEN_KEY );
+        final HttpSession session = portalRequest.getRawRequest().getSession( false );
+        return session != null ? (String) session.getAttribute( ID_TOKEN_KEY ) : null;
     }
 
     @Override
     public void initialize( final BeanContext context )
     {
-        this.portalRequest = context.getBinding( PortalRequest.class ).
-            get();
+        this.portalRequest = context.getBinding( PortalRequest.class ).get();
     }
 }

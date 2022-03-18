@@ -51,9 +51,6 @@ function handleAuthenticationResponse(req) {
     const params = getRequestParams(req);
 
     const context = requestLib.removeContext(params.state);
-    if (!context || context.state !== params.state) {
-        throw 'Invalid state parameter: ' + params.state;
-    }
 
     if (params.error) {
         throw 'Authentication error [' + params.error + ']' + (params.error_description ? ': ' + params.error_description : '');
@@ -70,7 +67,7 @@ function handleAuthenticationResponse(req) {
         clientSecret: idProviderConfig.clientSecret,
         redirectUri: context.redirectUri,
         nonce: context.nonce,
-        code: code,
+        code: code
     });
 
     const claims = {
