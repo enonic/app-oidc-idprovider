@@ -81,7 +81,7 @@ public class PortalRequestBean
                 throw new WebException( HttpStatus.CONFLICT, "Invalid authentication flow" );
             }
 
-            final Map<String, String> context = contextMap.remove( state );
+            final Map<String, String> context = contextMap.get( state );
 
             if ( context == null )
             {
