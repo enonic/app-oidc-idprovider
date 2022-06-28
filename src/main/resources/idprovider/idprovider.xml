@@ -157,7 +157,7 @@
             <input name="forceEmailVerification" type="CheckBox">
               <label>Enforce Email Verification</label>
               <help-text>Enforce email verification. Requires the email scope</help-text>
-              <occurrences minimum="1" maximum="1"/>
+              <occurrences minimum="0" maximum="1"/>
               <default>checked</default>
             </input>
           </items>
