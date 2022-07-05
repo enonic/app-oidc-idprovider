@@ -8,6 +8,8 @@ function getIdProviderConfig() {
     preconditions.checkConfig(idProviderConfig, 'tokenUrl');
     preconditions.checkConfig(idProviderConfig, 'clientId');
     preconditions.checkConfig(idProviderConfig, 'clientSecret');
+    preconditions.checkConfig(idProviderConfig, 'authenticationMethod');
+
 
     //Handle backward compatibility
     if (idProviderConfig.scopes == null) {

@@ -20,12 +20,17 @@ function generateAuthorizationUrl(params) {
 
     //https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest
     return authorizationUrl
-           + '?scope=' + encodeURIComponent(scope)
-           + '&response_type=code'
-           + '&client_id=' + encodeURIComponent(clientId)
-           + '&redirect_uri=' + encodeURIComponent(redirectUri)
-           + '&state=' + state
-           + '&nonce=' + nonce;
+        + '?scope=' + encodeURIComponent(scope)
+        + '&response_type=code'
+        + '&client_id=' + encodeURIComponent(clientId)
+        + '&redirect_uri=' + encodeURIComponent(redirectUri)
+        + '&state=' + state
+        + '&nonce=' + nonce;
+}
+
+function getAuthentication(clientId, clientSecret) {
+    const authString = `${clientId}:${clientSecret}`;
+    return Java.type('com.enonic.app.oidcidprovider.OIDCUtils').base64EncodeString(authString);
 }
 
 function requestIDToken(params) {
@@ -34,24 +39,28 @@ function requestIDToken(params) {
     const clientId = preconditions.checkParameter(params, 'clientId');
     const clientSecret = preconditions.checkParameter(params, 'clientSecret');
     const redirectUri = preconditions.checkParameter(params, 'redirectUri');
+    const authenticationMethod = preconditions.checkParameter(params, 'authenticationMethod');
     const nonce = preconditions.checkParameter(params, 'nonce');
     const code = preconditions.checkParameter(params, 'code');
-    //TODO Handle different authentication methods
 
     //https://openid.net/specs/openid-connect-core-1_0.html#TokenRequest
-    const body = 'grant_type=authorization_code'
-                 + '&code=' + code
-                 + '&redirect_uri=' + redirectUri
-                 + '&client_id=' + clientId
-                 + '&client_secret=' + clientSecret;
+    let body = 'grant_type=authorization_code'
+        + '&code=' + code
+        + '&redirect_uri=' + redirectUri;
+
+    if (authenticationMethod === 'postAuth') {
+        body = body + '&client_id=' + clientId
+            + '&client_secret=' + clientSecret;
+    }
+
+    const headers = authenticationMethod === "basicAuth" ?
+        { Authorization: `Basic ${getAuthentication(clientId, clientSecret)}` } : {};
 
     const request = {
         url: tokenUrl,
         method: 'POST',
-        // headers: {
-        //     //https://tools.ietf.org/html/rfc6749#section-2.3.1
-        // },
-        body: body,
+        headers,
+        body,
         contentType: 'application/x-www-form-urlencoded'
     };
     log.debug('Sending token request: ' + JSON.stringify(request));

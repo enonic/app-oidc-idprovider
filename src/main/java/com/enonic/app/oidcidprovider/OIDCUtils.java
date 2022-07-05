@@ -3,6 +3,7 @@ package com.enonic.app.oidcidprovider;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.text.ParseException;
+import java.util.Base64;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
@@ -35,5 +36,9 @@ public class OIDCUtils
         return ClaimSetMapper.create().
             claimSet( jwtClaimsSet ).
             build();
+    }
+
+    public static String base64EncodeString(String s) {
+        return Base64.getEncoder().encodeToString(s.getBytes());
     }
 }

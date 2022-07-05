@@ -66,6 +66,7 @@ function handleAuthenticationResponse(req) {
         clientId: idProviderConfig.clientId,
         clientSecret: idProviderConfig.clientSecret,
         redirectUri: context.redirectUri,
+        authenticationMethod: idProviderConfig.authenticationMethod,
         nonce: context.nonce,
         code: code
     });

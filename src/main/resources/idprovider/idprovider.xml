@@ -3,6 +3,20 @@
   <mode>MIXED</mode>
   <form>
     <field-set>
+      <label>Authentication</label>
+      <items>
+        <input name="authenticationMethod" type="RadioButton">
+          <label>Authentication method</label>
+          <occurrences minimum="1" maximum="1"/>
+          <config>
+            <option value="postAuth">POST authentication</option>
+            <option value="basicAuth">Basic authentication</option>
+          </config>
+          <default>postAuth</default>
+        </input>
+      </items>
+    </field-set>
+    <field-set>
       <label>Authorization Server</label>
       <items>
         <input name="issuer" type="TextLine">
