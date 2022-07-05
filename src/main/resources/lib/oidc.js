@@ -48,13 +48,16 @@ function requestIDToken(params) {
         + '&code=' + code
         + '&redirect_uri=' + redirectUri;
 
-    if (authenticationMethod === 'postAuth') {
-        body = body + '&client_id=' + clientId
-            + '&client_secret=' + clientSecret;
-    }
+    let headers = {};
 
-    const headers = authenticationMethod === "basicAuth" ?
-        { Authorization: `Basic ${getAuthentication(clientId, clientSecret)}` } : {};
+    switch (authenticationMethod) {
+    case 'basicAuth':
+        headers = { Authorization: `Basic ${getAuthentication(clientId, clientSecret)}` }
+        break;
+    default:
+        body = body + '&client_id=' + clientId
+          + '&client_secret=' + clientSecret;
+    }
 
     const request = {
         url: tokenUrl,

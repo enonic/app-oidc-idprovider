@@ -3,22 +3,18 @@
   <mode>MIXED</mode>
   <form>
     <field-set>
-      <label>Authentication</label>
+      <label>Authorization Server</label>
       <items>
         <input name="authenticationMethod" type="RadioButton">
-          <label>Authentication method</label>
+          <label>Client/Secret token authentication method</label>
+          <help-text>Specify how Enonic XP authenticates with the authorization server. Read more about client/secret token auth methods here: https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication</help-text>
           <occurrences minimum="1" maximum="1"/>
           <config>
-            <option value="postAuth">POST authentication</option>
-            <option value="basicAuth">Basic authentication</option>
+            <option value="postAuth">client_secret_post</option>
+            <option value="basicAuth">client_secret_basic</option>
           </config>
           <default>postAuth</default>
         </input>
-      </items>
-    </field-set>
-    <field-set>
-      <label>Authorization Server</label>
-      <items>
         <input name="issuer" type="TextLine">
           <label>Issuer Identifier</label>
           <help-text>Case sensitive URL using the https scheme that contains scheme, host, and optionally, port number and path components
