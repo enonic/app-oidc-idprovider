@@ -8,6 +8,7 @@ function getIdProviderConfig() {
     preconditions.checkConfig(idProviderConfig, 'tokenUrl');
     preconditions.checkConfig(idProviderConfig, 'clientId');
     preconditions.checkConfig(idProviderConfig, 'clientSecret');
+    preconditions.checkConfig(idProviderConfig, 'method');
 
     //Handle backward compatibility
     if (idProviderConfig.scopes == null) {
@@ -21,6 +22,9 @@ function getIdProviderConfig() {
     }
     if (idProviderConfig.mappings.email == null) {
         idProviderConfig.mappings.email = '${email}';
+    }
+    if (idProviderConfig.method == null) {
+        idProviderConfig.method = 'post';
     }
 
     idProviderConfig.scopes = idProviderConfig.scopes.trim();

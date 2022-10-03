@@ -10,6 +10,10 @@ function parseClaims(jwt, issuer, clientId, nonce) {
     return __.toNativeObject(parsedJwt);
 }
 
+function generateJwt(jwtData, clientSecret) {
+    return Java.type('com.enonic.app.oidcidprovider.OIDCUtils').generateJwt(jwtData, clientSecret);
+}
+
 function generateAuthorizationUrl(params) {
     const authorizationUrl = preconditions.checkParameter(params, 'authorizationUrl');
     const clientId = preconditions.checkParameter(params, 'clientId');
@@ -32,6 +36,7 @@ function requestIDToken(params) {
     const issuer = preconditions.checkParameter(params, 'issuer');
     const tokenUrl = preconditions.checkParameter(params, 'tokenUrl');
     const clientId = preconditions.checkParameter(params, 'clientId');
+    const method = preconditions.checkParameter(params, 'method');
     const clientSecret = preconditions.checkParameter(params, 'clientSecret');
     const redirectUri = preconditions.checkParameter(params, 'redirectUri');
     const nonce = preconditions.checkParameter(params, 'nonce');
@@ -39,18 +44,40 @@ function requestIDToken(params) {
     //TODO Handle different authentication methods
 
     //https://openid.net/specs/openid-connect-core-1_0.html#TokenRequest
-    const body = 'grant_type=authorization_code'
-                 + '&code=' + code
-                 + '&redirect_uri=' + redirectUri
-                 + '&client_id=' + clientId
-                 + '&client_secret=' + clientSecret;
+    let body = 'grant_type=authorization_code'
+               + '&code=' + code
+               + '&redirect_uri=' + redirectUri;
+
+    let headers = null;
+
+    switch (method) {
+    case 'basic':
+        headers = {
+            'Authorization': 'Basic ' +
+                             Java.type('java.util.Base64').getEncoder().encodeToString((clientId + ':' + clientSecret).getBytes())
+        };
+        break;
+    case 'jwt':
+        body += '&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
+                + '&client_assertion=' + generateJwt({
+                'iss': clientId,
+                'sub': clientId,
+                'aud': tokenUrl,
+                'jti': generateToken(),
+                'exp': Math.floor(new Date().getTime() / 1000.0 + 5 * 60),
+                'iat': Math.floor(new Date().getTime() / 1000.0)
+            }, clientSecret)
+        break;
+    case 'post':
+    default:
+        body += '&client_id=' + clientId
+                + '&client_secret=' + clientSecret;
+    }
 
     const request = {
         url: tokenUrl,
         method: 'POST',
-        // headers: {
-        //     //https://tools.ietf.org/html/rfc6749#section-2.3.1
-        // },
+        headers: headers,
         body: body,
         contentType: 'application/x-www-form-urlencoded'
     };
