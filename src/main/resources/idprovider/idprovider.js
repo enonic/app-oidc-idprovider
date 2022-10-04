@@ -63,6 +63,7 @@ function handleAuthenticationResponse(req) {
     const idToken = oidcLib.requestIDToken({
         issuer: idProviderConfig.issuer,
         tokenUrl: idProviderConfig.tokenUrl,
+        method: idProviderConfig.method,
         clientId: idProviderConfig.clientId,
         clientSecret: idProviderConfig.clientSecret,
         redirectUri: context.redirectUri,

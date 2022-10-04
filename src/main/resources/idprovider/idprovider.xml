@@ -30,6 +30,17 @@
           <help-text>User Info endpoint URL. Omit if the information is already present in the TokenID</help-text>
           <occurrences minimum="0" maximum="1"/>
         </input>
+        <input name="method" type="RadioButton">
+          <label>Client Authentication method</label>
+          <help-text>Client Authentication methods that are used to authenticate to the Authorization Server when using the Token Endpoint</help-text>
+          <occurrences minimum="0" maximum="1"/>
+          <default>post</default>
+          <config>
+            <option value="basic">Basic</option>
+            <option value="post">Post</option>
+            <option value="jwt">JWT</option>
+          </config>
+        </input>
         <input name="scopes" type="TextLine">
           <label>Additional scopes</label>
           <help-text>Scopes in addition to "openid". Space separated. We recommend adding at least the standard scopes "profile email".
