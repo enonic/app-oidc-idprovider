@@ -44,9 +44,7 @@ function requestIDToken(params) {
     //TODO Handle different authentication methods
 
     //https://openid.net/specs/openid-connect-core-1_0.html#TokenRequest
-    let body = 'grant_type=authorization_code'
-               + '&code=' + code
-               + '&redirect_uri=' + redirectUri;
+    let requestParams = {'grant_type': 'authorization_code', 'code': code, 'redirect_uri': redirectUri};
 
     let headers = null;
 
@@ -58,27 +56,26 @@ function requestIDToken(params) {
         };
         break;
     case 'jwt':
-        body += '&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
-                + '&client_assertion=' + generateJwt({
-                'iss': clientId,
-                'sub': clientId,
-                'aud': tokenUrl,
-                'jti': generateToken(),
-                'exp': Math.floor(new Date().getTime() / 1000.0 + 5 * 60),
-                'iat': Math.floor(new Date().getTime() / 1000.0)
-            }, clientSecret)
+        requestParams.client_assertion_type = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
+        requestParams.client_assertion = generateJwt({
+            'iss': clientId,
+            'sub': clientId,
+            'aud': tokenUrl,
+            'exp': Math.floor(new Date().getTime() / 1000.0 + 5 * 60),
+            'iat': Math.floor(new Date().getTime() / 1000.0)
+        }, clientSecret);
         break;
     case 'post':
     default:
-        body += '&client_id=' + clientId
-                + '&client_secret=' + clientSecret;
+        requestParams.client_id=clientId;
+        requestParams.client_secret=clientSecret;
     }
 
     const request = {
         url: tokenUrl,
         method: 'POST',
         headers: headers,
-        body: body,
+        params: requestParams,
         contentType: 'application/x-www-form-urlencoded'
     };
     log.debug('Sending token request: ' + JSON.stringify(request));
