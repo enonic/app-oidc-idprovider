@@ -38,7 +38,7 @@
           <config>
             <option value="basic">Basic</option>
             <option value="post">Post</option>
-            <option value="jwt">Jwt</option>
+            <option value="jwt">JWT</option>
           </config>
         </input>
         <input name="scopes" type="TextLine">
