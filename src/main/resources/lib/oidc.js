@@ -36,12 +36,11 @@ function requestIDToken(params) {
     const issuer = preconditions.checkParameter(params, 'issuer');
     const tokenUrl = preconditions.checkParameter(params, 'tokenUrl');
     const clientId = preconditions.checkParameter(params, 'clientId');
-    const method = preconditions.checkParameter(params, 'method');
     const clientSecret = preconditions.checkParameter(params, 'clientSecret');
     const redirectUri = preconditions.checkParameter(params, 'redirectUri');
     const nonce = preconditions.checkParameter(params, 'nonce');
     const code = preconditions.checkParameter(params, 'code');
-    //TODO Handle different authentication methods
+    const method = params.method;
 
     //https://openid.net/specs/openid-connect-core-1_0.html#TokenRequest
     let requestParams = {'grant_type': 'authorization_code', 'code': code, 'redirect_uri': redirectUri};
