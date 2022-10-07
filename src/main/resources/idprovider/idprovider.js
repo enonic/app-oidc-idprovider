@@ -5,6 +5,7 @@ const requestLib = require('/lib/request');
 const preconditions = require('/lib/preconditions');
 const authLib = require('/lib/xp/auth');
 const portalLib = require('/lib/xp/portal');
+const adminLib = require('/lib/xp/admin');
 
 function redirectToAuthorizationEndpoint() {
     log.debug('Handling 401 error...');
@@ -41,10 +42,9 @@ function redirectToAuthorizationEndpoint() {
 
 function generateRedirectUri() {
     var idProviderKey = portalLib.getIdProviderKey();
-    return portalLib.idProviderUrl({
-        idProviderKey: idProviderKey,
-        type: 'absolute'
-    });
+
+    return adminLib.getHomeToolUrl({type: 'absolute'}) + '/_/idprovider/' + idProviderKey;
+    // dynamic portalLib.idProviderUrl can't be use here because of lack of widespread support of dynamic redirect urls by different OIDC implementations
 }
 
 function handleAuthenticationResponse(req) {
