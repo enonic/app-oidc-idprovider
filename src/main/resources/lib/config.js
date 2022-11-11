@@ -18,12 +18,6 @@ function getIdProviderConfigFromFile() {
         )
     );
 
-                                                                                                                        log.info("rawConfigKeys (" +
-                                                                                                                            (Array.isArray(rawConfigKeys) ?
-                                                                                                                                    ("array[" + rawConfigKeys.length + "]") :
-                                                                                                                                    (typeof rawConfigKeys + (rawConfigKeys && typeof rawConfigKeys === 'object' ? (" with keys: " + JSON.stringify(Object.keys(rawConfigKeys))) : ""))
-                                                                                                                            ) + "): " + JSON.stringify(rawConfigKeys, null, 2)
-                                                                                                                        );
     if (!rawConfigKeys || !rawConfigKeys.length) {
         return null;
     }
@@ -48,12 +42,6 @@ function getIdProviderConfigFromFile() {
     if (skipped.length) {
         log.warning(`${app.name}.cfg contains invalid config key(s) for the '${idProviderKey}' ID provider. They should only be on this shape: '${idProviderKey}.oneSingleSubkey = value'. Skipping config(s): ${JSON.stringify(skipped)}`);
     }
-																														log.info("idProviderConfigKeys (" +
-																															(Array.isArray(idProviderConfigKeys) ?
-																																("array[" + idProviderConfigKeys.length + "]") :
-																																(typeof idProviderConfigKeys + (idProviderConfigKeys && typeof idProviderConfigKeys === 'object' ? (" with keys: " + JSON.stringify(Object.keys(idProviderConfigKeys))) : ""))
-																															) + "): " + JSON.stringify(idProviderConfigKeys, null, 2)
-																														);
 
     if (!idProviderConfigKeys || !idProviderConfigKeys.length) {
         return null;
@@ -63,12 +51,7 @@ function getIdProviderConfigFromFile() {
     idProviderConfigKeys.forEach(key => {
         idProviderConfig[key] = app.config[`${idProviderKey}.${key}`];
     });
-																														log.info("idProviderConfig (" +
-																															(Array.isArray(idProviderConfig) ?
-																																("array[" + idProviderConfig.length + "]") :
-																																(typeof idProviderConfig + (idProviderConfig && typeof idProviderConfig === 'object' ? (" with keys: " + JSON.stringify(Object.keys(idProviderConfig))) : ""))
-																															) + "): " + JSON.stringify(idProviderConfig, null, 2)
-																														);
+
     log.debug(`Found config for the '${idProviderKey}' ID provider in ${app.name}.cfg. Using that instead of node-stored config from authLib.`);
     return idProviderConfig;
 }
@@ -76,14 +59,6 @@ function getIdProviderConfigFromFile() {
 function getIdProviderConfig() {
 
     let idProviderConfig = getIdProviderConfigFromFile() || authLib.getIdProviderConfig();
-
-    log.info("idProviderConfig (" +
-        (Array.isArray(idProviderConfig) ?
-                ("array[" + idProviderConfig.length + "]") :
-                (typeof idProviderConfig + (idProviderConfig && typeof idProviderConfig === 'object' ? (" with keys: " + JSON.stringify(Object.keys(idProviderConfig))) : ""))
-        ) + "): " + JSON.stringify(idProviderConfig, null, 2)
-    );
-
     preconditions.checkConfig(idProviderConfig, 'issuer');
     preconditions.checkConfig(idProviderConfig, 'authorizationUrl');
     preconditions.checkConfig(idProviderConfig, 'tokenUrl');
