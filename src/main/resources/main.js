@@ -1,13 +1,7 @@
 const context = require("/lib/context");
 const clusterLib = require("/lib/xp/cluster");
-const taskLib = require("/lib/xp/task");
-const initLib = require("/lib/initIdprovider");
+const initLib = require("/lib/configFile/initIdprovider");
 
 if (clusterLib.isMaster()) {
-    context.runAsSu(function () {
-        taskLib.executeFunction({
-            description: app.name + ": create userstore(s)",
-            func: initLib.initUserStores,
-        });
-    });
+    context.runAsSu(initLib.initUserStores)
 }

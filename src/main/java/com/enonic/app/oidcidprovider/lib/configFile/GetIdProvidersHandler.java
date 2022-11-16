@@ -1,9 +1,9 @@
-package com.enonic.app.oidcidprovider.lib.auth;
+package com.enonic.app.oidcidprovider.lib.configFile;
+
+import com.enonic.xp.security.IdProviders;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
-import com.enonic.xp.security.IdProviders;
 
 public final class GetIdProvidersHandler
         extends AbstractIdProviderHandler

@@ -1,7 +1,7 @@
 // Based on app-simple-idprovider
 
-
-const configFile = require("/lib/configFile");
+const configFile = require("/lib/configFile/configFile");
+const taskLib = require("/lib/xp/task");
 
 function required(params, name) {
     var value = params[name];
@@ -25,7 +25,7 @@ function nullOrValue(value) {
  * @param {object} [params.permissions] Id provider permissions.
  */
 function createIdProvider(params) {
-    var bean = __.newBean('com.enonic.app.oidcidprovider.lib.auth.CreateIdProviderHandler');
+    var bean = __.newBean('com.enonic.app.oidcidprovider.lib.configFile.CreateIdProviderHandler');
 
     bean.name = required(params, 'name');
     bean.displayName = nullOrValue(params.displayName);
@@ -42,11 +42,9 @@ function createIdProvider(params) {
  * @returns {object[]} Array of id providers.
  */
 function getIdProviders() {
-    var bean = __.newBean('com.enonic.app.oidcidprovider.lib.auth.GetIdProvidersHandler');
+    var bean = __.newBean('com.enonic.app.oidcidprovider.lib.configFile.GetIdProvidersHandler');
     return __.toNativeObject(bean.getIdProviders());
 };
-
-
 
 
 /**
@@ -68,7 +66,9 @@ function exists(providers, name) {
 }
 
 
-exports.initUserStores = function() {
+
+function runInitUserStores() {
+
     const systemIdProviders = getIdProviders();
     const configedIdProviderNames = configFile.getAllIdProviderNames();
 
@@ -95,8 +95,20 @@ exports.initUserStores = function() {
             });
 
             if (result) {
-                log.info(`Successful autoinit, created userstore: ${JSON.stringify({name: idProviderName, displayName, description})}`);
+                log.info(`Successful autoinit, created userstore: ${JSON.stringify({
+                    name: idProviderName,
+                    displayName,
+                    description
+                })}`);
             }
         }
+    });
+}
+
+
+exports.initUserStores = function () {
+    taskLib.executeFunction({
+        description: app.name + ": create userstore(s)",
+        func: runInitUserStores
     });
 }

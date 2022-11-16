@@ -1,4 +1,4 @@
-package com.enonic.app.oidcidprovider.lib.auth;
+package com.enonic.app.oidcidprovider.lib.configFile;
 
 import java.util.List;
 

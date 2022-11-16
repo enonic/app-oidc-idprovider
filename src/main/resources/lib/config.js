@@ -2,8 +2,7 @@ const authLib = require('/lib/xp/auth');
 const preconditions = require('/lib/preconditions');
 const portalLib = require('/lib/xp/portal');
 
-
-const configFile = require('/lib/configFile');
+const configFile = require('/lib/configFile/configFile');
 
 function getIdProviderConfig() {
     const idProviderName = portalLib.getIdProviderKey();
