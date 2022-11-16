@@ -1,12 +1,15 @@
 const portalLib = require('/lib/xp/portal');
 
-// Expected format in this app's .cfg file:
-// eg. for an idprovider named "myidp", with a configuration tree { setting1: "hey", setting2: { nextLevel: true } }:
+const AUTOINIT="autoinit"
+
+// Expected format in this app's .cfg file, for separately configuring multiple idproviders: idprovider.<name>.<field>[.optional][.subfields][.etc...]
+// For example, an idprovider named "myidp", with a configuration tree { mySetting1: "false", mySetting2: { nextLevel: true } }:
 //
-// idprovider.myidp.setting1=hey
-// idprovider.myidp.setting2.nextLevel=true
+// idprovider.myidp.mySetting1=false
+// idprovider.myidp.mySetting2.nextLevel=true
 //
 const CONFIG_NAMESPACE = "idprovider"
+
 
 
 // TODO: Redundant? Duplicates appear to be silently skipped when .cfg is read?
@@ -97,9 +100,9 @@ function getFileConfigSubTree(allConfigKeys, currentKey, currentFieldIndex, subT
  *  On invalid keys/datastructures, error is logged and null is returned. If no valid keys are found, returns null.
  *  A returned null is expected make the config fall back to old node-stored config, entirely skipping the file .cfg for the current idprovider name.
  */
-function getIdProviderConfigFromFile() {
-    const idProviderName = portalLib.getIdProviderKey();
+exports.getConfigForIdProvider = function(idProviderName) {
     const idProviderKeyBase = `${CONFIG_NAMESPACE}.${idProviderName}`;
+
     const rawConfigKeys = Object.keys(app.config || {}).filter( k =>
         k && (k.startsWith(idProviderKeyBase))
     );
@@ -110,6 +113,7 @@ function getIdProviderConfigFromFile() {
 
     try {
         const config = getFileConfigSubTree(rawConfigKeys, idProviderKeyBase, 1);
+
         if (Object.keys(config).length) {
             log.info(`Found config for '${idProviderKeyBase}' in ${app.name}.cfg. Using that instead of node-stored config from authLib.`);
             return config;
@@ -127,4 +131,39 @@ function getIdProviderConfigFromFile() {
 
 
 
-exports.getIdProviderConfig = getIdProviderConfigFromFile;
+/**
+ *  Returns an array of idprovider names found in the .cfg file under the 'idprovider.<name>' namespace
+ */
+exports.getAllIdProviderNames = function() {
+    const names = [];
+
+    Object.keys(app.config || {}).forEach( key => {
+        const fields = key.split('.');
+        if (
+            fields.length > 1 &&
+            fields[0] === CONFIG_NAMESPACE
+        ) {
+            const name = (fields[1] || "").trim();
+            if (
+                name.length &&
+                names.indexOf(name) === -1
+            ) {
+                names.push(name);
+            }
+        }
+    });
+
+    return names;
+}
+
+
+
+/**
+ * Returns true or false: should the idProvider auto-initialize?
+ * Currently, only autoinit=true is used.
+ * TODO: Consider finer granularity? If so, use the idProviderName arg to match for subfields or array for each paricular ID provider (userstore) name, eg. autoinit.oicd=true or autoinit=["oicd", ...] etc
+ */
+exports.shouldAutoInit = function(idProviderName) {
+    const autoInit = (app.config || {})[AUTOINIT];
+    return autoInit === true || autoInit === "true";
+}
