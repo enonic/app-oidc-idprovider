@@ -1,7 +1,5 @@
 // Based on app-simple-idprovider
 
-// TODO: appDisplayName from gradle.properties?
-const DEFAULT_DESCRIPTION = "OIDC ID Provider"
 
 const configFile = require("/lib/configFile");
 
@@ -35,15 +33,7 @@ function createIdProvider(params) {
     bean.idProviderConfig = __.toScriptValue(params.idProviderConfig);
     bean.permissions = __.toScriptValue(params.permissions);
 
-    var idProviderConfig = __.toNativeObject(bean.idProviderConfig);
-																														log.info("idProviderConfig (" +
-																															(Array.isArray(idProviderConfig) ?
-																																("array[" + idProviderConfig.length + "]") :
-																																(typeof idProviderConfig + (idProviderConfig && typeof idProviderConfig === 'object' ? (" with keys: " + JSON.stringify(Object.keys(idProviderConfig))) : ""))
-																															) + "): " + JSON.stringify(idProviderConfig, null, 2)
-																														);
-    return true;
-    //return __.toNativeObject(bean.createIdProvider());
+    return __.toNativeObject(bean.createIdProvider());
 };
 
 /**
@@ -80,47 +70,32 @@ function exists(providers, name) {
 
 exports.initUserStores = function() {
     const systemIdProviders = getIdProviders();
-																														log.info("Existing systemIdProviders (" +
-																															(Array.isArray(systemIdProviders) ?
-																																("array[" + systemIdProviders.length + "]") :
-																																(typeof systemIdProviders + (systemIdProviders && typeof systemIdProviders === 'object' ? (" with keys: " + JSON.stringify(Object.keys(systemIdProviders))) : ""))
-																															) + "): " + JSON.stringify(systemIdProviders, null, 2)
-																														);
     const configedIdProviderNames = configFile.getAllIdProviderNames();
-                                                                                                                        log.info("File config'd IdProviderNames (" +
-																															(Array.isArray(configedIdProviderNames) ?
-																																("array[" + configedIdProviderNames.length + "]") :
-																																(typeof configedIdProviderNames + (configedIdProviderNames && typeof configedIdProviderNames === 'object' ? (" with keys: " + JSON.stringify(Object.keys(configedIdProviderNames))) : ""))
-																															) + "): " + JSON.stringify(configedIdProviderNames, null, 2)
-																														);
 
     configedIdProviderNames.forEach(idProviderName => {
-        if (configFile.shouldAutoInit(idProviderName)) {
-            if (!exists(systemIdProviders, idProviderName)) {
-                                                                                                                        log.info("'" + idProviderName + "' noExist. SHOULD create idprovider userstore from: app (" +
-                                                                                                                            (Array.isArray(app) ?
-                                                                                                                                    ("array[" + app.length + "]") :
-                                                                                                                                    (typeof app + (app && typeof app === 'object' ? (" with keys: " + JSON.stringify(Object.keys(app))) : ""))
-                                                                                                                            ) + "): " + JSON.stringify(app, null, 2)
-                                                                                                                        );
-                const config = configFile.getConfigForIdProvider(idProviderName);
-                const displayName = config.displayName || idProviderName;
-                const description = config.description || `${DEFAULT_DESCRIPTION} ('${idProviderName}' with autoinit in ${app.config["config.filename"]})`;
 
-                const result = createIdProvider({
-                    name: idProviderName,
-                    displayName,
+        if (
+            configFile.shouldAutoInit(idProviderName) &&
+            !exists(systemIdProviders, idProviderName)
+        ) {
+            const config = configFile.getConfigForIdProvider(idProviderName);
+            const displayName = config.displayName || idProviderName;
+            const description = config.description || `${configFile.CONFIG_NAMESPACE}.${idProviderName} in ${app.config["config.filename"]}`;
+
+            const result = createIdProvider({
+                name: idProviderName,
+                displayName: displayName,
+                descripton: description,
+                idProviderConfig: {
                     descripton: description,
-                    idProviderConfig: {
-                        applicationKey: app.name,
-                        config: config,
-                    },
-                    permissions: [],
-                });
+                    applicationKey: app.name,
+                    config: [], // Skipping the node-level config entirely; we're going to use the .cfg anyway (although this causes invalid config fields when viewing it in the user manager)
+                },
+                permissions: [],
+            });
 
-                if (result) {
-                    log.info(`Created userstore: ${JSON.stringify({name: idProviderName, displayName, description})}`);
-                }
+            if (result) {
+                log.info(`Successful autoinit, created userstore: ${JSON.stringify({name: idProviderName, displayName, description})}`);
             }
         }
     });

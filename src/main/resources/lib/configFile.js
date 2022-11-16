@@ -1,5 +1,3 @@
-const portalLib = require('/lib/xp/portal');
-
 const AUTOINIT="autoinit"
 
 // Expected format in this app's .cfg file, for separately configuring multiple idproviders: idprovider.<name>.<field>[.optional][.subfields][.etc...]
@@ -8,7 +6,8 @@ const AUTOINIT="autoinit"
 // idprovider.myidp.mySetting1=false
 // idprovider.myidp.mySetting2.nextLevel=true
 //
-const CONFIG_NAMESPACE = "idprovider"
+const CONFIG_NAMESPACE = "idprovider";
+exports.CONFIG_NAMESPACE = CONFIG_NAMESPACE;
 
 
 
@@ -88,6 +87,18 @@ function getFileConfigSubTree(allConfigKeys, currentKey, currentFieldIndex, subT
 }
 
 
+// Prevent flooding of state logs, only log message on state change
+let alreadyLogged = null;
+const KIND_FILE="using_file";
+const KIND_NODE="using_node";
+function logStateOnce(messageKind, message) {
+    if (alreadyLogged !== messageKind) {
+        log.info(message);
+        alreadyLogged = messageKind;
+    }
+}
+
+
 /** Read out and return config from this-app.cfg that apply to the relevant id provider key.
  *  That is, the config keys are dot-separated,
  *      the first field must be "idprovider" (aka CONFIG_NAMESPACE),
@@ -108,18 +119,18 @@ exports.getConfigForIdProvider = function(idProviderName) {
     );
 
     if (!rawConfigKeys || !rawConfigKeys.length) {
-        log.info(`Found config for the '${idProviderKeyBase}' ID provider in ${app.name}.cfg. Using that instead of node-stored config from authLib.`);
+        logStateOnce(KIND_FILE, `Found config for the '${idProviderKeyBase}' ID provider in ${app.name}.cfg. Using that instead of node-stored config from authLib.`);
     }
 
     try {
         const config = getFileConfigSubTree(rawConfigKeys, idProviderKeyBase, 1);
 
         if (Object.keys(config).length) {
-            log.info(`Found config for '${idProviderKeyBase}' in ${app.name}.cfg. Using that instead of node-stored config from authLib.`);
+            logStateOnce(KIND_FILE, `Found config for '${idProviderKeyBase}' in ${app.name}.cfg. Using that instead of node-stored config from authLib.`);
             return config;
 
         } else {
-            log.info(`No config for '${idProviderKeyBase}' was found in ${app.name}.cfg. Using old node-stored config from authLib.`);
+            logStateOnce(KIND_NODE, `No config for '${idProviderKeyBase}' was found in ${app.name}.cfg. Using old node-stored config from authLib.`);
         }
 
     } catch (e) {
@@ -161,7 +172,7 @@ exports.getAllIdProviderNames = function() {
 /**
  * Returns true or false: should the idProvider auto-initialize?
  * Currently, only autoinit=true is used.
- * TODO: Consider finer granularity? If so, use the idProviderName arg to match for subfields or array for each paricular ID provider (userstore) name, eg. autoinit.oicd=true or autoinit=["oicd", ...] etc
+ * TODO: Consider finer granularity for overriding particular ID provider (userstore) names, eg. autoinit.oicd=false or autoinit=["oicd", ...] etc? If so, use the idProviderName arg to match for subfields or array values
  */
 exports.shouldAutoInit = function(idProviderName) {
     const autoInit = (app.config || {})[AUTOINIT];
