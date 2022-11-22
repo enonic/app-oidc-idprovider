@@ -67,8 +67,7 @@ function exists(providers, name) {
 
 
 
-function runInitUserStores() {
-
+exports.initUserStores = function() {
     const systemIdProviders = getIdProviders();
     const configedIdProviderNames = configFile.getAllIdProviderNames();
 
@@ -78,6 +77,8 @@ function runInitUserStores() {
             configFile.shouldAutoInit(idProviderName) &&
             !exists(systemIdProviders, idProviderName)
         ) {
+            log.info(`Autoinit: creating userstore '${idProviderName}'...`);
+
             const config = configFile.getConfigForIdProvider(idProviderName);
             const displayName = config.displayName || idProviderName;
             const description = config.description || `${configFile.CONFIG_NAMESPACE}.${idProviderName} in ${app.config["config.filename"]}`;
@@ -95,20 +96,17 @@ function runInitUserStores() {
             });
 
             if (result) {
-                log.info(`Successful autoinit, created userstore: ${JSON.stringify({
+                log.info(`Autoinit: success, created userstore: ${JSON.stringify({
                     name: idProviderName,
                     displayName,
                     description
                 })}`);
+
+            } else {
+                log.warning(`Autoinit: something went wrong trying to create userstore '${idProviderName}'.`);
+                log.debug("createIdProvider result:");
+                log.debug(result);
             }
         }
-    });
-}
-
-
-exports.initUserStores = function () {
-    taskLib.executeFunction({
-        description: app.name + ": create userstore(s)",
-        func: runInitUserStores
     });
 }

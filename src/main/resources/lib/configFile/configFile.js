@@ -11,16 +11,6 @@ exports.CONFIG_NAMESPACE = CONFIG_NAMESPACE;
 
 
 
-// TODO: Redundant? Duplicates appear to be silently skipped when .cfg is read?
-function checkForKeyDuplicate(targetKey, seenKeys) {
-    if (seenKeys.indexOf(targetKey) === -1) {
-        seenKeys.push(targetKey);
-
-    } else {
-        throw Error(`Ambiguity in ${app.name}.cfg: the key '${targetKey}' is duplicated.`);
-    }
-}
-
 
 // For example, looking for "idprovider.myidp.mykey" and all keys that may or may not be below it (eg. "idprovider.myidp.mykey.subkey" and "idprovider.myidp.mykey.another", etc),
 // allConfigKeys is an array of all keys,
@@ -30,16 +20,14 @@ function getFileConfigSubTree(allConfigKeys, currentKey, currentFieldIndex, subT
     // Eg. "idprovider.myidp.mykey." (trailing dot)
     const currentBaseDot = `${currentKey}.`;
 
-    let exactConfigKey=null
-    const deeperSubKeys=[]
-    const seenKeys=[];
+    let exactConfigKey=null;
+    const deeperSubKeys=[];
 
     // Distribute relevant keys (starting with currentKey) to either an exact match or a list of subkeys to parse into a subtree (deeperSubKeys) - while error checking for invalid data structures.
     allConfigKeys.forEach( (k) => {
         const key = k.trim();
 
         if (key === currentKey) {
-            checkForKeyDuplicate(key, seenKeys);
             // If at least one subtree key has already been seen: invalid
             if (deeperSubKeys.length) {
                 throw Error(`Ambiguity in ${app.name}.cfg: the key '${currentKey}' can't both have a direct value and subfields (a tree) below it ('${deeperSubKeys[0]}' etc).`);
@@ -47,7 +35,6 @@ function getFileConfigSubTree(allConfigKeys, currentKey, currentFieldIndex, subT
             exactConfigKey = key;
 
         } else if (key.startsWith(currentBaseDot)) {
-            checkForKeyDuplicate(key, seenKeys);
             // If an exact match with a direct value has already been seen: invalid
             if (exactConfigKey) {
                 throw Error(`Ambiguity in ${app.name}.cfg: the key '${exactConfigKey}' can't both have a direct value and subfields (a tree) below it ('${key}' etc).`);
