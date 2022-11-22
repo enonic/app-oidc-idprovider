@@ -1,7 +1,6 @@
 // Based on app-simple-idprovider
 
 const configFile = require("/lib/configFile/configFile");
-const taskLib = require("/lib/xp/task");
 
 function required(params, name) {
     var value = params[name];
@@ -74,7 +73,7 @@ exports.initUserStores = function() {
     configedIdProviderNames.forEach(idProviderName => {
 
         if (
-            configFile.shouldAutoInit(idProviderName) &&
+            configFile.shouldAutoInit() &&
             !exists(systemIdProviders, idProviderName)
         ) {
             log.info(`Autoinit: creating userstore '${idProviderName}'...`);

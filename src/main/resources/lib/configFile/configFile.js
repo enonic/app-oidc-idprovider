@@ -159,9 +159,8 @@ exports.getAllIdProviderNames = function() {
 /**
  * Returns true or false: should the idProvider auto-initialize?
  * Currently, only autoinit=true is used.
- * TODO: Consider finer granularity for overriding particular ID provider (userstore) names, eg. autoinit.oicd=false or autoinit=["oicd", ...] etc? If so, use the idProviderName arg to match for subfields or array values
  */
-exports.shouldAutoInit = function(idProviderName) {
+exports.shouldAutoInit = function() {
     const autoInit = (app.config || {})[AUTOINIT];
     return autoInit === true || autoInit === "true";
 }
