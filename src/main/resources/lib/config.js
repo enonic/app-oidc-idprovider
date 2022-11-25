@@ -1,8 +1,13 @@
 const authLib = require('/lib/xp/auth');
 const preconditions = require('/lib/preconditions');
+const portalLib = require('/lib/xp/portal');
+
+const configFile = require('/lib/configFile/configFile');
 
 function getIdProviderConfig() {
-    const idProviderConfig = authLib.getIdProviderConfig();
+    const idProviderName = portalLib.getIdProviderKey();
+    const idProviderConfig = configFile.getConfigForIdProvider(idProviderName) || authLib.getIdProviderConfig();
+
     preconditions.checkConfig(idProviderConfig, 'issuer');
     preconditions.checkConfig(idProviderConfig, 'authorizationUrl');
     preconditions.checkConfig(idProviderConfig, 'tokenUrl');
