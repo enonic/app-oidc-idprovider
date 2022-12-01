@@ -1,3 +1,5 @@
+const parsingLib = require('/lib/configFile/parsingCallbacks');
+
 const AUTOINIT="autoinit"
 
 // Expected format in this app's .cfg file, for separately configuring multiple idproviders: idprovider.<name>.<field>[.optional][.subfields][.etc...]
@@ -12,12 +14,28 @@ exports.CONFIG_NAMESPACE = CONFIG_NAMESPACE;
 
 
 
-// For example, looking for "idprovider.myidp.mykey" and all keys that may or may not be below it (eg. "idprovider.myidp.mykey.subkey" and "idprovider.myidp.mykey.another", etc),
-// allConfigKeys is an array of all keys,
-// currentKey is "idprovider.myidp.mykey",
-// and currentKeyIndex points to the current specific field in the key, "mykey", so that is 2 ("mykey" is the third field in the array of the key's fields).
-function getFileConfigSubTree(allConfigKeys, currentKey, currentFieldIndex, subTree={}) {
-    // Eg. "idprovider.myidp.mykey." (trailing dot)
+/**
+ *  Returns the value or subtree under the current key in the .cfg file.
+ *
+ *  For example, looking for the current key "idprovider.myidp.mykey" and all keys that may or may not be below it
+ *  (eg. "idprovider.myidp.mykey.subkey" and "idprovider.myidp.mykey.another", etc)
+ *  allConfigKeys is an array of all keys,
+ *  currentKey is "idprovider.myidp.mykey",
+ *  and currentKeyIndex points to the current specific field in the key, "mykey", so that is 2 ("mykey" is the third field in the array of the key's fields).
+ *
+ *  A ParsingCallback is a function that provides a custom parsing function for the key
+ *  @callback parsingCallback
+ *  @param {string} rawValue - Raw value read in from the .cfg file
+ *  @returns {Object|string|number} - A parsed value
+ *
+ *  @param parsingCallbacks {Object.<string, parsingCallback>} - Key -> function object that provides custom parsing
+ *      functions for values of particular keys in the .cfg file.
+ *      Keys are full, exact strings as found in the .cfg file including dot delimiters
+ *      OR regex pattern strings, to match multiple keys. If regex patterns: key string must start with ^ and end with ^.
+ *      Values are parsingCallback functions (see above).
+ */
+function getFileConfigSubTree(allConfigKeys, currentKey, currentFieldIndex, parsingCallbacks, subTree={}) {
+    // Eg. "idprovider.myidp.mykey." (note the trailing dot)
     const currentBaseDot = `${currentKey}.`;
 
     let exactConfigKey=null;
@@ -49,25 +67,97 @@ function getFileConfigSubTree(allConfigKeys, currentKey, currentFieldIndex, subT
         }
     });
 
-    // Only one key; the exact one. So return the value - JSON parsed if possible.
+    // Only one key; the exact one. So return the value
+    // - custom parsed with a parsingCallback, if that is supplied for this exact key or a regexp pattern that matches this exact key,
+    // - or the raw value if no parsingCallback mathces.
     if (exactConfigKey) {
-        const value = app.config[exactConfigKey];
+																														log.info("exactConfigKey (" +
+																															(Array.isArray(exactConfigKey) ?
+																																("array[" + exactConfigKey.length + "]") :
+																																(typeof exactConfigKey + (exactConfigKey && typeof exactConfigKey === 'object' ? (" with keys: " + JSON.stringify(Object.keys(exactConfigKey))) : ""))
+																															) + "): " + JSON.stringify(exactConfigKey, null, 2)
+																														);
         try {
-            return JSON.parse(value);
-        } catch (e) {
+            const value = app.config[exactConfigKey];
+																														log.info("parsingCallbacks? (" +
+																															(Array.isArray(parsingCallbacks) ?
+																																("array[" + parsingCallbacks.length + "]") :
+																																(typeof parsingCallbacks + (parsingCallbacks && typeof parsingCallbacks === 'object' ? (" with keys: " + JSON.stringify(Object.keys(parsingCallbacks))) : ""))
+																															) + "): " + JSON.stringify(parsingCallbacks, null, 2)
+																														);
+            if (parsingCallbacks) {
+
+                // Look for a parsing callback function whose key in parsingCallbacks literally matches the current exact key:
+                let parsingCallback = parsingCallbacks[exactConfigKey];
+                                                                                                                        log.info("FIRST parsingCallback (" +
+                                                                                                                            (Array.isArray(parsingCallback) ?
+                                                                                                                                ("array[" + parsingCallback.length + "]") :
+                                                                                                                                (typeof parsingCallback + (parsingCallback && typeof parsingCallback === 'object' ? (" with keys: " + JSON.stringify(Object.keys(parsingCallback))) : ""))
+                                                                                                                            ) + "): " + JSON.stringify(parsingCallback, null, 2)
+                                                                                                                        );
+
+                if (!parsingCallback) {
+                                                                                                                        log.info("Okay, no parsingCallback.");
+                    // Look for the first parsing callback function where the key in parsingCallbacks can be interpreted as a regex pattern
+                    // (by starting with ^ and ending with $) that matches the current exact key.
+
+                    // .find is not available, though:
+                    let firstMatchingPatternKey;
+                    for (let patternKey of Object.keys(parsingCallbacks)) {
+																														log.info("patternKey (" +
+																															(Array.isArray(patternKey) ?
+																																("array[" + patternKey.length + "]") :
+																																(typeof patternKey + (patternKey && typeof patternKey === 'object' ? (" with keys: " + JSON.stringify(Object.keys(patternKey))) : ""))
+																															) + "): " + JSON.stringify(patternKey, null, 2)
+																														);
+                        if (
+                            patternKey.startsWith('^') &&
+                            patternKey.endsWith('$') &&
+                            new RegExp(patternKey).test(exactConfigKey)
+                        ) {
+																														log.info("Yep: " + patternKey);
+                            firstMatchingPatternKey = patternKey;
+                            break;
+                        }
+                    }
+                                                                                                                        log.info(`parsingCallback for ${exactConfigKey} with firstMatchingPatternKey (` +
+                                                                                                                            (Array.isArray(firstMatchingPatternKey) ?
+                                                                                                                                    ("array[" + firstMatchingPatternKey.length + "]") :
+                                                                                                                                    (typeof firstMatchingPatternKey + (firstMatchingPatternKey && typeof firstMatchingPatternKey === 'object' ? (" with keys: " + JSON.stringify(Object.keys(firstMatchingPatternKey))) : ""))
+                                                                                                                            ) + "): " + JSON.stringify(firstMatchingPatternKey, null, 2)
+                                                                                                                        );
+                    parsingCallback = parsingCallbacks[firstMatchingPatternKey];
+                }
+
+                                                                                                                        log.info("parsingCallback type: " + typeof parsingCallback);
+                if ('function' === typeof parsingCallback) {
+                    return parsingCallback(value);
+                }
+            }
+
+																														log.info("Okay, so NO parsingCallback for exactConfigKey (" +
+																															(Array.isArray(exactConfigKey) ?
+																																("array[" + exactConfigKey.length + "]") :
+																																(typeof exactConfigKey + (exactConfigKey && typeof exactConfigKey === 'object' ? (" with keys: " + JSON.stringify(Object.keys(exactConfigKey))) : ""))
+																															) + "): " + JSON.stringify(exactConfigKey, null, 2) + "\n\n"
+																														);
             return value;
+
+        } catch (e) {
+            throw Error(`Couldn't custom parse the value.`, e);
         }
     }
 
     // More than one key but no duplicates so far? Parse it recursively into a subtree and return that.
     const nextFieldIndex = currentFieldIndex + 1;
+
     deeperSubKeys.forEach(key => {
         const fields=key.split('.');
         const currentField=fields[nextFieldIndex].trim();
         if (!currentField.length) {
             throw Error(`Malformed key in ${app.name}.cfg: '${key}'`);
         }
-        subTree[currentField] = getFileConfigSubTree(deeperSubKeys, currentBaseDot+currentField, nextFieldIndex);
+        subTree[currentField] = getFileConfigSubTree(deeperSubKeys, currentBaseDot+currentField, nextFieldIndex, parsingCallbacks);
     });
 
     return subTree;
@@ -94,7 +184,10 @@ function logStateOnce(messageKind, message) {
  *      OR nested tree structures (eg. below "mappings":
  *          idprovider.myidp.mappings.displayName=${userinfo.preferred_username}
  *          idprovider.myidp.mappings.email=${userinfo.email}
- *  Returns an object where the keys are the second subfield from well-formed configs, eg. { authorizationUrl: 'http://something', clientSecret: 'vs12jn56bn2ai4sjf' }, etc
+ *
+ *  @param idProviderName {string} - Name of ID provider, eg. "myidp"
+ *
+ *  @returns An object where the keys are the second subfield from well-formed configs, eg. { authorizationUrl: 'http://something', clientSecret: 'vs12jn56bn2ai4sjf' }, etc
  *  On invalid keys/datastructures, error is logged and null is returned. If no valid keys are found, returns null.
  *  A returned null is expected make the config fall back to old node-stored config, entirely skipping the file .cfg for the current idprovider name.
  */
@@ -110,10 +203,16 @@ exports.getConfigForIdProvider = function(idProviderName) {
     }
 
     try {
-        const config = getFileConfigSubTree(rawConfigKeys, idProviderKeyBase, 1);
+        const config = getFileConfigSubTree(rawConfigKeys, idProviderKeyBase, 1, parsingLib.PARSING_CALLBACKS);
 
         if (Object.keys(config).length) {
             logStateOnce(KIND_FILE, `Found config for '${idProviderKeyBase}' in ${app.name}.cfg. Using that instead of node-stored config from authLib.`);
+																														log.info("PARSED config (" +
+																															(Array.isArray(config) ?
+																																("array[" + config.length + "]") :
+																																(typeof config + (config && typeof config === 'object' ? (" with keys: " + JSON.stringify(Object.keys(config))) : ""))
+																															) + "): " + JSON.stringify(config, null, 2)
+																														);
             return config;
 
         } else {
