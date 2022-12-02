@@ -1,6 +1,7 @@
 // Based on app-simple-idprovider
 
-const configFile = require("/lib/configFile/configFile");
+const configFileLib = require("/lib/configFile/configFile");
+
 
 function required(params, name) {
     var value = params[name];
@@ -68,19 +69,19 @@ function exists(providers, name) {
 
 exports.initUserStores = function() {
     const systemIdProviders = getIdProviders();
-    const configedIdProviderNames = configFile.getAllIdProviderNames();
+    const configedIdProviderNames = configFileLib.getAllIdProviderNames();
 
     configedIdProviderNames.forEach(idProviderName => {
 
         if (
-            configFile.shouldAutoInit() &&
+            configFileLib.shouldAutoInit() &&
             !exists(systemIdProviders, idProviderName)
         ) {
             log.info(`Autoinit: creating userstore '${idProviderName}'...`);
 
-            const config = configFile.getConfigForIdProvider(idProviderName);
+            const config = configFileLib.getConfigForIdProvider(idProviderName);
             const displayName = config.displayName || idProviderName;
-            const description = config.description || `${configFile.CONFIG_NAMESPACE}.${idProviderName} in ${app.config["config.filename"]}`;
+            const description = config.description || `${configFileLib.CONFIG_NAMESPACE}.${idProviderName} in ${app.config["config.filename"]}`;
 
             const result = createIdProvider({
                 name: idProviderName,
