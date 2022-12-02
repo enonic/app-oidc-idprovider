@@ -71,76 +71,38 @@ function getFileConfigSubTree(allConfigKeys, currentKey, currentFieldIndex, pars
     // - custom parsed with a parsingCallback, if that is supplied for this exact key or a regexp pattern that matches this exact key,
     // - or the raw value if no parsingCallback mathces.
     if (exactConfigKey) {
-																														log.info("exactConfigKey (" +
-																															(Array.isArray(exactConfigKey) ?
-																																("array[" + exactConfigKey.length + "]") :
-																																(typeof exactConfigKey + (exactConfigKey && typeof exactConfigKey === 'object' ? (" with keys: " + JSON.stringify(Object.keys(exactConfigKey))) : ""))
-																															) + "): " + JSON.stringify(exactConfigKey, null, 2)
-																														);
         try {
             const value = app.config[exactConfigKey];
-																														log.info("parsingCallbacks? (" +
-																															(Array.isArray(parsingCallbacks) ?
-																																("array[" + parsingCallbacks.length + "]") :
-																																(typeof parsingCallbacks + (parsingCallbacks && typeof parsingCallbacks === 'object' ? (" with keys: " + JSON.stringify(Object.keys(parsingCallbacks))) : ""))
-																															) + "): " + JSON.stringify(parsingCallbacks, null, 2)
-																														);
             if (parsingCallbacks) {
 
                 // Look for a parsing callback function whose key in parsingCallbacks literally matches the current exact key:
                 let parsingCallback = parsingCallbacks[exactConfigKey];
-                                                                                                                        log.info("FIRST parsingCallback (" +
-                                                                                                                            (Array.isArray(parsingCallback) ?
-                                                                                                                                ("array[" + parsingCallback.length + "]") :
-                                                                                                                                (typeof parsingCallback + (parsingCallback && typeof parsingCallback === 'object' ? (" with keys: " + JSON.stringify(Object.keys(parsingCallback))) : ""))
-                                                                                                                            ) + "): " + JSON.stringify(parsingCallback, null, 2)
-                                                                                                                        );
 
                 if (!parsingCallback) {
-                                                                                                                        log.info("Okay, no parsingCallback.");
                     // Look for the first parsing callback function where the key in parsingCallbacks can be interpreted as a regex pattern
                     // (by starting with ^ and ending with $) that matches the current exact key.
 
-                    // .find is not available, though:
+                    // .find is not available in this JS, hence iteration:
                     let firstMatchingPatternKey;
                     for (let patternKey of Object.keys(parsingCallbacks)) {
-																														log.info("patternKey (" +
-																															(Array.isArray(patternKey) ?
-																																("array[" + patternKey.length + "]") :
-																																(typeof patternKey + (patternKey && typeof patternKey === 'object' ? (" with keys: " + JSON.stringify(Object.keys(patternKey))) : ""))
-																															) + "): " + JSON.stringify(patternKey, null, 2)
-																														);
                         if (
                             patternKey.startsWith('^') &&
                             patternKey.endsWith('$') &&
                             new RegExp(patternKey).test(exactConfigKey)
                         ) {
-																														log.info("Yep: " + patternKey);
                             firstMatchingPatternKey = patternKey;
                             break;
                         }
                     }
-                                                                                                                        log.info(`parsingCallback for ${exactConfigKey} with firstMatchingPatternKey (` +
-                                                                                                                            (Array.isArray(firstMatchingPatternKey) ?
-                                                                                                                                    ("array[" + firstMatchingPatternKey.length + "]") :
-                                                                                                                                    (typeof firstMatchingPatternKey + (firstMatchingPatternKey && typeof firstMatchingPatternKey === 'object' ? (" with keys: " + JSON.stringify(Object.keys(firstMatchingPatternKey))) : ""))
-                                                                                                                            ) + "): " + JSON.stringify(firstMatchingPatternKey, null, 2)
-                                                                                                                        );
+
                     parsingCallback = parsingCallbacks[firstMatchingPatternKey];
                 }
 
-                                                                                                                        log.info("parsingCallback type: " + typeof parsingCallback);
                 if ('function' === typeof parsingCallback) {
                     return parsingCallback(value);
                 }
             }
 
-																														log.info("Okay, so NO parsingCallback for exactConfigKey (" +
-																															(Array.isArray(exactConfigKey) ?
-																																("array[" + exactConfigKey.length + "]") :
-																																(typeof exactConfigKey + (exactConfigKey && typeof exactConfigKey === 'object' ? (" with keys: " + JSON.stringify(Object.keys(exactConfigKey))) : ""))
-																															) + "): " + JSON.stringify(exactConfigKey, null, 2) + "\n\n"
-																														);
             return value;
 
         } catch (e) {
@@ -166,8 +128,8 @@ function getFileConfigSubTree(allConfigKeys, currentKey, currentFieldIndex, pars
 
 // Prevent flooding of state logs, only log message on state change
 let alreadyLogged = null;
-const KIND_FILE="using_file";
-const KIND_NODE="using_node";
+const KIND_FILE="_file_";
+const KIND_NODE="_node_";
 function logStateOnce(messageKind, message) {
     if (alreadyLogged !== messageKind) {
         log.info(message);
@@ -198,21 +160,11 @@ exports.getConfigForIdProvider = function(idProviderName) {
         k && (k.startsWith(idProviderKeyBase))
     );
 
-    if (!rawConfigKeys || !rawConfigKeys.length) {
-        logStateOnce(KIND_FILE, `Found config for the '${idProviderKeyBase}' ID provider in ${app.name}.cfg. Using that instead of node-stored config from authLib.`);
-    }
-
     try {
         const config = getFileConfigSubTree(rawConfigKeys, idProviderKeyBase, 1, parsingLib.PARSING_CALLBACKS);
 
         if (Object.keys(config).length) {
             logStateOnce(KIND_FILE, `Found config for '${idProviderKeyBase}' in ${app.name}.cfg. Using that instead of node-stored config from authLib.`);
-																														log.info("PARSED config (" +
-																															(Array.isArray(config) ?
-																																("array[" + config.length + "]") :
-																																(typeof config + (config && typeof config === 'object' ? (" with keys: " + JSON.stringify(Object.keys(config))) : ""))
-																															) + "): " + JSON.stringify(config, null, 2)
-																														);
             return config;
 
         } else {

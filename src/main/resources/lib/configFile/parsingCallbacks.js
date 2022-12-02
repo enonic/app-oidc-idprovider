@@ -1,5 +1,5 @@
 
-const parseSafelyStringArray = function(jsonStringValue) {
+const parseStringArray = function(jsonStringValue) {
     let parsed;
     try {
         parsed = JSON.parse(jsonStringValue);
@@ -28,8 +28,8 @@ const parseSafelyStringArray = function(jsonStringValue) {
 // For example, "defaultGroups" below is converted to '^idprovider\.[a-zA-Z0-9_-]+\.defaultGroups$' which will match the keys
 // 'idprovider.oidc.defaultGroups' and 'idprovider.other.defaultGroups' in the config file, but not 'idprovider.oidc.tokenUrl'.
 const IDPROVIDER_PARSE_CALLBACKS = {
-    defaultGroups: parseSafelyStringArray,
-    scopes:  (value) => parseSafelyStringArray(value).join(" "),
+    'defaultGroups': parseStringArray,
+    'scopes':  (value) => parseStringArray(value).join(" "),
     'mappings.displayName': (value) => ((value || '') + '').replace(/@@/g, '$'),
     'mappings.email': (value) => ((value || '') + '').replace(/@@/g, '$')
 }
