@@ -1,4 +1,7 @@
 = Open ID Connect ID Provider
+:imagesdir: media/
+
+{zwsp} +
 
 Authenticate your users using Open ID Connect.
 
@@ -6,27 +9,41 @@ This ID Provider application, acting as a OIDC Relying Party, will verify the id
 It will redirect unauthenticated users to the Authentication Server and obtain basic information in order to create a user within Enonic XP.
 This ID Provider application follows the Authorization Code Flow and uses one of the `client_secret_post`, `client_secret_basic` or `client_secret_jwt` auth methods.
 
+{zwsp} +
+{zwsp} +
+
 == Configuration
 
-=== Authorization Server
+{zwsp} +
+
+[[authorization_server]]
+=== Configure the Authorization Server
 
 The configuration depends on the Authorization Server selected and is not covered by this documentation.
-It will typically require the creation and configuration of a Client/Application.
+It will typically require the creation and configuration of a Client/Application. The following information is needed:
 
-==== Authorization Server - Redirection/Callback URI
+{zwsp} +
+
+[[redirection_callback_uri]]
+==== Redirection/Callback URI
 
 Once authenticated by the Authorization Server, the End-User will be redirected to Enonic XP.
 During the configuration of your Client/Application, you will have to register this callback URL.
 The callback URL depends on the VHost mapping and the name of the ID Provider.
-It has the following format:  ``[VHost source]/_/idprovider/[ID Provider name]``
+It has the following format:  ``[VHost source]/_/idprovider/[ID Provider name]``. Make sure the ID provider name exactly <<#id_provider_creation, matches the name of the ID provider>> (or "userstore") in the User Admin app.
 
-Example for a site: ``https://www.example.com/_/idprovider/myoidcprovider``
+{zwsp} +
 
-Example for admin:  ``https://www.example.com/admin/tool/_/idprovider/myoidcprovider``
+**Example for a site:** ``https://www.example.com/_/idprovider/myoidcprovider``
 
-==== Authorization Server - Information required for the ID Provider Config
+**Example for admin:** ``https://www.example.com/admin/tool/_/idprovider/myoidcprovider``
 
-You will need to gather the following information for the ID Provider configuration
+{zwsp} +
+
+[[information_required_for_config]]
+==== Information required for the ID Provider Config
+
+You will need to gather the following information from the Authorization Server setup, for the <<#id_provider_creation, ID Provider configuration>>
 
 . The Client ID
 . The Client secret
@@ -36,104 +53,171 @@ You will need to gather the following information for the ID Provider configurat
 
 You might have been given only the Issuer URL instead of the list of endpoint URLs.
 In that case the endpoint URLs are accessible under: [Issuer URL]/.well-known/openid-configuration
-The JSON result will contain the required information: "issuer", "authorization_endpoint" and "token_endpoint
+The JSON result will contain the required information: "issuer", "authorization_endpoint" and "token_endpoint".
 
-Example: Auth0
+{zwsp} +
+
+Example: **Auth0**
 
 - OpenID Provider Configuration URL: [Domain URL]/.well-known/openid-configuration
 - Issuer Identifier: [Domain URL]/
 - Authorization endpoint URL: [Domain URL]/authorize
 - Token endpoint URL: [Domain URL]/oauth/token
 
-Example: Google
+{zwsp} +
+
+Example: **Google**
 
 - OpenID Provider Configuration URL: https://accounts.google.com/.well-known/openid-configuration
 - Issuer Identifier: https://accounts.google.com
 - Authorization endpoint URL: https://accounts.google.com/o/oauth2/v2/auth
 - Token endpoint URL: https://oauth2.googleapis.com/token
 
-Example: Azure AD
+{zwsp} +
+Example: **Azure AD**
 
 - OpenID Provider Configuration URL: https://login.microsoftonline.com/{TenantID}/.well-known/openid-configuration
 - Issuer Identifier: https://sts.windows.net/{TenantID}/
 - Authorization endpoint URL: https://login.microsoftonline.com/{TenantID}/oauth2/authorize
 - Token endpoint URL: https://login.microsoftonline.com/{TenantID}/oauth2/token
 
-Example: Difi/ID-porten/VER1
+{zwsp} +
+
+Example: **Difi/ID-porten/VER1**
 
 - OpenID Provider Configuration URL: https://oidc-ver1.difi.no/idporten-oidc-provider/.well-known/openid-configuration
 - Issuer Identifier: https://oidc-ver1.difi.no/idporten-oidc-provider/
 - Authorization endpoint URL: https://oidc-ver1.difi.no/idporten-oidc-provider/authorize
 - Token endpoint URL: https://oidc-ver1.difi.no/idporten-oidc-provider/token
 
+{zwsp} +
+{zwsp} +
 
-=== Enonic XP
+=== Configure Enonic XP
 
-
-==== Enonic XP - Application Installation
+==== Application Installation
 
 . In the admin tool "Applications", click on "Install".
 . Select the tab "Enonic Market", find "OIDC ID Provider", and click on the link "Install".
 
-==== Enonic XP - ID Provider creation
+{zwsp} +
 
-. In the admin tool "Users", click on "New" and select "Id Provider".
-. Fill in the fields and, for the field "Applications", select the application "OIDC ID Provider".
-. Configure the ID Provider with the information gathered previously. See <<Enonic XP - ID Provider configuration>> for more information
+[[id_provider_creation]]
+==== ID Provider creation
 
-==== Enonic XP - Virtual Host Mapping configuration
+. In the https://www.youtube.com/watch?v=QZpBdsDlkA0[admin tool "Users"], click on "New" and select "Id Provider".
+. Fill in the `displayName` field, which pre-fills the *ID provider name* just below. The ID provider name must match the name set in the <<#redirection_callback_uri, Authorization server>>:
++
+.ID provider name:
++
+image:idprovider-name.png[title="ID provider name is found/set in the name field below the displayName", width=500px]
++
+The ID provider name can be edited before saving, but not changed later.
+. For the field "Application", select the "OIDC ID Provider" application.
 
-. Edit the configuration file "com.enonic.xp.web.vhost.cfg", and set the new user store to your virtual host. (See https://developer.enonic.com/docs/xp/stable/deployment/vhosts[Virtual Host Configuration] for more information).
+
+{zwsp} +
+
+==== Virtual Host Mapping configuration
+
+Edit the configuration file "com.enonic.xp.web.vhost.cfg", and set the new user store to your virtual host. (See https://developer.enonic.com/docs/xp/stable/deployment/vhosts[Virtual Host Configuration] for more information).
 
     mapping.example.host = example.com
     mapping.example.source = /
     mapping.example.target = /portal/master/mysite
     mapping.example.idProvider.myoidcprovider = default
 
-=== ID Provider configuration
+Here as well, the ID provider name must match: see the last line.
 
-==== ID Provider configuration - Authorization Server
+{zwsp} +
+{zwsp} +
 
-Information mostly found from the OpenID Provider Configuration,
-optionally available at the WellKnown endpoint of your Authorization server (/.well-known/openid-configuration).
+[[idp_config]]
+=== Configure the ID Provider
 
-* Issuer Identifier: Value of "issuer" in your OpenID Provider Configuration
-* Authorization endpoint URL: Value of "authorization_endpoint" in your OpenID Provider Configuration
-* Token endpoint URL: Value of "token_endpoint" in your OpenID Provider Configuration
-* User Info endpoint: If the user information is not returned in the ID Token. Value of "userinfo_endpoint" in your OpenID Provider Configuration
-* Additional scopes: Scope/Claims to retrieve in addition to the mandatory "openid" scope. We recommend setting the two standard scopes: "profile email".
-* Additional OAuth2 endpoints: Additional OAuth2 endpoints used to retrieve additional user information using the access token.
-** Name : Value used to store these claims under a same scope in the user profile.
-** URL : Endpoint URL.
-* End Session: See <<End Session>> for more information
-** End session URL: Value of "end_session_endpoint" in your OpenID Provider Configuration
-** ID Token Hint parameter name: "id_token_hint"
-** Post Logout Redirect URI parameter name: "post_logout_redirect_uri"
+The ID Provider must be configured, many of the fields are the information gathered from <<#information_required_for_config, authorization server configuration>> (optionally available at the _WellKnown_ endpoint of your Authorization server, /.well-known/openid-configuration).
 
-==== ID Provider configuration - Client
+It's possible to configure each userstore that uses this app in _one_ of two ways: using the form in the User Admin app, or adding config in the config file for this app, _com.enonic.app.oidcidprovider.cfg_. <<#form_vs_cfg, See below for more details on this>>.
 
-This application uses the authentication method "client_secret_post" for the token retrieval
-During the creation of your Client/Application, you must have received or generated credentials/secret
 
-* Client Identifier
-* Client Secret
+{zwsp} +
 
-==== ID Provider configuration - User Creation
+==== Authorization Server
 
-You may configure the values used to created users inside Enonic. The values "${claimKey}" will be replaced by the information retrieved.
-For example a template for display name could be "${userinfo.given_name} ${userinfo.family_name}"
+* **Issuer Identifier**  (`issuer`): Value of "issuer" in your OpenID Provider Configuration
+* **Authorization endpoint URL** (`authorizationUrl`): Value of "authorization_endpoint" in your OpenID Provider Configuration
+* **Token endpoint URL** (`tokenUrl): Value of "token_endpoint" in your OpenID Provider Configuration
+* **User Info endpoint**: If the user information is not returned in the ID Token. Value of "userinfo_endpoint" in your OpenID Provider Configuration
+* **Client Authentication Method** (`method`): Method for client authentication
+** _<<#form_vs_cfg, Form format>>_: selector
+** _<<#form_vs_cfg, .cfg format>>_: string, either `post`, `basic` or `jwt`.
+* **Additional scopes** (`scopes`): Scope/Claims to retrieve in addition to the mandatory "openid" scope. We recommend setting the two standard scopes: _profile_ and _email_:
+** _Form format_: space-delimited string in double quotes, eg. `"profile email"`
+** _.cfg format_: JSON-style array string, eg. `["profile", "email"]`
 
-* Display name: Template for the display name
-* Email: Template for the email
-* Default groups: Groups to assign to this user on creation
+==== Additional OAuth2 endpoints
+
+Additional OAuth2 endpoints used to retrieve additional user information using the access token.
+
+* **Name** : Value used to store these claims under a same scope in the user profile.
+* **URL** : Endpoint URL.
+
+==== End Session
+
+* **End session URL**: Value of "end_session_endpoint" in your OpenID Provider Configuration
+* **ID Token Hint parameter name**: Value of "id_token_hint"
+* **Post Logout Redirect URI parameter name**: Value of "post_logout_redirect_uri"
+
+See <<#end_session, End Session>> for more information.
+
+==== Client
+
+This application uses the authentication method "client_secret_post" for the token retrieval. During the <<#authorization_server, creation of your Client/Application>>, you must have received or generated credentials/secret:
+
+* **Client Identifier** (`clientId`)
+* **Client Secret** (`clientSecret`)
+
+==== User Creation
+
+* **Mappings**: You may configure the rules with placeholders used to create users inside Enonic: the values will be replaced by the information retrieved by the placeholder expression.
+** **Display name** (`mappings.displayName`): Template for the display name
+** **Email** (`mappings.email`): Template for the email
+*** For both these, this format difference applies:
+*** _Form format_: `${expression}`. For example `"${userinfo.given_name} ${userinfo.family_name}"` or `${userinfo.preferred_username}`
+*** _.cfg format_: `@@{expression}`. For example `@@{userinfo.email}`
+* Default groups (`defaultGroups`): Groups to assign to this user on creation.
+** _Form format_: selector
+** _.cfg format_: JSON-style array string, where items are string on the form `group:<idprovidername>:<groupname>`. For example `["group:myoidcprovider:authors"]`
 
 ==== Rules
 
 Additional rules enforced on login
 
-* Enforce Email Verification: Check the claim "email_verified" (returned with the scope "email").
+* Enforce Email Verification (`rules.forceEmailVerification`): Check the claim "email_verified" (returned with the scope "email").
+
+{zwsp} +
+{zwsp} +
 
 
+[[form_vs_cfg]]
+==== Form vs .cfg file configuration
+
+It's possible to configure each userstore that uses this app in _one_ of two ways:
+
+* **Form**: Configure the IDprovider app by opening and filling out the form in the user admin app (the **pencil icon** in <<#id_provider_creation, the illustration above>>). This stores the settings in the node layer.
+** _This is not recommended!_ This feature can be considered deprecated, future versions are subject to move parts of (or the entire) configuration into the .cfg file.
+* **.cfg** Add config to a config file: _com.enonic.app.oidcidprovider.cfg_. Add keys to that on the format `idprovider.\<idprovidername\}>.\<configkey(s)\>=\<value\>`, where _\<configkey\>_ is the keys in parenthesis (and typefied with `code font` below, eg. _issuer_, _authorizationUrl_, etc) in the <<#idp_config, idprovider config section above>>.
+** For example, `idprovider.enonic-oidc.rules.forceEmailVerification=true`
+** In .cfg you can also add `autoinit=true`. This will make this idprovider app check whether a userstore exists by the name of _\<idprovidername\>_, and create it if it doesnt.
+
+Some format differences may occur between _Form_ and _.cfg_, this was noted in the <<#idp_config, idprovider config section above>>.
+
+NOTE: It is in principle possible for this app to config two userstores in different ways at the same time, for example _myoidcprovider_ from the cfg with (with `idprovider.myoidcprovider...` keys) and another one _otheridp_ from the form. But for each individual userstore, the settings will not be merged from these two sources: if even one `idprovider.myoidcprovider...` key exists in the .cfg file, the _myoidcprovider_ userstore will ignore the form configuration and only look in the .cfg file.
+
+{zwsp} +
+{zwsp} +
+
+[[end_session]]
 === End Session
 
 OIDC Front-Channel Logout specifications are still in draft. This might not be supported by your authentication server.
@@ -141,24 +225,32 @@ You can check if the endpoint is available in the Open ID Configuration (.well-k
 There might also be another custom endpoint available that achieves the same purpose.
 The ID Provider Configuration schema tries to be dynamic enough to handle all cases.
 
+{zwsp} +
 
-Example: Auth0
+Example: **Auth0**
 
 * End Session URL: [Domain URL]/v2/logout
 * Post Logout Redirect URI parameter name: returnTo
 * Additional Parameters:
 ** clientId = [Client ID]
 
-Example: Google
+{zwsp} +
+
+Example: **Google**
 
 Not available
 
-Example: Azure AD
+
+{zwsp} +
+
+Example: **Azure AD**
 
 * End Session URL: https://login.microsoftonline.com/{TenantID}/oauth2/logout
 * Post Logout Redirect URI parameter name: post_logout_redirect_uri
 
-Example: Difi/ID-porten/VER1
+{zwsp} +
+
+Example: **Difi/ID-porten/VER1**
 
 * End Session URL: https://oidc-ver1.difi.no/idporten-oidc-provider/endsession
 * ID Token Hint parameter name: id_token_hint
