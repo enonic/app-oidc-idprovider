@@ -1,50 +1,7 @@
 // Based on app-simple-idprovider
 
+const beanService = require("/lib/configFile/services/bean");
 const configFileLib = require("/lib/configFile/configFile");
-
-
-function required(params, name) {
-    var value = params[name];
-    if (value === undefined) {
-        throw "Parameter '" + name + "' is required";
-    }
-    return value;
-}
-
-function nullOrValue(value) {
-    return value == null ? null : value;
-}
-
-/**
- * Creates an id provider.
- *
- * @param {string} name Id provider name.
- * @param {string} [params.displayName] Id provider display name.
- * @param {string} [params.description] Id provider  description.
- * @param {object} [params.idProviderConfig] ID Provider configuration.
- * @param {object} [params.permissions] Id provider permissions.
- */
-function createIdProvider(params) {
-    var bean = __.newBean('com.enonic.app.oidcidprovider.lib.configFile.CreateIdProviderHandler');
-
-    bean.name = required(params, 'name');
-    bean.displayName = nullOrValue(params.displayName);
-    bean.description = nullOrValue(params.description);
-    bean.idProviderConfig = __.toScriptValue(params.idProviderConfig);
-    bean.permissions = __.toScriptValue(params.permissions);
-
-    return __.toNativeObject(bean.createIdProvider());
-};
-
-/**
- * Returns the list of all the id providers.
- *
- * @returns {object[]} Array of id providers.
- */
-function getIdProviders() {
-    var bean = __.newBean('com.enonic.app.oidcidprovider.lib.configFile.GetIdProvidersHandler');
-    return __.toNativeObject(bean.getIdProviders());
-};
 
 
 /**
@@ -65,14 +22,11 @@ function exists(providers, name) {
     return false;
 }
 
-
-
 exports.initUserStores = function() {
-    const systemIdProviders = getIdProviders();
+    const systemIdProviders = beanService.getIdProviders();
     const configedIdProviderNames = configFileLib.getAllIdProviderNames();
 
     configedIdProviderNames.forEach(idProviderName => {
-
         if (
             configFileLib.shouldAutoInit() &&
             !exists(systemIdProviders, idProviderName)
@@ -83,7 +37,7 @@ exports.initUserStores = function() {
             const displayName = config.displayName || idProviderName;
             const description = config.description || `${configFileLib.CONFIG_NAMESPACE}.${idProviderName} in ${app.config["config.filename"]}`;
 
-            const result = createIdProvider({
+            const result = beanService.createIdProvider({
                 name: idProviderName,
                 displayName: displayName,
                 descripton: description,

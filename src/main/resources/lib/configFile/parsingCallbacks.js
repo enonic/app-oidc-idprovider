@@ -1,10 +1,14 @@
 
-const parseStringArray = function(jsonStringValue) {
+exports.parseStringArray = (jsonStringValue) => {
+    if (!jsonStringValue) {
+        return [];
+    }
+
     let parsed;
     try {
-        parsed = JSON.parse(jsonStringValue);
+        parsed = JSON.parse((jsonStringValue || '').trim());
     } catch (e) {
-        throw Error(`Expected a well-formed JSON string: ${JSON.stringify(parsed)}`, e);
+        throw Error(`Expected a well-formed JSON string: '${jsonStringValue}'`, e);
     }
 
     if (!parsed) {
@@ -22,16 +26,18 @@ const parseStringArray = function(jsonStringValue) {
     })
 }
 
+exports.firstAtsToDollar = (value) => (value || '').replace(/@@\{/, '${');
+
 
 
 // Keys below are converted to regexpattern-ready strings for detecting all .cfg keys matching 'idprovider.<idprovidername>.<key>'.
 // For example, "defaultGroups" below is converted to '^idprovider\.[a-zA-Z0-9_-]+\.defaultGroups$' which will match the keys
 // 'idprovider.oidc.defaultGroups' and 'idprovider.other.defaultGroups' in the config file, but not 'idprovider.oidc.tokenUrl'.
 const IDPROVIDER_PARSE_CALLBACKS = {
-    'defaultGroups': parseStringArray,
-    'scopes':  (value) => parseStringArray(value).join(" "),
-    'mappings.displayName': (value) => ((value || '') + '').replace(/@@/g, '$'),
-    'mappings.email': (value) => ((value || '') + '').replace(/@@/g, '$')
+    'defaultGroups': exports.parseStringArray,
+    'scopes':  (value) => exports.parseStringArray(value).join(" "),
+    'mappings.displayName': exports.atsToDollar,
+    'mappings.email': exports.atsToDollar
 }
 
 
