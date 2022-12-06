@@ -126,6 +126,9 @@ function getFileConfigSubTree(allConfigKeys, currentKey, currentFieldIndex, pars
     return subTree;
 }
 
+// Only exported for mocking:
+exports.getFileConfigSubTree = getFileConfigSubTree;
+
 
 // Prevent flooding of state logs, only log message on state change
 let alreadyLogged = null;
