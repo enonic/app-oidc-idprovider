@@ -1,4 +1,5 @@
 const parsingLib = require('/lib/configFile/parsingCallbacks');
+const getConfigService = require('/lib/configFile/services/getConfig');
 
 const AUTOINIT="autoinit"
 
@@ -72,7 +73,7 @@ function getFileConfigSubTree(allConfigKeys, currentKey, currentFieldIndex, pars
     // - or the raw value if no parsingCallback mathces.
     if (exactConfigKey) {
         try {
-            const value = app.config[exactConfigKey];
+            const value = getConfigService.getConfigOrEmpty()[exactConfigKey];
             if (parsingCallbacks) {
 
                 // Look for a parsing callback function whose key in parsingCallbacks literally matches the current exact key:
@@ -156,7 +157,7 @@ function logStateOnce(messageKind, message) {
 exports.getConfigForIdProvider = function(idProviderName) {
     const idProviderKeyBase = `${CONFIG_NAMESPACE}.${idProviderName}`;
 
-    const rawConfigKeys = Object.keys(app.config || {}).filter( k =>
+    const rawConfigKeys = Object.keys(getConfigService.getConfigOrEmpty()).filter( k =>
         k && (k.startsWith(idProviderKeyBase))
     );
 
@@ -186,7 +187,7 @@ exports.getConfigForIdProvider = function(idProviderName) {
 exports.getAllIdProviderNames = function() {
     const names = [];
 
-    Object.keys(app.config || {}).forEach( key => {
+    Object.keys(getConfigService.getConfigOrEmpty()).forEach( key => {
         const fields = key.split('.');
         if (
             fields.length > 1 &&
@@ -212,6 +213,6 @@ exports.getAllIdProviderNames = function() {
  * Currently, only autoinit=true is used.
  */
 exports.shouldAutoInit = function() {
-    const autoInit = (app.config || {})[AUTOINIT];
+    const autoInit = getConfigService.getConfigOrEmpty()[AUTOINIT];
     return autoInit === true || autoInit === "true";
 }

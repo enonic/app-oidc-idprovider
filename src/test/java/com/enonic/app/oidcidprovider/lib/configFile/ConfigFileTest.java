@@ -6,6 +6,6 @@ public class ConfigFileTest extends ScriptRunnerSupport {
 
     @Override
     public String getScriptTestFile() {
-        return "/lib/configFile/configFile-test.js";
+        return "/lib/configFile/_init_tests.js";
     }
 }
