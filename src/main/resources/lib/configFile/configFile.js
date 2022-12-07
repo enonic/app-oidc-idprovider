@@ -1,5 +1,4 @@
 const parsingLib = require('/lib/configFile/parsingCallbacks');
-const getConfigService = require('/lib/configFile/services/getConfig.js');
 
 const AUTOINIT="autoinit"
 
@@ -35,14 +34,8 @@ exports.CONFIG_NAMESPACE = CONFIG_NAMESPACE;
  *      OR regex pattern strings, to match multiple keys. If regex patterns: key string must start with ^ and end with ^.
  *      Values are parsingCallback functions (see above).
  */
-function getFileConfigSubTree(allConfigKeys, currentKey, currentFieldIndex, parsingCallbacks) {
-
-
-    // Eg. "idprovider.myidp.mykey." with nothing after the final dot would be an invalid key.
-    if (currentKey.endsWith('.')) {
-        throw Error(`Malformed key in ${app.name}.cfg: '${currentKey}'`);
-    }
-    // Eg. currentBaseDot = "idprovider.myidp.mykey." (note the trailing dot)
+function getFileConfigSubTree(allConfigKeys, currentKey, currentFieldIndex, parsingCallbacks, subTree={}) {
+    // Eg. "idprovider.myidp.mykey." (note the trailing dot)
     const currentBaseDot = `${currentKey}.`;
 
     let exactConfigKey=null;
@@ -63,6 +56,10 @@ function getFileConfigSubTree(allConfigKeys, currentKey, currentFieldIndex, pars
             // If an exact match with a direct value has already been seen: invalid
             if (exactConfigKey) {
                 throw Error(`Ambiguity in ${app.name}.cfg: the key '${exactConfigKey}' can't both have a direct value and subfields (a tree) below it ('${key}' etc).`);
+            }
+            // Eg. "idprovider.myidp.mykey." with nothing after the final dot would be an invalid key.
+            if (key === currentBaseDot) {
+                throw Error(`Malformed key in ${app.name}.cfg: '${key}'`);
 
             } else {
                 deeperSubKeys.push(key);
@@ -75,7 +72,7 @@ function getFileConfigSubTree(allConfigKeys, currentKey, currentFieldIndex, pars
     // - or the raw value if no parsingCallback mathces.
     if (exactConfigKey) {
         try {
-            const value = getConfigService.getConfigOrEmpty()[exactConfigKey];
+            const value = app.config[exactConfigKey];
             if (parsingCallbacks) {
 
                 // Look for a parsing callback function whose key in parsingCallbacks literally matches the current exact key:
@@ -116,8 +113,6 @@ function getFileConfigSubTree(allConfigKeys, currentKey, currentFieldIndex, pars
     // More than one key but no duplicates so far? Parse it recursively into a subtree and return that.
     const nextFieldIndex = currentFieldIndex + 1;
 
-    const subTree = {};
-
     deeperSubKeys.forEach(key => {
         const fields=key.split('.');
         const currentField=fields[nextFieldIndex].trim();
@@ -129,9 +124,6 @@ function getFileConfigSubTree(allConfigKeys, currentKey, currentFieldIndex, pars
 
     return subTree;
 }
-
-// Only exported for mocking, actually used by getConfigForIdProvider:
-exports.getFileConfigSubTree = getFileConfigSubTree;
 
 
 // Prevent flooding of state logs, only log message on state change
@@ -164,7 +156,7 @@ function logStateOnce(messageKind, message) {
 exports.getConfigForIdProvider = function(idProviderName) {
     const idProviderKeyBase = `${CONFIG_NAMESPACE}.${idProviderName}`;
 
-    const rawConfigKeys = Object.keys(getConfigService.getConfigOrEmpty()).filter( k =>
+    const rawConfigKeys = Object.keys(app.config || {}).filter( k =>
         k && (k.startsWith(idProviderKeyBase))
     );
 
@@ -194,7 +186,7 @@ exports.getConfigForIdProvider = function(idProviderName) {
 exports.getAllIdProviderNames = function() {
     const names = [];
 
-    Object.keys(getConfigService.getConfigOrEmpty()).forEach( key => {
+    Object.keys(app.config || {}).forEach( key => {
         const fields = key.split('.');
         if (
             fields.length > 1 &&
@@ -220,6 +212,6 @@ exports.getAllIdProviderNames = function() {
  * Currently, only autoinit=true is used.
  */
 exports.shouldAutoInit = function() {
-    const autoInit = getConfigService.getConfigOrEmpty()[AUTOINIT];
+    const autoInit = (app.config || {})[AUTOINIT];
     return autoInit === true || autoInit === "true";
 }
