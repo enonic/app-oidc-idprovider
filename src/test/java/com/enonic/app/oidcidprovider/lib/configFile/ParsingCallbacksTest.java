@@ -1,13 +1,13 @@
 package com.enonic.app.oidcidprovider.lib.configFile;
 
-//*
+/*
 import com.enonic.xp.testing.ScriptRunnerSupport;
-public class ConfigFileTest extends ScriptRunnerSupport { /*/
+public class ParsingCallbacksTest extends ScriptRunnerSupport { /*/
 
-    public class ConfigFileTest { /*/
+    public class ParsingCallbacksTest { /*/
 
     @Override
     public String getScriptTestFile() {
-        return "/lib/configFile/configFile-test.js";
+        return "/lib/configFile/parsingCallbacks-test.js";
     } //*/
 }

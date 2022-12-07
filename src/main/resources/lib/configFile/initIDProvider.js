@@ -1,8 +1,8 @@
 // Based on app-simple-idprovider
 
-const configFileLib = require("/lib/configFile/configFile");
 const beanService = require("/lib/configFile/services/bean");
 
+const configFileLib = require("/lib/configFile/configFile");
 
 
 /**
