@@ -1,7 +1,6 @@
 // Based on app-simple-idprovider
 
 const beanService = require("/lib/configFile/services/bean");
-
 const configFileLib = require("/lib/configFile/configFile");
 
 
@@ -14,6 +13,12 @@ const configFileLib = require("/lib/configFile/configFile");
 function exists(providers, name) {
     for (const count in providers) {
         const provider = providers[count];
+        																														log.info("provider (" +
+        																															(Array.isArray(provider) ?
+        																																("array[" + provider.length + "]") :
+        																																(typeof provider + (provider && typeof provider === 'object' ? (" with keys: " + JSON.stringify(Object.keys(provider))) : ""))
+        																															) + "): " + JSON.stringify(provider, null, 2)
+        																														);
         if (provider && provider.key === name) {
             log.info(`Userstore '${name}' already exists - no autoinit.`);
             return true;
@@ -22,11 +27,6 @@ function exists(providers, name) {
     log.info(`Userstore '${name}' doesn't exist yet. Will try autoinit.`);
     return false;
 }
-
-                                                                                                                        // Exports for mocking
-                                                                                                                        // exports.getAllIdProviderNames = configFileLib.getAllIdProviderNames;
-                                                                                                                        // exports.shouldAutoInit = configFileLib.shouldAutoInit;
-                                                                                                                        // exports.getConfigForIdProvider = configFileLib.getConfigForIdProvider;
 
 exports.initUserStores = function() {
     const systemIdProviders = beanService.getIdProviders();
