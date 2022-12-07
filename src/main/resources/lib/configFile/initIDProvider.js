@@ -13,12 +13,6 @@ const configFileLib = require("/lib/configFile/configFile");
 function exists(providers, name) {
     for (const count in providers) {
         const provider = providers[count];
-        																														log.info("provider (" +
-        																															(Array.isArray(provider) ?
-        																																("array[" + provider.length + "]") :
-        																																(typeof provider + (provider && typeof provider === 'object' ? (" with keys: " + JSON.stringify(Object.keys(provider))) : ""))
-        																															) + "): " + JSON.stringify(provider, null, 2)
-        																														);
         if (provider && provider.key === name) {
             log.info(`Userstore '${name}' already exists - no autoinit.`);
             return true;

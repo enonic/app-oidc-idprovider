@@ -2,7 +2,7 @@ const test = require('/lib/xp/testing');
 
 
 
-//////////////////////  Mock workaround
+//////////////////////  Mock workaround (test.mock only works once)
 
 const configFileMocks = {};
 test.mock("/lib/configFile/configFile.js", {

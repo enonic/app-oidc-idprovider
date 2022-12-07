@@ -3,9 +3,7 @@ const test = require('/lib/xp/testing');
 
 
 
-////////////////////////////
-
-// test.mock only works once. Workaround
+//////////////////////////// Mock workaround (test.mock only works once)
 
 // Mutable config for returning a mock object
 const mockConfig = [];
