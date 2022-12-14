@@ -1,5 +1,4 @@
-
-exports.parseStringArray = (jsonStringValue) => {
+const parseStringArray = (jsonStringValue) => {
     if (!jsonStringValue) {
         return [];
     }
@@ -25,8 +24,10 @@ exports.parseStringArray = (jsonStringValue) => {
         return item.trim();
     })
 }
+exports.parseStringArray = parseStringArray;
 
-exports.firstAtsToDollar = (value) => (value || '').replace(/@@\{/, '${');
+const firstAtsToDollar = (value) => (value || '').replace(/@@\{/, '${');
+exports.firstAtsToDollar= firstAtsToDollar;
 
 
 
@@ -34,18 +35,19 @@ exports.firstAtsToDollar = (value) => (value || '').replace(/@@\{/, '${');
 // For example, "defaultGroups" below is converted to '^idprovider\.[a-zA-Z0-9_-]+\.defaultGroups$' which will match the keys
 // 'idprovider.oidc.defaultGroups' and 'idprovider.other.defaultGroups' in the config file, but not 'idprovider.oidc.tokenUrl'.
 const IDPROVIDER_PARSE_CALLBACKS = {
-    'defaultGroups': exports.parseStringArray,
-    'scopes':  (value) => exports.parseStringArray(value).join(" "),
-    'mappings.displayName': exports.atsToDollar,
-    'mappings.email': exports.atsToDollar
+    'defaultGroups': parseStringArray,
+    'scopes':  (value) => parseStringArray(value).join(" "),
+    'mappings.displayName': firstAtsToDollar,
+    'mappings.email': firstAtsToDollar
 }
 
 
 
 // Magic: make regex-pattern-ready keys for the final object and export it
 const RX_SUBFIELD='[a-zA-Z0-9_-]+';
-exports.PARSING_CALLBACKS = {};
+const PARSING_CALLBACKS = {};
 Object.keys(IDPROVIDER_PARSE_CALLBACKS).forEach( key => {
     const rxKey = key.replace(/\./g, `\.`);
-    exports.PARSING_CALLBACKS[`^idprovider\.${RX_SUBFIELD}\.${rxKey}$`] = IDPROVIDER_PARSE_CALLBACKS[key];
+    PARSING_CALLBACKS[`^idprovider\.${RX_SUBFIELD}\.${rxKey}$`] = IDPROVIDER_PARSE_CALLBACKS[key];
 });
+exports.PARSING_CALLBACKS = PARSING_CALLBACKS;
