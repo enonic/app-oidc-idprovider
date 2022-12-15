@@ -1,10 +1,13 @@
+const parseStringArray = (jsonStringValue) => {
+    if (!jsonStringValue) {
+        return [];
+    }
 
-const parseStringArray = function(jsonStringValue) {
     let parsed;
     try {
-        parsed = JSON.parse(jsonStringValue);
+        parsed = JSON.parse((jsonStringValue || '').trim());
     } catch (e) {
-        throw Error(`Expected a well-formed JSON string: ${JSON.stringify(parsed)}`, e);
+        throw Error(`Expected a well-formed JSON string: '${jsonStringValue}'`, e);
     }
 
     if (!parsed) {
@@ -21,6 +24,10 @@ const parseStringArray = function(jsonStringValue) {
         return item.trim();
     })
 }
+exports.parseStringArray = parseStringArray;
+
+const firstAtsToDollar = (value) => (value || '').replace(/@@\{/, '${');
+exports.firstAtsToDollar= firstAtsToDollar;
 
 
 
@@ -30,16 +37,17 @@ const parseStringArray = function(jsonStringValue) {
 const IDPROVIDER_PARSE_CALLBACKS = {
     'defaultGroups': parseStringArray,
     'scopes':  (value) => parseStringArray(value).join(" "),
-    'mappings.displayName': (value) => ((value || '') + '').replace(/@@/g, '$'),
-    'mappings.email': (value) => ((value || '') + '').replace(/@@/g, '$')
+    'mappings.displayName': firstAtsToDollar,
+    'mappings.email': firstAtsToDollar
 }
 
 
 
 // Magic: make regex-pattern-ready keys for the final object and export it
 const RX_SUBFIELD='[a-zA-Z0-9_-]+';
-exports.PARSING_CALLBACKS = {};
+const PARSING_CALLBACKS = {};
 Object.keys(IDPROVIDER_PARSE_CALLBACKS).forEach( key => {
     const rxKey = key.replace(/\./g, `\.`);
-    exports.PARSING_CALLBACKS[`^idprovider\.${RX_SUBFIELD}\.${rxKey}$`] = IDPROVIDER_PARSE_CALLBACKS[key];
+    PARSING_CALLBACKS[`^idprovider\.${RX_SUBFIELD}\.${rxKey}$`] = IDPROVIDER_PARSE_CALLBACKS[key];
 });
+exports.PARSING_CALLBACKS = PARSING_CALLBACKS;
