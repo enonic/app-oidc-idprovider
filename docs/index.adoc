@@ -207,7 +207,7 @@ It's possible to configure each userstore that uses this app in _one_ of two way
 * **Form**: Configure the IDprovider app by opening and filling out the form in the user admin app (the **pencil icon** in <<#id_provider_creation, the illustration above>>). This stores the settings in the node layer.
 ** _This is not recommended!_ This feature can be considered deprecated, future versions are subject to move parts of (or the entire) configuration into the .cfg file.
 * **.cfg** Add config to a config file: _com.enonic.app.oidcidprovider.cfg_. Add keys to that on the format `idprovider.[idprovidername].[configkey(s)] = [value]`, where _[configkey]_ is the keys in parenthesis (and typefied with `code font` below, eg. _issuer_, _authorizationUrl_, etc) in the <<#idp_config, idprovider config section above>>.
-** For example, `idprovider.enonic-oidc.rules.forceEmailVerification=true`
+** For example, `idprovider.myoidcprovider.rules.forceEmailVerification=true`
 ** In .cfg you can also add `autoinit=true`. This will make this idprovider app check whether a userstore exists by the name of _[idprovidername]_, and create it if it doesnt.
 
 Some format differences may occur between _Form_ and _.cfg_, this was noted in the <<#idp_config, idprovider config section above>>.
