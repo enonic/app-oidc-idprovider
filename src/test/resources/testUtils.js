@@ -13,7 +13,7 @@ const updateMocks = (libPath, newMocks) => {
 }
 
 
-// This replaces the test.mock function, and returns a function that updates the relevant mocks, hence allowing mutation/replacment mocking:
+// This replaces the test.mock function, and returns a function that updates the relevant mocks, hence allowing mutation/replacement mocking:
 exports.mockAndGetUpdaterFunc = (libPath, mockObj) => {
     mocks[libPath] = {};
 
