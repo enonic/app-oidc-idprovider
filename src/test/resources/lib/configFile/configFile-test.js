@@ -1,23 +1,20 @@
 const test = require('/lib/xp/testing');
+const testUtils = require('/testUtils');
 
 
-
-
-//////////////////////////// Mock workaround (test.mock only works once)
-
-// Mutable config for returning a mock object
-const mockConfig = [];
-const setMockConfig = (configToReturn) => {
-    mockConfig[0]=configToReturn;
-}
-
-test.mock("/lib/configFile/services/getConfig.js", {
-    getConfigOrEmpty: () => {
-        return mockConfig[0]
+const updateGetConfigMock = testUtils.mockAndGetUpdaterFunc(
+    "/lib/configFile/services/getConfig.js",
+    {
+        getConfigOrEmpty: null
     }
+);
+const setMockConfig = (configToReturn) => updateGetConfigMock({
+    getConfigOrEmpty: () => configToReturn
 });
 
-// Require configFile after mocking the getConfig service it uses:
+
+
+// Require configFile AFTER mocking the getConfig service it uses:
 const lib = require('./configFile');
 
 
