@@ -21,7 +21,7 @@ dependencies {
     include "com.enonic.xp:lib-portal:${xpVersion}"
     include "com.enonic.xp:lib-cluster:${xpVersion}"
     include "com.enonic.lib:lib-http-client:3.2.2"
-    include "com.nimbusds:oauth2-oidc-sdk:10.7.1"
+    include "com.nimbusds:oauth2-oidc-sdk:10.7.2"
 
     testImplementation "com.enonic.xp:testing:${xpVersion}"
 }
