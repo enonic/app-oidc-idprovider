@@ -11,13 +11,17 @@ This ID Provider application follows the Authorization Code Flow and uses one of
 |=======
 |App version |Required XP version |Download
 
-|1.1.0 |7.7.4 |https://repo.enonic.com/public/com/enonic/app/oidcidprovider/1.1.0/oidcidprovider-1.1.0.jar[Download]
-|1.0.3 |7.7.4 |https://repo.enonic.com/public/com/enonic/app/oidcidprovider/1.0.3/oidcidprovider-1.0.3.jar[Download]
-|1.0.2 |7.7.4 |https://repo.enonic.com/public/com/enonic/app/oidcidprovider/1.0.2/oidcidprovider-1.0.2.jar[Download]
-|1.0.1 |7.1.0 |https://repo.enonic.com/public/com/enonic/app/oidcidprovider/1.0.1/oidcidprovider-1.0.1.jar[Download]
-|1.0.0 |7.1.0 |https://repo.enonic.com/public/com/enonic/app/oidcidprovider/1.0.0/oidcidprovider-1.0.0.jar[Download]
-|0.2.0 |7.1.0 |https://repo.enonic.com/public/com/enonic/app/oidcidprovider/0.2.0/oidcidprovider-0.2.0.jar[Download]
-|0.1.0 |7.1.0 |https://repo.enonic.com/public/com/enonic/app/oidcidprovider/0.1.0/oidcidprovider-0.1.0.jar[Download]
+|1.3.2 | >=7.7.4 |https://repo.enonic.com/public/com/enonic/app/oidcidprovider/1.3.2/oidcidprovider-1.3.2.jar[Download]
+|1.3.0 | >=7.7.4 |https://repo.enonic.com/public/com/enonic/app/oidcidprovider/1.3.0/oidcidprovider-1.3.0.jar[Download]
+|1.2.1 | >=7.7.4 |https://repo.enonic.com/public/com/enonic/app/oidcidprovider/1.2.1/oidcidprovider-1.2.1.jar[Download]
+|1.2.0 | >=7.7.4 |https://repo.enonic.com/public/com/enonic/app/oidcidprovider/1.2.0/oidcidprovider-1.2.0.jar[Download]
+|1.1.0 | >=7.7.4 |https://repo.enonic.com/public/com/enonic/app/oidcidprovider/1.1.0/oidcidprovider-1.1.0.jar[Download]
+|1.0.3 | >=7.7.4 |https://repo.enonic.com/public/com/enonic/app/oidcidprovider/1.0.3/oidcidprovider-1.0.3.jar[Download]
+|1.0.2 | >=7.7.4 |https://repo.enonic.com/public/com/enonic/app/oidcidprovider/1.0.2/oidcidprovider-1.0.2.jar[Download]
+|1.0.1 | >=7.1.0 |https://repo.enonic.com/public/com/enonic/app/oidcidprovider/1.0.1/oidcidprovider-1.0.1.jar[Download]
+|1.0.0 | >=7.1.0 |https://repo.enonic.com/public/com/enonic/app/oidcidprovider/1.0.0/oidcidprovider-1.0.0.jar[Download]
+|0.2.0 | >=7.1.0 |https://repo.enonic.com/public/com/enonic/app/oidcidprovider/0.2.0/oidcidprovider-0.2.0.jar[Download]
+|0.1.0 | >=7.1.0 |https://repo.enonic.com/public/com/enonic/app/oidcidprovider/0.1.0/oidcidprovider-0.1.0.jar[Download]
 |=======
 
 == link:docs/index.adoc[Configuration]
