@@ -276,15 +276,18 @@ Example: **Difi/ID-porten/VER1**
 * ID Token Hint parameter name: `id_token_hint`
 * Post Logout Redirect URI parameter name: `post_logout_redirect_uri`
 
+{zwsp} +
 
+== Upgrading from version 1.x
+Version `2.x` of this app introduces a breaking change: all configuration now happens in `com.enonic.app.oidcidprovider.cfg` instead of editing a form in the Users app. So no configuration will be stored in / read from the data layer anymore.
 
+The following upgrade descriptions use information you can find by editing your `1.x` ID provider app in XP:
 
+image:idprovider-migration.png[title="(1) - ID provider name, (2) - pencil button to open form for edit", width=500px]
 
+When editing an ID provider in the Users app, the ID provider name (1) is found (or edited) directly below the displayName field, and in previous versions of this app the configuration form was opened by clicking the pencil (2) icon on the ID provider application.
 
+=== Migrate the configuration
+Create `com.enonic.app.oidcidprovider.cfg` in your `/config` folder. Then in XP, enter the Users app and edit the ID provider. Note the ID provider name (without the leading slash), and click the edit-form icon to view the configuration entered in the old app. Transfer the values into the `.cfg` file, the way it's specified above (the order may vary).
 
-
-
-
-
-
-
+For mapping config (`idprovider.<idprovidername>.mappings.displayName` and `idprovider.<idprovidername>.mappings.email`), remember the `@@`` syntax for the placeholders. Replace any `${` in the values with `@@{`!
