@@ -133,12 +133,11 @@ mapping.example.idProvider.myoidcprovider = default
 Here as well, the ID provider name must match: see the last line.
 
 {zwsp} +
-{zwsp} +
 
 [[idp_config]]
 === Configure the ID Provider
 
-As of v1.4.0, the config form in the users app (`idprovider.xml`) has been removed. The settings to configure the id provider must instead be entered in a .CFG file: com.enonic.app.oidcidprovider.cfg.
+As of v2.0.0, the config form in the users app (`idprovider.xml`) has been removed. The settings to configure the id provider must instead be entered in a .CFG file: com.enonic.app.oidcidprovider.cfg.
 
 In this .cfg file, all ID providers that use this app are configured. Each ID provider gets a idprovider.<idprovidername> namespace, which prefixes the config fields. Add keys to that on the format `idprovider.[idprovidername].[configkey(s)] = [value]`. The ID provider name is set in the Users app in XP. For example, setting the `forceEmailVerification` rule config field with a value of `true` for an ID provider named myoidcprovider, will look like this: `idprovider.myoidcprovider.rules.forceEmailVerification=true`
 
@@ -147,56 +146,95 @@ The ID Provider must be configured, many of the fields are the information gathe
 
 {zwsp} +
 
-==== Authorization Server
+==== Overview
 
-* **Issuer Identifier**  (`issuer`): Value of `issuer` in your OpenID Provider Configuration
-* **Authorization endpoint URL** (`authorizationUrl`): Value of `authorization_endpoint` in your OpenID Provider Configuration
-* **Token endpoint URL** (`tokenUrl`): Value of `token_endpoint` in your OpenID Provider Configuration
-* **User Info endpoint**: If the user information is not returned in the ID Token. Value of `userinfo_endpoint` in your OpenID Provider Configuration
-* **Client Authentication Method** (`method`): Method for client authentication. The value is a string, either `post`, `basic`, or `jwt`.
-* **Additional scopes** (`scopes`): Scope/Claims to retrieve in addition to the mandatory "openid" scope. We recommend setting the two standard scopes: _profile_ and _email_. The value is a JSON-style array string, eg. `["profile", "email"]`
+The following settings are available for using in `com.enonic.app.oidcidprovider.cfg`. <<#fields_in_config, More details>> follow below.
 
-==== Additional OAuth2 endpoints
+[source,properties]
+----
+autoinit=  (true | false, optional)
 
-Additional OAuth2 endpoints used to retrieve additional user information using the access token.
+idprovider.<idprovidername>.issuer=  (string, required)
+idprovider.<idprovidername>.authorizationUrl=  (string, required)
+idprovider.<idprovidername>.tokenUrl=  (string, required)
+idprovider.<idprovidername>.userinfoUrl=  (string, optional)
+idprovider.<idprovidername>.method=  ((basic|port|jwt), optional, default to "post")
+idprovider.<idprovidername>.scopes=  (space separated strings, optional, default to "profile email")
 
-* **Name** : Value used to store these claims under a same scope in the user profile.
-* **URL** : Endpoint URL.
+# Optional 'additionalEndpoints' namespace
+# Is an array, that uses index (integer, starts from 0) to set items with 'name' and 'url' fields
+idprovider.<idprovidername>.additionalEndpoints.0.name=  (string, required)
+idprovider.<idprovidername>.additionalEndpoints.0.url=  (string, required)
 
-==== End Session
+# Optional 'endSession' namespace
+idprovider.<idprovidername>.endSession.url=  (string, required)
+idprovider.<idprovidername>.endSession.idTokenHintKey=  (string, optional)
+idprovider.<idprovidername>.endSession.postLogoutRedirectUriKey=  (string, optional)
 
-* **End session URL**: Value of `end_session_endpoint` in your OpenID Provider Configuration
-* **ID Token Hint parameter name**: Value of `id_token_hint`
-* **Post Logout Redirect URI parameter name**: Value of `post_logout_redirect_uri`
+# Optional 'additionalParameters' namespace
+# Is an array, that uses index (integer, starts from 0) to set items with 'key' and 'value' fields
+idprovider.<idprovidername>.endSession.additionalParameters.0.key=  (string, required)
+idprovider.<idprovidername>.endSession.additionalParameters.0.value=  (string, required)
 
-See <<#end_session, End Session>> for more information.
+idprovider.<idprovidername>.clientId=  (string, required)
+idprovider.<idprovidername>.clientSecret=  (string, required)
 
-==== Client
+idprovider.<idprovidername>.mappings.displayName=  (string, required)
+idprovider.<idprovidername>.mappings.email=  (string, required)
+idprovider.<idprovidername>.mappings.defaultGroups=  (space separated group keys, optional)
 
-This application uses the authentication method "client_secret_post" for the token retrieval. During the <<#authorization_server, creation of your Client/Application>>, you must have received or generated credentials/secret:
-
-* **Client Identifier** (`clientId`)
-* **Client Secret** (`clientSecret`)
-
-==== User Creation
-
-* **Mappings**: You may configure the rules with placeholders used to create users inside Enonic: the values will be replaced by the information retrieved by the placeholder expression.
-** **Display name** (`mappings.displayName`): Template for the display name
-** **Email** (`mappings.email`): Template for the email
-*** For both these, this format difference applies:
-*** _Form format_: `${expression}`. For example `"${userinfo.given_name} ${userinfo.family_name}"` or `${userinfo.preferred_username}`
-*** _.cfg format_: `@@{expression}`. For example `@@{userinfo.email}`
-* Default groups (`defaultGroups`): Groups to assign to this user on creation.
-** _Form format_: selector
-** _.cfg format_: JSON-style array string, where items are string on the form `group:[idprovidername]:[groupname]`. For example `["group:myoidcprovider:authors"]`
-
-==== Rules
-
-Additional rules enforced on login
-
-* Enforce Email Verification (`rules.forceEmailVerification`): Check the claim `email_verified` (returned with the scope `email`).
+idprovider.<idprovidername>.rules.forceEmailVerification=  (true | false, required)
+----
 
 {zwsp} +
+
+[[fields_in_config]]
+==== Fields in the config
+
+* `autoinit`: Automatic initialization. If `com.enonic.app.oidcidprovider.cfg` contains `autoinit=true`, then during startup this app will look all idprovider names declared in the file and create them (if the app names don't already exist) with those settings. For example, `idprovider.myfirstidp.someKey=someValue` and `idprovider.anotheridp.anotherKey=anotherValue` will declare two idproviders named `myfirstidp` and `anotheridp`.
+
+**Authorization Server**
+
+* `issuer`: Issuer identifier. Value of `issuer` in your OpenID Provider <<#information_required_for_config, configuration>>.
+* `authorizationUrl`: Authorization endpoint URL. Value of `authorization_endpoint` in your OpenID Provider <<#information_required_for_config, configuration>>.
+* `tokenUrl`: Token endpoint URL. Value of `token_endpoint` in your OpenID Provider <<#information_required_for_config, configuration>>.
+* `method`: Client authentication method.  The value is a string, either `post`, `basic`, or `jwt`.
+* `scopes`: Scope/Claims to retrieve in addition to the mandatory "openid" scope. We recommend setting the two standard scopes: _profile_ and _email_. The value is a space-separated list of scopes, eg. `profile email`.
+
+**Additional OAuth2 endpoints**
+
+* `additionalEndpoints...` (`idprovider.<idprovidername>.additionalEndpoints...` namespace): Additional OAuth2 endpoints used to retrieve additional user information using the access token. This `additionalEndpoints` namespace _requires an array_ immediately below it, with two required fields below each item in the array. Array starts counting on `0`, so for example, `idprovider.<idprovidername>.additionalEndpoints.0.name` sets the `name` for the first item, while `idprovider.<idprovidername>.additionalEndpoints.1.url` sets `url` for the second one, etc.
+  - `name`: Value used to store these claims under a same scope in the user profile.
+  - `url`: Endpoint URL.
+
+**End session**
+
+* `endSession...` (`idprovider.<idprovidername>.endSession...` namespace): OIDC Front-Channel Logout configuration parameters. See <<#end_session, End Session>> for more information.
+  ** `url`: End session URL. Value of `end_session_endpoint` in your OpenID Provider <<#information_required_for_config, configuration>>.
+  ** `idTokenHintKey`: ID Token Hint parameter name. Value of `id_token_hint` in your OpenID Provider <<#information_required_for_config, configuration>>.
+  ** `postLogoutRedirectUriKey`: Post logout redirect URI parameter name. Value of `post_logout_redirect_uri` in your OpenID Provider <<#information_required_for_config, configuration>>.
+  ** `additionalParameters...` (`idprovider.<idprovidername>.endSession.additionalParameters...` namespace): Additional OIDC Front-Channel Logout. This `additionalParameters` namespace _requires an array_ immediately below it, with two required fields below each item in the array. Array starts counting on `0`, so for example, `idprovider.<idprovidername>.endSession.additionalParameters.0.key` sets the `key` for the first item, while `idprovider.<idprovidername>.endSession.additionalParameters.1.value` sets `value` for the second one, etc.
+    *** `key`
+    *** `value`
+
+
+**Client**
+
+* `clientId`: Client identifier, received ot generated during the <<#authorization_server, creation of your Client/Application>> (this application uses the authentication method "client_secret_post" for the token retrieval).
+* `clientSecret`: Client secret, received ot generated during the <<#authorization_server, creation of your Client/Application>> (this application uses the authentication method "client_secret_post" for the token retrieval).
+
+**User creation**
+
+* `mappings...` (`idprovider.<idprovidername>.mappings...` namespace): You may configure the rules with placeholders used to create users inside Enonic: the values will be replaced by the information retrieved by the placeholder expression.
+  ** `displayName`: Template for the display name in format of `@@{expression}`, e.g. `@@{userinfo.preferred_username}`.
+  ** `email`: Template for the email in format of `@@{expression}`, e.g. `@@{userinfo.email}`.
+  ** `defaultGroups`: Groups to assign to this user on creation. A list of space separated group keys. The key must have be in the format `group:[idprovidername]:[groupname]`, e.g. `group:myoidcprovider:authors`.
+
+**Rules**
+
+* `rules...` (`idprovider.<idprovidername>.rules...` namespace): Additional rules enforced on login.
+  ** `forceEmailVerification`: Enforce email verification. Check the claim `email_verified` (returned with the scope `email`)..
+
 {zwsp} +
 
 [[end_session]]
