@@ -195,9 +195,7 @@ function logStateOnce(messageKind, message) {
 exports.getConfigForIdProvider = function (idProviderName) {
     const idProviderKeyBase = `${CONFIG_NAMESPACE}.${idProviderName}`;
 
-    const rawConfigKeys = Object.keys(getConfigService.getConfigOrEmpty()).filter(k =>
-        k && (k.startsWith(idProviderKeyBase))
-    );
+    const rawConfigKeys = Object.keys(getConfigService.getConfigOrEmpty()).filter(k => k && (k.startsWith(idProviderKeyBase)));
 
     try {
         const config = getFileConfigSubTree(rawConfigKeys, idProviderKeyBase, 1, parsingLib.PARSING_CALLBACKS);
