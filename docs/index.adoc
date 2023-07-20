@@ -139,7 +139,7 @@ Here as well, the ID provider name must match: see the last line.
 
 As of v2.0.0, the config form in the users app (`idprovider.xml`) has been removed. The settings to configure the id provider must instead be entered in a .CFG file: com.enonic.app.oidcidprovider.cfg.
 
-In this .cfg file, all ID providers that use this app are configured. Each ID provider gets a idprovider.<idprovidername> namespace, which prefixes the config fields. Add keys to that on the format `idprovider.[idprovidername].[configkey(s)] = [value]`. The ID provider name is set in the Users app in XP. For example, setting the `forceEmailVerification` rule config field with a value of `true` for an ID provider named myoidcprovider, will look like this: `idprovider.myoidcprovider.rules.forceEmailVerification=true`
+This config file should contain config fields for all OpenID providers in the format `idprovider.[idprovidername].[configkey] = [value]`, where `idprovidername` should exactly match ID provider name from the Users app. For example, setting the `forceEmailVerification` rule config field with a value of `true` for an ID provider named `myoidcprovider`, will look like this: `idprovider.myoidcprovider.rules.forceEmailVerification=true`
 
 The ID Provider must be configured, many of the fields are the information gathered from <<#information_required_for_config, authorization server configuration>> (optionally available at the _WellKnown_ endpoint of your Authorization server, `/.well-known/openid-configuration`).
 
@@ -148,7 +148,7 @@ The ID Provider must be configured, many of the fields are the information gathe
 
 ==== Overview
 
-The following settings are available for using in `com.enonic.app.oidcidprovider.cfg`. <<#fields_in_config, More details>> follow below.
+The following settings are allowed to be used in `com.enonic.app.oidcidprovider.cfg` (<<#fields_in_config, field descriptions>> follow below):
 
 [source,properties]
 ----
@@ -191,7 +191,7 @@ idprovider.<idprovidername>.rules.forceEmailVerification=  (true | false, requir
 [[fields_in_config]]
 ==== Fields in the config
 
-* `autoinit`: Automatic initialization. If `com.enonic.app.oidcidprovider.cfg` contains `autoinit=true`, then during startup this app will look all idprovider names declared in the file and create them (if the app names don't already exist) with those settings. For example, `idprovider.myfirstidp.someKey=someValue` and `idprovider.anotheridp.anotherKey=anotherValue` will declare two idproviders named `myfirstidp` and `anotheridp`.
+* `autoinit`: Automatic initialization. If the config file contains `autoinit=true`, then during startup this app will automatically create ID providers for all settings declared in the file, if they don't already exist. For example, `idprovider.myfirstidp.someKey=someValue` and `idprovider.anotheridp.anotherKey=anotherValue` will declare two idproviders named `myfirstidp` and `anotheridp`.
 
 **Authorization Server**
 
@@ -220,15 +220,15 @@ idprovider.<idprovidername>.rules.forceEmailVerification=  (true | false, requir
 
 **Client**
 
-* `clientId`: Client identifier, received ot generated during the <<#authorization_server, creation of your Client/Application>> (this application uses the authentication method "client_secret_post" for the token retrieval).
-* `clientSecret`: Client secret, received ot generated during the <<#authorization_server, creation of your Client/Application>> (this application uses the authentication method "client_secret_post" for the token retrieval).
+* `clientId`: Client identifier, received or generated during <<#authorization_server, creation of your Client/Application>> (this application uses the authentication method "client_secret_post" for token retrieval).
+* `clientSecret`: Client secret, received or generated during <<#authorization_server, creation of your Client/Application>> (this application uses the authentication method "client_secret_post" for token retrieval).
 
 **User creation**
 
-* `mappings...` (`idprovider.<idprovidername>.mappings...` namespace): You may configure the rules with placeholders used to create users inside Enonic: the values will be replaced by the information retrieved by the placeholder expression.
+* `mappings...` (`idprovider.<idprovidername>.mappings...` namespace): You may configure the rules containing placeholders used to create users inside Enonic: values will be replaced with information provided by the placeholder expression.
   ** `displayName`: Template for the display name in format of `@@{expression}`, e.g. `@@{userinfo.preferred_username}`.
   ** `email`: Template for the email in format of `@@{expression}`, e.g. `@@{userinfo.email}`.
-  ** `defaultGroups`: Groups to assign to this user on creation. A list of space separated group keys. The key must have be in the format `group:[idprovidername]:[groupname]`, e.g. `group:myoidcprovider:authors`.
+  ** `defaultGroups`: Groups to assign to this user on creation. A list of space-separated group keys. The key must be in the format `group:[idprovidername]:[groupname]`, e.g. `group:myoidcprovider:authors`.
 
 **Rules**
 
@@ -279,15 +279,15 @@ Example: **Difi/ID-porten/VER1**
 {zwsp} +
 
 == Upgrading from version 1.x
-Version `2.x` of this app introduces a breaking change: all configuration now happens in `com.enonic.app.oidcidprovider.cfg` instead of editing a form in the Users app. So no configuration will be stored in / read from the data layer anymore.
+Version `2.0` of this app introduces a breaking change: ID Providers can only be configured via the config file (`com.enonic.app.oidcidprovider.cfg`) instead of editing the ID Provider form in the Users app UI. So, no configuration will be stored in / read from the data layer anymore.
 
-The following upgrade descriptions use information you can find by editing your `1.x` ID provider app in XP:
+The following upgrade description assumes you currently have an earlier (`1.x`) version of OIDC ID provider app installed:
 
 image:idprovider-migration.png[title="(1) - ID provider name, (2) - pencil button to open form for edit", width=500px]
 
 When editing an ID provider in the Users app, the ID provider name (1) is found (or edited) directly below the displayName field, and in previous versions of this app the configuration form was opened by clicking the pencil (2) icon on the ID provider application.
 
 === Migrate the configuration
-Create `com.enonic.app.oidcidprovider.cfg` in your `/config` folder. Then in XP, enter the Users app and edit the ID provider. Note the ID provider name (without the leading slash), and click the edit-form icon to view the configuration entered in the old app. Transfer the values into the `.cfg` file, the way it's specified above (the order may vary).
+Create `com.enonic.app.oidcidprovider.cfg` in your XP instance's `config` folder. Then in the XP backoffice, open the Users app and edit the ID provider. Note the ID provider name (without the leading slash), and click the edit-form icon to view the configuration entered in the old app. Transfer the values into the `.cfg` file, the way it's specified above (the order may vary).
 
 For mapping config (`idprovider.<idprovidername>.mappings.displayName` and `idprovider.<idprovidername>.mappings.email`), remember the `@@`` syntax for the placeholders. Replace any `${` in the values with `@@{`!
