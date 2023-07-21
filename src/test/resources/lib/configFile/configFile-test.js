@@ -20,6 +20,143 @@ const lib = require('./configFile');
 
 
 
+/////////////////////////
+
+exports.test_arrayOrObject_arr_arrayAsObject = () => {
+    const arrayAsObject = {
+        0: "a",
+        1: "b",
+        2: "c"
+    }
+    const nowAnArray = lib.arrayOrObject(arrayAsObject);
+
+    test.assertEquals("object", typeof nowAnArray);
+    test.assertTrue(Array.isArray(nowAnArray));
+}
+
+exports.test_arrayOrObject_obj_simpleObject = () => {
+    const simpleObject = {
+        a: "a",
+        b: "b",
+        c: "c"
+    }
+    const stillAnObject = lib.arrayOrObject(simpleObject);
+
+    test.assertEquals("object", typeof stillAnObject);
+    test.assertFalse(Array.isArray(stillAnObject));
+}
+
+exports.test_arrayOrObject_obj_mixedObject = () => {
+    const mixedObject = {
+        1: "a",
+        b: "b",
+        3: "c"
+    }
+    const stillAnObject = lib.arrayOrObject(mixedObject);
+
+    test.assertEquals("object", typeof stillAnObject);
+    test.assertFalse(Array.isArray(stillAnObject));
+}
+
+exports.test_arrayOrObject_obj_nonSequentialIndices = () => {
+    const brokenArray = {
+        0: "a",
+        1: "b",
+        3: "c"
+    }
+    const stillAnObject = lib.arrayOrObject(brokenArray);
+
+    test.assertEquals("object", typeof stillAnObject);
+    test.assertFalse(Array.isArray(stillAnObject));
+}
+
+exports.test_arrayOrObject_obj_nonZeroIndices = () => {
+    const brokenArray = {
+        1: "a",
+        2: "b",
+        3: "c"
+    }
+    const stillAnObject = lib.arrayOrObject(brokenArray);
+
+    test.assertEquals("object", typeof stillAnObject);
+    test.assertFalse(Array.isArray(stillAnObject));
+}
+
+
+exports.test_arrayOrObject_obj_subZeroIndices = () => {
+    const brokenArray = {
+        1: "a",
+        2: "b",
+        "-1": "c"
+    }
+    const stillAnObject = lib.arrayOrObject(brokenArray);
+
+    test.assertEquals("object", typeof stillAnObject);
+    test.assertFalse(Array.isArray(stillAnObject));
+}
+
+
+exports.test_arrayOrObject_obj_repeatIndices = () => {
+    const brokenArray = {
+        "1": "a",
+        "2 ": "b",
+        " 2": "c"
+    }
+    const stillAnObject = lib.arrayOrObject(brokenArray);
+
+    test.assertEquals("object", typeof stillAnObject);
+    test.assertFalse(Array.isArray(stillAnObject));
+}
+
+
+
+
+exports.test_arrayOrObject_obj_trueTree = () => {
+    const trueTree = {
+        a: "a",
+        b: ["b", "c", "d"],
+        e: {f: "g", h: "i", j: "k"}
+    }
+    const stillAnObject = lib.arrayOrObject(trueTree);
+
+    test.assertEquals("object", typeof stillAnObject);
+    test.assertFalse(Array.isArray(stillAnObject));
+
+    test.assertEquals("a", stillAnObject.a)
+
+    test.assertEquals("object", typeof stillAnObject.b);
+    test.assertTrue(Array.isArray(stillAnObject.b));
+    test.assertEquals("c", stillAnObject.b[1])
+
+    test.assertEquals("object", typeof stillAnObject.e);
+    test.assertFalse(Array.isArray(stillAnObject.e));
+    test.assertEquals("i", stillAnObject.e.h);
+}
+
+
+exports.test_arrayOrObject_obj_arrayTree = () => {
+    const arrayTree = {
+        0: "a",
+        1: ["b", "c", "d"],
+        2: {f: "g", h: "i", j: "k"}
+    }
+    const nestedArray = lib.arrayOrObject(arrayTree);
+
+
+    test.assertEquals("object", typeof nestedArray);
+    test.assertTrue(Array.isArray(nestedArray));
+
+    test.assertEquals("a", nestedArray[0])
+
+    test.assertEquals("object", typeof nestedArray[1]);
+    test.assertTrue(Array.isArray(nestedArray[1]));
+    test.assertEquals("c", nestedArray[1][1])
+
+    test.assertEquals("object", typeof nestedArray[2]);
+    test.assertFalse(Array.isArray(nestedArray[2]));
+    test.assertEquals("i", nestedArray[2].h);
+}
+
 
 /////////////////////////
 

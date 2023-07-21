@@ -129,11 +129,8 @@ exports.test_parsingCallbacks_parseStringArray_parsesStringArray = () => {
         test.assertEquals(parsed[2], "c", `parseStringArray should have parsed '${jsonString}' to ["a","b","c"], but instead parsed it to ${JSON.stringify(parsed)}`);
     };
 
-    parseAndVerify(`["a", "b", "c"]`);
-    parseAndVerify(`  ["a", "b", "c"]`);
-    parseAndVerify(`["a", "b", "c"]  `);
-    parseAndVerify(`[  "a", "b", "c"]`);
-    parseAndVerify(`["a"  , "b", "c"]`);
+    parseAndVerify(`a b c`);
+    parseAndVerify(`  a   b c `);
 }
 
 exports.test_parsingCallbacks_parseStringArray_parsesFalsyToEmptyArray = () => {
@@ -145,68 +142,7 @@ exports.test_parsingCallbacks_parseStringArray_parsesFalsyToEmptyArray = () => {
 
     parseAndVerifyEmpty(null);
     parseAndVerifyEmpty('');
-    parseAndVerifyEmpty('null');
-    parseAndVerifyEmpty('""');
 }
-
-exports.test_parsingCallbacks_parseStringArray_failsOnBadJSON = () => {
-
-    const parseAndFail = jsonString => {
-        let failed = false;
-        let parsed;
-        try {
-            parsed = lib.parseStringArray(jsonString);
-        } catch (e) {
-            failed = true;
-        }
-
-        test.assertTrue(failed, `parseStringArray shouldn't have been able to json-parse '${jsonString}', but parsed it to: ${JSON.stringify(parsed)}`);
-    };
-
-    parseAndFail(`Blablabla`);
-    parseAndFail(`{"a", "b", "c"]`);
-    parseAndFail(`["a", "b", "c"}`);
-}
-
-exports.test_parsingCallbacks_parseStringArray_failsOnNonArray = () => {
-
-    const parseAndFail = jsonString => {
-        let failed = false;
-        let parsed;
-        try {
-            parsed = lib.parseStringArray(jsonString);
-        } catch (e) {
-            failed = true;
-        }
-
-        test.assertTrue(failed, `parseStringArray should have failed on the non-array JSON '${jsonString}', but parsed it to: ${JSON.stringify(parsed)}`);
-    };
-
-    parseAndFail(`"Blablabla"`);
-    parseAndFail(`{"bla":"a", "blabla": "b", "blablabla": "c"}`);
-    parseAndFail(`"   "`);
-}
-
-exports.test_parsingCallbacks_parseStringArray_failsOnNonStringItem = () => {
-    const parseAndFail = jsonString => {
-        let failed = false;
-        let parsed;
-        try {
-            parsed = lib.parseStringArray(jsonString);
-        } catch (e) {
-            failed = true;
-        }
-
-        test.assertTrue(failed, `parseStringArray should have failed on a non-string array item in '${jsonString}', but parsed it to: ${JSON.stringify(parsed)}`);
-    };
-
-    parseAndFail(`[1, 2, 3]`);
-    parseAndFail(`[null, null]`);
-    parseAndFail(`[["a", "b", "c"]]`);
-    parseAndFail(`[{}, "bla"]`);
-}
-
-
 
 ///////////////////////////////
 
@@ -229,4 +165,3 @@ exports.test_parsingCallbacks_firstAtsToDollar_changesOnlyAtsBeforeCurlybrace = 
     test.assertEquals(lib.firstAtsToDollar("@@hey"), "@@hey")
     test.assertEquals(lib.firstAtsToDollar("email@@domain.com"), "email@@domain.com")
 }
-

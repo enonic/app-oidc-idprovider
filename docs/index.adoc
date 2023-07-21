@@ -30,13 +30,13 @@ It will typically require the creation and configuration of a Client/Application
 Once authenticated by the Authorization Server, the End-User will be redirected to Enonic XP.
 During the configuration of your Client/Application, you will have to register this callback URL.
 The callback URL depends on the VHost mapping and the name of the ID Provider.
-It has the following format:  ``[VHost source]/_/idprovider/[ID Provider name]``. Make sure the ID provider name exactly <<#id_provider_creation, matches the name of the ID provider>> (or "userstore") in the User Admin app.
+It has the following format:  `[VHost source]/_/idprovider/[ID Provider name]`. Make sure the ID provider name exactly <<#id_provider_creation, matches the name of the ID provider>> (or "userstore") in the User Admin app.
 
 {zwsp} +
 
-**Example for a site:** ``https://www.example.com/_/idprovider/myoidcprovider``
+**Example for a site:** `https://www.example.com/_/idprovider/myoidcprovider`
 
-**Example for admin:** ``https://www.example.com/admin/tool/_/idprovider/myoidcprovider``
+**Example for admin:** `https://www.example.com/admin/tool/_/idprovider/myoidcprovider`
 
 {zwsp} +
 
@@ -52,17 +52,17 @@ You will need to gather the following information from the Authorization Server 
 . The Token endpoint URL
 
 You might have been given only the Issuer URL instead of the list of endpoint URLs.
-In that case the endpoint URLs are accessible under: [Issuer URL]/.well-known/openid-configuration
-The JSON result will contain the required information: "issuer", "authorization_endpoint" and "token_endpoint".
+In that case the endpoint URLs are accessible under: `[Issuer URL]/.well-known/openid-configuration`
+The JSON result will contain the required information: `issuer`, `authorization_endpoint` and `token_endpoint`.
 
 {zwsp} +
 
 Example: **Auth0**
 
-- OpenID Provider Configuration URL: [Domain URL]/.well-known/openid-configuration
-- Issuer Identifier: [Domain URL]/
-- Authorization endpoint URL: [Domain URL]/authorize
-- Token endpoint URL: [Domain URL]/oauth/token
+- OpenID Provider Configuration URL: `[Domain URL]/.well-known/openid-configuration`
+- Issuer Identifier: `[Domain URL]/`
+- Authorization endpoint URL: `[Domain URL]/authorize`
+- Token endpoint URL: `[Domain URL]/oauth/token`
 
 {zwsp} +
 
@@ -120,108 +120,128 @@ The ID provider name can be edited before saving, but not changed later.
 
 ==== Virtual Host Mapping configuration
 
-Edit the configuration file "com.enonic.xp.web.vhost.cfg", and set the new user store to your virtual host. (See https://developer.enonic.com/docs/xp/stable/deployment/vhosts[Virtual Host Configuration] for more information).
+Edit the configuration file `com.enonic.xp.web.vhost.cfg`, and set the new user store to your virtual host. (See https://developer.enonic.com/docs/xp/stable/deployment/vhosts[Virtual Host Configuration] for more information).
 
-    mapping.example.host = example.com
-    mapping.example.source = /
-    mapping.example.target = /portal/master/mysite
-    mapping.example.idProvider.myoidcprovider = default
+[source,properties]
+----
+mapping.example.host = example.com
+mapping.example.source = /
+mapping.example.target = /portal/master/mysite
+mapping.example.idProvider.myoidcprovider = default
+----
 
 Here as well, the ID provider name must match: see the last line.
 
-{zwsp} +
 {zwsp} +
 
 [[idp_config]]
 === Configure the ID Provider
 
-The ID Provider must be configured, many of the fields are the information gathered from <<#information_required_for_config, authorization server configuration>> (optionally available at the _WellKnown_ endpoint of your Authorization server, /.well-known/openid-configuration).
+As of v2.0.0, the config form in the users app (`idprovider.xml`) has been removed. The settings to configure the id provider must instead be entered in a .CFG file: com.enonic.app.oidcidprovider.cfg.
 
-It's possible to configure each userstore that uses this app in _one_ of two ways: using the form in the User Admin app, or adding config in the config file for this app, _com.enonic.app.oidcidprovider.cfg_. <<#form_vs_cfg, See below for more details on this>>.
+This config file should contain config fields for all OpenID providers in the format `idprovider.[idprovidername].[configkey] = [value]`, where `idprovidername` should exactly match ID provider name from the Users app. For example, setting the `forceEmailVerification` rule config field with a value of `true` for an ID provider named `myoidcprovider`, will look like this: `idprovider.myoidcprovider.rules.forceEmailVerification=true`
+
+The ID Provider must be configured, many of the fields are the information gathered from <<#information_required_for_config, authorization server configuration>> (optionally available at the _WellKnown_ endpoint of your Authorization server, `/.well-known/openid-configuration`).
 
 
 {zwsp} +
 
-==== Authorization Server
+==== Overview
 
-* **Issuer Identifier**  (`issuer`): Value of "issuer" in your OpenID Provider Configuration
-* **Authorization endpoint URL** (`authorizationUrl`): Value of "authorization_endpoint" in your OpenID Provider Configuration
-* **Token endpoint URL** (`tokenUrl`): Value of "token_endpoint" in your OpenID Provider Configuration
-* **User Info endpoint**: If the user information is not returned in the ID Token. Value of "userinfo_endpoint" in your OpenID Provider Configuration
-* **Client Authentication Method** (`method`): Method for client authentication
-** _<<#form_vs_cfg, Form format>>_: selector
-** _<<#form_vs_cfg, .cfg format>>_: string, either `post`, `basic` or `jwt`.
-* **Additional scopes** (`scopes`): Scope/Claims to retrieve in addition to the mandatory "openid" scope. We recommend setting the two standard scopes: _profile_ and _email_:
-** _Form format_: space-delimited string in double quotes, eg. `"profile email"`
-** _.cfg format_: JSON-style array string, eg. `["profile", "email"]`
+The following settings are allowed to be used in `com.enonic.app.oidcidprovider.cfg` (<<#fields_in_config, field descriptions>> follow below):
 
-==== Additional OAuth2 endpoints
+[source,properties]
+----
+autoinit=  (true | false, optional)
 
-Additional OAuth2 endpoints used to retrieve additional user information using the access token.
+idprovider.<idprovidername>.issuer=  (string, required)
+idprovider.<idprovidername>.authorizationUrl=  (string, required)
+idprovider.<idprovidername>.tokenUrl=  (string, required)
+idprovider.<idprovidername>.userinfoUrl=  (string, optional)
+idprovider.<idprovidername>.method=  ((basic|port|jwt), optional, default to "post")
+idprovider.<idprovidername>.scopes=  (space separated strings, optional, default to "profile email")
 
-* **Name** : Value used to store these claims under a same scope in the user profile.
-* **URL** : Endpoint URL.
+# Optional 'additionalEndpoints' namespace
+# Is an array, that uses index (integer, starts from 0) to set items with 'name' and 'url' fields
+idprovider.<idprovidername>.additionalEndpoints.0.name=  (string, required)
+idprovider.<idprovidername>.additionalEndpoints.0.url=  (string, required)
 
-==== End Session
+# Optional 'endSession' namespace
+idprovider.<idprovidername>.endSession.url=  (string, required)
+idprovider.<idprovidername>.endSession.idTokenHintKey=  (string, optional)
+idprovider.<idprovidername>.endSession.postLogoutRedirectUriKey=  (string, optional)
 
-* **End session URL**: Value of "end_session_endpoint" in your OpenID Provider Configuration
-* **ID Token Hint parameter name**: Value of "id_token_hint"
-* **Post Logout Redirect URI parameter name**: Value of "post_logout_redirect_uri"
+# Optional 'additionalParameters' namespace
+# Is an array, that uses index (integer, starts from 0) to set items with 'key' and 'value' fields
+idprovider.<idprovidername>.endSession.additionalParameters.0.key=  (string, required)
+idprovider.<idprovidername>.endSession.additionalParameters.0.value=  (string, required)
 
-See <<#end_session, End Session>> for more information.
+idprovider.<idprovidername>.clientId=  (string, required)
+idprovider.<idprovidername>.clientSecret=  (string, required)
 
-==== Client
+idprovider.<idprovidername>.mappings.displayName=  (string, required)
+idprovider.<idprovidername>.mappings.email=  (string, required)
+idprovider.<idprovidername>.mappings.defaultGroups=  (space separated group keys, optional)
 
-This application uses the authentication method "client_secret_post" for the token retrieval. During the <<#authorization_server, creation of your Client/Application>>, you must have received or generated credentials/secret:
-
-* **Client Identifier** (`clientId`)
-* **Client Secret** (`clientSecret`)
-
-==== User Creation
-
-* **Mappings**: You may configure the rules with placeholders used to create users inside Enonic: the values will be replaced by the information retrieved by the placeholder expression.
-** **Display name** (`mappings.displayName`): Template for the display name
-** **Email** (`mappings.email`): Template for the email
-*** For both these, this format difference applies:
-*** _Form format_: `${expression}`. For example `"${userinfo.given_name} ${userinfo.family_name}"` or `${userinfo.preferred_username}`
-*** _.cfg format_: `@@{expression}`. For example `@@{userinfo.email}`
-* Default groups (`defaultGroups`): Groups to assign to this user on creation.
-** _Form format_: selector
-** _.cfg format_: JSON-style array string, where items are string on the form `group:[idprovidername]:[groupname]`. For example `["group:myoidcprovider:authors"]`
-
-==== Rules
-
-Additional rules enforced on login
-
-* Enforce Email Verification (`rules.forceEmailVerification`): Check the claim "email_verified" (returned with the scope "email").
+idprovider.<idprovidername>.rules.forceEmailVerification=  (true | false, required)
+----
 
 {zwsp} +
-{zwsp} +
+
+[[fields_in_config]]
+==== Fields in the config
+
+* `autoinit`: Automatic initialization. If the config file contains `autoinit=true`, then during startup this app will automatically create ID providers for all settings declared in the file, if they don't already exist. For example, `idprovider.myfirstidp.someKey=someValue` and `idprovider.anotheridp.anotherKey=anotherValue` will declare two idproviders named `myfirstidp` and `anotheridp`.
+
+**Authorization Server**
+
+* `issuer`: Issuer identifier. Value of `issuer` in your OpenID Provider <<#information_required_for_config, configuration>>.
+* `authorizationUrl`: Authorization endpoint URL. Value of `authorization_endpoint` in your OpenID Provider <<#information_required_for_config, configuration>>.
+* `tokenUrl`: Token endpoint URL. Value of `token_endpoint` in your OpenID Provider <<#information_required_for_config, configuration>>.
+* `method`: Client authentication method.  The value is a string, either `post`, `basic`, or `jwt`.
+* `scopes`: Scope/Claims to retrieve in addition to the mandatory "openid" scope. We recommend setting the two standard scopes: _profile_ and _email_. The value is a space-separated list of scopes, eg. `profile email`.
+
+**Additional OAuth2 endpoints**
+
+* `additionalEndpoints...` (`idprovider.<idprovidername>.additionalEndpoints...` namespace): Additional OAuth2 endpoints used to retrieve additional user information using the access token. This `additionalEndpoints` namespace _requires an array_ immediately below it, with two required fields below each item in the array. Array starts counting on `0`, so for example, `idprovider.<idprovidername>.additionalEndpoints.0.name` sets the `name` for the first item, while `idprovider.<idprovidername>.additionalEndpoints.1.url` sets `url` for the second one, etc.
+  - `name`: Value used to store these claims under a same scope in the user profile.
+  - `url`: Endpoint URL.
+
+**End session**
+
+* `endSession...` (`idprovider.<idprovidername>.endSession...` namespace): OIDC Front-Channel Logout configuration parameters. See <<#end_session, End Session>> for more information.
+  ** `url`: End session URL. Value of `end_session_endpoint` in your OpenID Provider <<#information_required_for_config, configuration>>.
+  ** `idTokenHintKey`: ID Token Hint parameter name. Value of `id_token_hint` in your OpenID Provider <<#information_required_for_config, configuration>>.
+  ** `postLogoutRedirectUriKey`: Post logout redirect URI parameter name. Value of `post_logout_redirect_uri` in your OpenID Provider <<#information_required_for_config, configuration>>.
+  ** `additionalParameters...` (`idprovider.<idprovidername>.endSession.additionalParameters...` namespace): Additional OIDC Front-Channel Logout. This `additionalParameters` namespace _requires an array_ immediately below it, with two required fields below each item in the array. Array starts counting on `0`, so for example, `idprovider.<idprovidername>.endSession.additionalParameters.0.key` sets the `key` for the first item, while `idprovider.<idprovidername>.endSession.additionalParameters.1.value` sets `value` for the second one, etc.
+    *** `key`
+    *** `value`
 
 
-[[form_vs_cfg]]
-==== Form vs .cfg file configuration
+**Client**
 
-It's possible to configure each userstore that uses this app in _one_ of two ways:
+* `clientId`: Client identifier, received or generated during <<#authorization_server, creation of your Client/Application>> (this application uses the authentication method "client_secret_post" for token retrieval).
+* `clientSecret`: Client secret, received or generated during <<#authorization_server, creation of your Client/Application>> (this application uses the authentication method "client_secret_post" for token retrieval).
 
-* **Form**: Configure the IDprovider app by opening and filling out the form in the user admin app (the **pencil icon** in <<#id_provider_creation, the illustration above>>). This stores the settings in the node layer.
-** _This is not recommended!_ This feature can be considered deprecated, future versions are subject to move parts of (or the entire) configuration into the .cfg file.
-* **.cfg file: ** Add config to a config file: _com.enonic.app.oidcidprovider.cfg_. Add keys to that on the format `idprovider.[idprovidername].[configkey(s)] = [value]`, where _[configkey]_ is the keys in parenthesis in the <<#idp_config, idprovider config section above>> (typefied with code font, eg. `issuer`, `authorizationUrl`, etc)
-** For example, `idprovider.myoidcprovider.rules.forceEmailVerification=true`
-** In .cfg you can also add `autoinit=true`. This will make this idprovider app check whether a userstore exists by the name of _[idprovidername]_, and create it if it doesnt.
+**User creation**
 
-Some format differences may occur between _Form_ and _.cfg_, this was noted in the <<#idp_config, idprovider config section above>>.
+* `mappings...` (`idprovider.<idprovidername>.mappings...` namespace): You may configure the rules containing placeholders used to create users inside Enonic: values will be replaced with information provided by the placeholder expression.
+  ** `displayName`: Template for the display name in format of `@@{expression}`, e.g. `@@{userinfo.preferred_username}`.
+  ** `email`: Template for the email in format of `@@{expression}`, e.g. `@@{userinfo.email}`.
+  ** `defaultGroups`: Groups to assign to this user on creation. A list of space-separated group keys. The key must be in the format `group:[idprovidername]:[groupname]`, e.g. `group:myoidcprovider:authors`.
 
-NOTE: It is in principle possible for this app to config two userstores in different ways at the same time, for example _myoidcprovider_ from the cfg with (with `idprovider.myoidcprovider...` keys) and another one _otheridp_ from the form. But for each individual userstore, the settings will not be merged from these two sources: if even one `idprovider.myoidcprovider...` key exists in the .cfg file, the _myoidcprovider_ userstore will ignore the form configuration and only look in the .cfg file.
+**Rules**
 
-{zwsp} +
+* `rules...` (`idprovider.<idprovidername>.rules...` namespace): Additional rules enforced on login.
+  ** `forceEmailVerification`: Enforce email verification. Check the claim `email_verified` (returned with the scope `email`)..
+
 {zwsp} +
 
 [[end_session]]
 === End Session
 
 OIDC Front-Channel Logout specifications are still in draft. This might not be supported by your authentication server.
-You can check if the endpoint is available in the Open ID Configuration (.well-known/openid-configuration) under the field "end_session_endpoint"
+You can check if the endpoint is available in the Open ID Configuration (`.well-known/openid-configuration`) under the field `end_session_endpoint`
 There might also be another custom endpoint available that achieves the same purpose.
 The ID Provider Configuration schema tries to be dynamic enough to handle all cases.
 
@@ -230,7 +250,7 @@ The ID Provider Configuration schema tries to be dynamic enough to handle all ca
 Example: **Auth0**
 
 * End Session URL: [Domain URL]/v2/logout
-* Post Logout Redirect URI parameter name: returnTo
+* Post Logout Redirect URI parameter name: `returnTo`
 * Additional Parameters:
 ** clientId = [Client ID]
 
@@ -246,25 +266,28 @@ Not available
 Example: **Azure AD**
 
 * End Session URL: https://login.microsoftonline.com/{TenantID}/oauth2/logout
-* Post Logout Redirect URI parameter name: post_logout_redirect_uri
+* Post Logout Redirect URI parameter name: `post_logout_redirect_uri`
 
 {zwsp} +
 
 Example: **Difi/ID-porten/VER1**
 
 * End Session URL: https://oidc-ver1.difi.no/idporten-oidc-provider/endsession
-* ID Token Hint parameter name: id_token_hint
-* Post Logout Redirect URI parameter name: post_logout_redirect_uri
+* ID Token Hint parameter name: `id_token_hint`
+* Post Logout Redirect URI parameter name: `post_logout_redirect_uri`
 
+{zwsp} +
 
+== Upgrading from version 1.x
+Version `2.0` of this app introduces a breaking change: ID Providers can only be configured via the config file (`com.enonic.app.oidcidprovider.cfg`) instead of editing the ID Provider form in the Users app UI. So, no configuration will be stored in / read from the data layer anymore.
 
+The following upgrade description assumes you currently have an earlier (`1.x`) version of OIDC ID provider app installed:
 
+image:idprovider-migration.png[title="(1) - ID provider name, (2) - pencil button to open form for edit", width=500px]
 
+When editing an ID provider in the Users app, the ID provider name (1) is found (or edited) directly below the displayName field, and in previous versions of this app the configuration form was opened by clicking the pencil (2) icon on the ID provider application.
 
+=== Migrate the configuration
+Create `com.enonic.app.oidcidprovider.cfg` in your XP instance's `config` folder. Then in the XP backoffice, open the Users app and edit the ID provider. Note the ID provider name (without the leading slash), and click the edit-form icon to view the configuration entered in the old app. Transfer the values into the `.cfg` file, the way it's specified above (the order may vary).
 
-
-
-
-
-
-
+For mapping config (`idprovider.<idprovidername>.mappings.displayName` and `idprovider.<idprovidername>.mappings.email`), remember the `@@`` syntax for the placeholders. Replace any `${` in the values with `@@{`!

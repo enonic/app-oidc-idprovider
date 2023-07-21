@@ -8,6 +8,10 @@ function getIdProviderConfig() {
     const idProviderName = portalLib.getIdProviderKey();
     const idProviderConfig = configFile.getConfigForIdProvider(idProviderName) || authLib.getIdProviderConfig();
 
+    if (idProviderConfig == null) {
+        throw `No config for '${CONFIG_NAMESPACE}.${idProviderName}' was found.`;
+    }
+
     preconditions.checkConfig(idProviderConfig, 'issuer');
     preconditions.checkConfig(idProviderConfig, 'authorizationUrl');
     preconditions.checkConfig(idProviderConfig, 'tokenUrl');
