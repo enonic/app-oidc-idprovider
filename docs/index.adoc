@@ -17,7 +17,7 @@ This ID Provider application follows the Authorization Code Flow and uses one of
 {zwsp} +
 
 [[authorization_server]]
-=== Configure the Authorization Server
+=== Authorization Server
 
 The configuration depends on the Authorization Server selected and is not covered by this documentation.
 It will typically require the creation and configuration of a Client/Application. The following information is needed:
@@ -93,7 +93,7 @@ Example: **Difi/ID-porten/VER1**
 {zwsp} +
 {zwsp} +
 
-=== Configure Enonic XP
+=== Enonic XP
 
 ==== Application Installation
 
@@ -135,7 +135,7 @@ Here as well, the ID provider name must match: see the last line.
 {zwsp} +
 
 [[idp_config]]
-=== Configure the ID Provider
+=== ID Provider
 
 As of v2.0.0, the config form in the users app (`idprovider.xml`) has been removed. The settings to configure the id provider must instead be entered in a .CFG file: com.enonic.app.oidcidprovider.cfg.
 
@@ -278,10 +278,10 @@ Example: **Difi/ID-porten/VER1**
 
 {zwsp} +
 
-== Upgrading from version 1.x
+== Upgrade Notes
 Version `2.0` of this app introduces a breaking change: ID Providers can only be configured via the config file (`com.enonic.app.oidcidprovider.cfg`) instead of editing the ID Provider form in the Users app UI. So, no configuration will be stored in / read from the data layer anymore.
 
-The following upgrade description assumes you currently have an earlier (`1.x`) version of OIDC ID provider app installed:
+The following upgrade notes assume you currently have an earlier (`1.x`) version of OIDC ID provider app installed:
 
 image:idprovider-migration.png[title="(1) - ID provider name, (2) - pencil button to open form for edit", width=500px]
 
