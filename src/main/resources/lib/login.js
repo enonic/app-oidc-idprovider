@@ -22,7 +22,8 @@ function login(claims) {
 
         //Creates the users
         const idProviderConfig = configLib.getIdProviderConfig();
-        if (idProviderConfig.rules && idProviderConfig.rules.forceEmailVerification) {
+
+        if (idProviderConfig.rules && String(idProviderConfig.rules.forceEmailVerification) === 'true') {
             preconditions.check(userinfoClaims.email_verified === true, 'Email must be verified');
         }
 
