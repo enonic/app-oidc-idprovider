@@ -212,7 +212,7 @@ exports.getConfigForIdProvider = function (idProviderName) {
         log.warning(`Error trying to parse keys below '${idProviderKeyBase}' in config file (${app.name}.cfg). Falling back to possible node-stored config from authLib. Reason: ${e.message}`);
     }
 
-    return null;
+    return {};
 }
 
 

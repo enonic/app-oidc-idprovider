@@ -681,6 +681,6 @@ exports.test_configFile_getConfigForIdProvider_getNullOnNomatch = () => {
 
     const result = lib.getConfigForIdProvider('nonexistingtarget');
 
-    // Expected: null when target idprovider was not found
-    test.assertEquals(null, result);
+    // Expected: empty config when target idprovider was not found
+    test.assertJsonEquals({}, result);
 }
