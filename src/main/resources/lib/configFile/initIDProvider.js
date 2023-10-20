@@ -40,9 +40,9 @@ exports.initUserStores = function() {
             const result = beanService.createIdProvider({
                 name: idProviderName,
                 displayName: displayName,
-                descripton: description,
+                description: description,
                 idProviderConfig: {
-                    descripton: description,
+                    description: description,
                     applicationKey: app.name,
                     config: [], // Skipping the node-level config entirely; we're going to use the .cfg anyway (although this causes invalid config fields when viewing it in the user manager)
                 },
