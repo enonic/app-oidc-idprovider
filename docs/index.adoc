@@ -181,7 +181,8 @@ idprovider.<idprovidername>.clientSecret=  (string, required)
 
 idprovider.<idprovidername>.mappings.displayName=  (string, required)
 idprovider.<idprovidername>.mappings.email=  (string, required)
-idprovider.<idprovidername>.mappings.defaultGroups=  (space separated group keys, optional)
+
+idprovider.<idprovidername>.defaultGroups=  (space separated group keys, optional)
 
 idprovider.<idprovidername>.rules.forceEmailVerification=  (true | false, required)
 ----
@@ -228,7 +229,7 @@ idprovider.<idprovidername>.rules.forceEmailVerification=  (true | false, requir
 * `mappings...` (`idprovider.<idprovidername>.mappings...` namespace): You may configure the rules containing placeholders used to create users inside Enonic: values will be replaced with information provided by the placeholder expression.
   ** `displayName`: Template for the display name in format of `@@{expression}`, e.g. `@@{userinfo.preferred_username}`.
   ** `email`: Template for the email in format of `@@{expression}`, e.g. `@@{userinfo.email}`.
-  ** `defaultGroups`: Groups to assign to this user on creation. A list of space-separated group keys. The key must be in the format `group:[idprovidername]:[groupname]`, e.g. `group:myoidcprovider:authors`.
+* `defaultGroups` (`idprovider.<idprovidername>.defaultGroups`): Groups to assign to this user on creation. A list of space-separated group keys. The key must be in the format `group:[idprovidername]:[groupname]`, e.g. `group:myoidcprovider:authors`.
 
 **Rules**
 
