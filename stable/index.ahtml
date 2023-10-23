@@ -748,7 +748,8 @@ idprovider.&lt;idprovidername&gt;.clientSecret=  (string, required)
 
 idprovider.&lt;idprovidername&gt;.mappings.displayName=  (string, required)
 idprovider.&lt;idprovidername&gt;.mappings.email=  (string, required)
-idprovider.&lt;idprovidername&gt;.mappings.defaultGroups=  (space separated group keys, optional)
+
+idprovider.&lt;idprovidername&gt;.defaultGroups=  (space separated group keys, optional)
 
 idprovider.&lt;idprovidername&gt;.rules.forceEmailVerification=  (true | false, required)</code></pre>
 </div>
@@ -872,11 +873,11 @@ idprovider.&lt;idprovidername&gt;.rules.forceEmailVerification=  (true | false, 
 <li>
 <p><code>email</code>: Template for the email in format of <code>@@{expression}</code>, e.g. <code>@@{userinfo.email}</code>.</p>
 </li>
-<li>
-<p><code>defaultGroups</code>: Groups to assign to this user on creation. A list of space-separated group keys. The key must be in the format <code>group:[idprovidername]:[groupname]</code>, e.g. <code>group:myoidcprovider:authors</code>.</p>
-</li>
 </ul>
 </div>
+</li>
+<li>
+<p><code>defaultGroups</code> (<code>idprovider.&lt;idprovidername&gt;.defaultGroups</code>): Groups to assign to this user on creation. A list of space-separated group keys. The key must be in the format <code>group:[idprovidername]:[groupname]</code>, e.g. <code>group:myoidcprovider:authors</code>.</p>
 </li>
 </ul>
 </div>
@@ -1015,7 +1016,7 @@ The ID Provider Configuration schema tries to be dynamic enough to handle all ca
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-08-04 13:49:52 UTC
+Last updated 2023-10-23 08:45:41 UTC
 </div>
 </div>
 </body>
