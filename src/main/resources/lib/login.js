@@ -52,7 +52,7 @@ function login(claims) {
     const profile = contextLib.runAsSu(() => authLib.modifyProfile({
         key: principalKey,
         scope: 'oidc',
-        editor: () => claims
+        editor: () => removeNonSupportedKeys(claims)
     }));
     log.debug('Modified profile of [' + principalKey + ']: ' + JSON.stringify(profile));
 
@@ -94,5 +94,26 @@ function getClaim(claims, claimKey) {
     }
     return claim || '';
 }
+
+function removeNonSupportedKeys(claims) {
+    if (typeof claims !== 'object' || claims === null) {
+        return claims;
+    }
+
+    if (Array.isArray(claims)) {
+        return claims.map(removeNonSupportedKeys);
+    }
+
+    const newClaims = {};
+
+    Object.keys(claims).forEach(function (key) {
+        if (!(key.includes('.') || key.includes('[') || key.includes(']'))) {
+            newClaims[key] = removeNonSupportedKeys(claims[key]);
+        }
+    });
+
+    return newClaims;
+}
+
 
 exports.login = login;
