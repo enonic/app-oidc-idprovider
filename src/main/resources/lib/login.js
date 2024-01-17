@@ -106,11 +106,11 @@ function removeNonSupportedKeys(claims) {
 
     const newClaims = {};
 
-    Object.keys(claims).forEach(function (key) {
-        if (!(key.includes('.') || key.includes('[') || key.includes(']'))) {
+    for (const key in claims) {
+        if (claims.hasOwnProperty(key) && !(key.indexOf('.') !== -1 || key.indexOf('[') !== -1 || key.indexOf(']') !== -1)) {
             newClaims[key] = removeNonSupportedKeys(claims[key]);
         }
-    });
+    }
 
     return newClaims;
 }
