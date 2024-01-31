@@ -154,11 +154,14 @@ The following settings are allowed to be used in `com.enonic.app.oidcidprovider.
 ----
 autoinit=  (true | false, optional)
 
+idprovider.<idprovidername>.displayName=  (string, optional)
+idprovider.<idprovidername>.description=  (string, optional)
+
 idprovider.<idprovidername>.issuer=  (string, required)
 idprovider.<idprovidername>.authorizationUrl=  (string, required)
 idprovider.<idprovidername>.tokenUrl=  (string, required)
 idprovider.<idprovidername>.userinfoUrl=  (string, optional)
-idprovider.<idprovidername>.method=  ((basic|port|jwt), optional, default to "post")
+idprovider.<idprovidername>.method=  ((basic|post|jwt), optional, default to "post")
 idprovider.<idprovidername>.scopes=  (space separated strings, optional, default to "profile email")
 
 # Optional 'additionalEndpoints' namespace

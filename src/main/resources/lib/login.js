@@ -23,7 +23,7 @@ function login(claims) {
         //Creates the users
         const idProviderConfig = configLib.getIdProviderConfig();
 
-        if (idProviderConfig.rules && String(idProviderConfig.rules.forceEmailVerification) === 'true') {
+        if (idProviderConfig.rules.forceEmailVerification) {
             preconditions.check(userinfoClaims.email_verified === true, 'Email must be verified');
         }
 
@@ -37,13 +37,12 @@ function login(claims) {
             displayName: displayName,
             email: email
         }));
-        log.info('User [' + user.key + '] created');
+        log.info(`User [${user.key}] created`);
 
-        var defaultGroups = idProviderConfig.defaultGroups;
         contextLib.runAsSu(() => {
-            toArray(defaultGroups).forEach(function (defaultGroup) {
+            idProviderConfig.defaultGroups.forEach(function (defaultGroup) {
                 authLib.addMembers(defaultGroup, [user.key]);
-                log.debug('User [' + user.key + '] added to group [' + defaultGroup + ']');
+                log.debug(`User [${user.key}] added to group [${defaultGroup}]`);
             });
         });
     }
@@ -54,7 +53,7 @@ function login(claims) {
         scope: 'oidc',
         editor: () => removeNonSupportedKeys(claims)
     }));
-    log.debug('Modified profile of [' + principalKey + ']: ' + JSON.stringify(profile));
+    log.debug(`Modified profile of [${principalKey}]: ${JSON.stringify(profile)}`);
 
     //Logs in the user
     const loginResult = authLib.login({
@@ -63,20 +62,10 @@ function login(claims) {
         skipAuth: true
     });
     if (loginResult.authenticated) {
-        log.debug('Logged in user [' + principalKey + ']');
+        log.debug(`Logged in user [${principalKey}]`);
     } else {
-        throw 'Error while logging user [' + principalKey + ']';
+        throw `Error while logging user [${principalKey}]`;
     }
-}
-
-function toArray(object) {
-    if (!object) {
-        return [];
-    }
-    if (object.constructor === Array) {
-        return object;
-    }
-    return [object];
 }
 
 function getClaim(claims, claimKey) {
@@ -87,7 +76,7 @@ function getClaim(claims, claimKey) {
     for (const claimKey of claimKeys) {
         currentClaimObject = currentClaimObject[claimKey];
         if (currentClaimObject == null) {
-            log.warning('Claim [' + claimKey + '] missing');
+            log.warning(`Claim [${claimKey}] missing`);
             return '';
         }
         claim = currentClaimObject;

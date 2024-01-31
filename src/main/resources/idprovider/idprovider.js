@@ -88,7 +88,7 @@ function handleAuthenticationResponse(req) {
         claims.userinfo = oidcLib.mergeClaims(claims.userinfo, userinfoClaims);
     }
 
-    toArray(idProviderConfig.additionalEndpoints).forEach(additionalEndpoint => {
+    idProviderConfig.additionalEndpoints.forEach(additionalEndpoint => {
         const additionalClaims = oidcLib.requestOAuth2({
             url: additionalEndpoint.url,
             accessToken: idToken.accessToken
@@ -100,7 +100,7 @@ function handleAuthenticationResponse(req) {
 
     loginLib.login(claims);
 
-    if (idProviderConfig.endSession && idProviderConfig.endSession.idTokenHintKey) {
+    if (idProviderConfig.endSession.idTokenHintKey) {
         requestLib.storeIdToken(idToken.idToken);
     }
 
@@ -134,7 +134,7 @@ function logout(req) {
     if (config.endSession) {
         redirectUrl = config.endSession.url;
         if ((config.endSession.idTokenHintKey && idToken) || (finalRedirectUrl && config.endSession.postLogoutRedirectUriKey) ||
-            (config.endSession.additionalParameters && Object.keys(config.endSession.additionalParameters).length > 0)) {
+            (Object.keys(config.endSession.additionalParameters).length > 0)) {
             redirectUrl += '?';
 
             if (config.endSession.idTokenHintKey && idToken) {
@@ -148,7 +148,7 @@ function logout(req) {
                 redirectUrl += config.endSession.postLogoutRedirectUriKey + '=' + encodeURIComponent(finalRedirectUrl)
             }
 
-            toArray(config.endSession.additionalParameters).forEach(additionalParameter => {
+            config.endSession.additionalParameters.forEach(additionalParameter => {
                 if (additionalParameter.key != null && additionalParameter.value != null) {
                     if (!redirectUrl.endsWith("?")) {
                         redirectUrl += '&';
@@ -176,16 +176,6 @@ function generateRedirectUrl() {
     }
     return '/';
 }
-
-function toArray(object) {
-    if (!object) {
-        return [];
-    }
-    if (object.constructor === Array) {
-        return object;
-    }
-    return [object];
-};
 
 
 exports.handle401 = redirectToAuthorizationEndpoint;

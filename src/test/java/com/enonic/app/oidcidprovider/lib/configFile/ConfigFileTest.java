@@ -1,10 +1,39 @@
 package com.enonic.app.oidcidprovider.lib.configFile;
 
-import com.enonic.xp.testing.ScriptRunnerSupport;
+import org.junit.Test;
 
-public class ConfigFileTest extends ScriptRunnerSupport {
-    @Override
-    public String getScriptTestFile() {
-        return "/lib/configFile/configFile-test.js";
+import com.enonic.xp.testing.ScriptTestSupport;
+
+public class ConfigFileTest
+    extends ScriptTestSupport
+{
+    @Test
+    public void testConfigFile()
+    {
+        runFunction( "/lib/configFile/configIdProvider-test.js", "testValidConfig" );
+    }
+
+    @Test
+    public void testConfigFileDefault()
+    {
+        runFunction( "/lib/configFile/configIdProvider-test.js", "testDefaultConfigWithRequiredOptions" );
+    }
+
+    @Test
+    public void testValidateRequiredOptions()
+    {
+        runFunction( "/lib/configFile/configIdProvider-test.js", "testValidateRequiredOptions" );
+    }
+
+    @Test
+    public void testValidationOfAdditionalEndpoints()
+    {
+        runFunction( "/lib/configFile/configIdProvider-test.js", "testValidationOfAdditionalEndpoints" );
+    }
+
+    @Test
+    public void testValidationOfEndSessionAdditionalParameters()
+    {
+        runFunction( "/lib/configFile/configIdProvider-test.js", "testValidationOfEndSessionAdditionalParameters" );
     }
 }
