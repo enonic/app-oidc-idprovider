@@ -721,11 +721,14 @@ mapping.example.idProvider.myoidcprovider = default</code></pre>
 <div class="content">
 <pre class="highlight"><code class="language-properties" data-lang="properties">autoinit=  (true | false, optional)
 
+idprovider.&lt;idprovidername&gt;.displayName=  (string, optional)
+idprovider.&lt;idprovidername&gt;.description=  (string, optional)
+
 idprovider.&lt;idprovidername&gt;.issuer=  (string, required)
 idprovider.&lt;idprovidername&gt;.authorizationUrl=  (string, required)
 idprovider.&lt;idprovidername&gt;.tokenUrl=  (string, required)
 idprovider.&lt;idprovidername&gt;.userinfoUrl=  (string, optional)
-idprovider.&lt;idprovidername&gt;.method=  ((basic|port|jwt), optional, default to "post")
+idprovider.&lt;idprovidername&gt;.method=  ((basic|post|jwt), optional, default to "post")
 idprovider.&lt;idprovidername&gt;.scopes=  (space separated strings, optional, default to "profile email")
 
 # Optional 'additionalEndpoints' namespace
@@ -1016,7 +1019,7 @@ The ID Provider Configuration schema tries to be dynamic enough to handle all ca
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-10-23 08:45:41 UTC
+Last updated 2024-02-01 11:28:04 UTC
 </div>
 </div>
 </body>
