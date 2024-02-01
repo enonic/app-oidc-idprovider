@@ -1,12 +1,23 @@
 const test = require('/lib/xp/testing');
 
 exports.testValidConfig = () => {
+    const wellKnownService = require('/lib/configFile/wellKnownService');
+
+    test.mock('/lib/configFile/wellKnownService', {
+        getWellKnownConfiguration: function (endpoint) {
+            return {
+                'issuer': 'CUSTOM ISSUER',
+            }
+        }
+    });
+
     test.mock('/lib/configFile/services/getConfig', {
         getConfigOrEmpty: function () {
             return {
                 'idprovider.myidp.displayName': 'displayName',
                 'idprovider.myidp.description': 'description',
 
+                'idprovider.myidp.oidcWellKnownEndpoint': 'endpoint', // TODO
                 'idprovider.myidp.issuer': 'issuer',
                 'idprovider.myidp.authorizationUrl': 'authorizationUrl',
                 'idprovider.myidp.tokenUrl': 'tokenUrl',
@@ -16,6 +27,8 @@ exports.testValidConfig = () => {
                 'idprovider.myidp.clientId': 'clientId',
                 'idprovider.myidp.clientSecret': 'clientSecret',
                 'idprovider.myidp.defaultGroups': 'group:myidp:default group:myidp:dev',
+                'idprovider.myidp.claimUsername': 'username',
+                'idprovider.myidp.handle401.enabled': 'true',
 
                 'idprovider.myidp.additionalEndpoints.0.name': 'name0',
                 'idprovider.myidp.additionalEndpoints.0.url': 'url0',
@@ -34,6 +47,16 @@ exports.testValidConfig = () => {
                 'idprovider.myidp.endSession.additionalParameters.1.value': 'v1',
 
                 'idprovider.myidp.rules.forceEmailVerification': 'true',
+
+                'idprovider.myidp.autoLogin.enabled': 'false',
+                'idprovider.myidp.autoLogin.useUserinfo': 'false',
+                'idprovider.myidp.autoLogin.claimDisplayName': 'username',
+                'idprovider.myidp.autoLogin.claimEmail': 'oid',
+                'idprovider.myidp.autoLogin.createUsers': 'true',
+                'idprovider.myidp.autoLogin.createSession': 'true',
+                'idprovider.myidp.autoLogin.retrievalQueryParameter': 'code',
+                'idprovider.myidp.autoLogin.retrievalWsHeader': 'false',
+                'idprovider.myidp.autoLogin.validationAllowedSubjects': 'header1 header2   header3      header4',
             }
         }
     });
@@ -49,10 +72,12 @@ exports.testValidConfig = () => {
     test.assertEquals('tokenUrl', config.tokenUrl);
     test.assertEquals('userinfoUrl', config.userinfoUrl);
     test.assertEquals('post', config.method);
+    test.assertEquals('name profile email nikname', config.scopes);
     test.assertEquals('clientId', config.clientId);
     test.assertEquals('clientSecret', config.clientSecret);
     test.assertJsonEquals(['group:myidp:default', 'group:myidp:dev'], config.defaultGroups);
-    test.assertEquals('name profile email nikname', config.scopes);
+    test.assertNull(config.oidcWellKnownEndpoint);
+    test.assertEquals('username', config.claimUsername);
 
     test.assertJsonEquals([{name: 'name0', url: 'url0'}, {name: 'name1', url: 'url1'}], config.additionalEndpoints);
 
@@ -65,6 +90,19 @@ exports.testValidConfig = () => {
     test.assertJsonEquals([{key: 'k0', value: 'v0'}, {key: 'k1', value: 'v1'}], config.endSession.additionalParameters);
 
     test.assertTrue(config.rules.forceEmailVerification);
+
+    test.assertTrue(config.handle401.enabled);
+
+    test.assertFalse(config.autoLogin.enabled);
+    test.assertFalse(config.autoLogin.useUserinfo);
+    test.assertEquals('username', config.autoLogin.claimDisplayName);
+    test.assertEquals('oid', config.autoLogin.claimEmail);
+    test.assertTrue(config.autoLogin.createUsers);
+    test.assertTrue(config.autoLogin.createSession);
+    test.assertTrue(config.autoLogin.retrievalQueryParameter);
+    test.assertEquals('code', config.autoLogin.retrievalQueryParameter);
+    test.assertFalse(config.autoLogin.retrievalWsHeader);
+    test.assertJsonEquals(['header1', 'header2', 'header3', 'header4'], config.autoLogin.validationAllowedSubjects);
 };
 
 exports.testDefaultConfigWithRequiredOptions = () => {
@@ -96,6 +134,9 @@ exports.testDefaultConfigWithRequiredOptions = () => {
     test.assertJsonEquals([], config.defaultGroups);
     test.assertEquals('profile email', config.scopes);
 
+    test.assertNull(config.oidcWellKnownEndpoint);
+    test.assertEquals('sub', config.claimUsername);
+
     test.assertJsonEquals([], config.additionalEndpoints);
 
     test.assertEquals('${preferred_username}', config.mappings.displayName);
@@ -107,6 +148,18 @@ exports.testDefaultConfigWithRequiredOptions = () => {
     test.assertJsonEquals([], config.endSession.additionalParameters);
 
     test.assertFalse(config.rules.forceEmailVerification);
+
+    test.assertTrue(config.handle401.enabled);
+
+    test.assertFalse(config.autoLogin.enabled);
+    test.assertFalse(config.autoLogin.useUserinfo);
+    test.assertEquals('name', config.autoLogin.claimDisplayName);
+    test.assertEquals('email', config.autoLogin.claimEmail);
+    test.assertTrue(config.autoLogin.createUsers);
+    test.assertFalse(config.autoLogin.createSession);
+    test.assertNull(config.autoLogin.retrievalQueryParameter);
+    test.assertFalse(config.autoLogin.retrievalWsHeader);
+    test.assertJsonEquals([], config.autoLogin.validationAllowedSubjects);
 };
 
 exports.testValidateRequiredOptions = () => {

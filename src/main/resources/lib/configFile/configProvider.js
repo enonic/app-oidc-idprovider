@@ -1,4 +1,5 @@
 const getConfigService = require('/lib/configFile/services/getConfig');
+const wellKnownService = require('/lib/configFile/wellKnownService');
 
 const END_SESSION_ADDITIONAL_PARAMETERS_PATTERN = '^idprovider\.[a-zA-Z0-9_-]+\.endSession\.additionalParameters\.(\\d+)\.(key|value)$';
 const ADDITIONAL_ENDPOINTS = "^idprovider\.[a-zA-Z0-9_-]+\.additionalEndpoints\.(\\d+)\.(name|url)$";
@@ -16,6 +17,8 @@ exports.getIdProviderConfig = function (idProviderName) {
     const result = {
         displayName: rawIdProviderConfig[`${idProviderKeyBase}.displayName`] || null,
         description: rawIdProviderConfig[`${idProviderKeyBase}.description`] || null,
+
+        oidcWellKnownEndpoint: rawIdProviderConfig[`${idProviderKeyBase}.oidcWellKnownEndpoint`],
         issuer: rawIdProviderConfig[`${idProviderKeyBase}.issuer`] || null,
         authorizationUrl: rawIdProviderConfig[`${idProviderKeyBase}.authorizationUrl`] || null,
         tokenUrl: rawIdProviderConfig[`${idProviderKeyBase}.tokenUrl`] || null,
@@ -25,6 +28,7 @@ exports.getIdProviderConfig = function (idProviderName) {
         clientId: rawIdProviderConfig[`${idProviderKeyBase}.clientId`] || null,
         clientSecret: rawIdProviderConfig[`${idProviderKeyBase}.clientSecret`] || null,
         defaultGroups: parseStringArray(rawIdProviderConfig[`${idProviderKeyBase}.defaultGroups`]),
+        claimUsername: rawIdProviderConfig[`${idProviderKeyBase}.claimUsername`] || 'sub',
         mappings: {
             displayName: firstAtsToDollar(rawIdProviderConfig[`${idProviderKeyBase}.mappings.displayName`]) || '${preferred_username}',
             email: firstAtsToDollar(rawIdProviderConfig[`${idProviderKeyBase}.mappings.email`]) || '${email}',
@@ -41,7 +45,26 @@ exports.getIdProviderConfig = function (idProviderName) {
         },
         additionalEndpoints: extractPropertiesToArray(rawIdProviderConfig, `${idProviderKeyBase}.additionalEndpoints.`,
             ADDITIONAL_ENDPOINTS),
+        handle401: {
+            enabled: rawIdProviderConfig[`${idProviderKeyBase}.handle401.enabled`] === 'true' || true,
+        },
+        autoLogin: {
+            enabled: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.enabled`] === 'true' || false,
+            useUserinfo: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.useUserinfo`] === 'true' || false,
+            claimDisplayName: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.claimDisplayName`] || 'name',
+            claimEmail: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.claimEmail`] || 'email',
+            createUsers: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.createUsers`] === 'true' || true,
+            createSession: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.createSession`] === 'true' || false,
+            retrievalQueryParameter: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.retrievalQueryParameter`] || null,
+            retrievalWsHeader: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.retrievalWsHeader`] === 'true' || false,
+            validationAllowedSubjects: parseStringArray(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.validationAllowedSubjects`]),
+        },
     };
+
+    if (result.oidcWellKnownEndpoint) {
+        const wellKnownConfigurationBean = wellKnownService.getWellKnownConfiguration(result.oidcWellKnownEndpoint);
+        result.issuer = wellKnownConfigurationBean.issuer;
+    }
 
     checkConfig(result, 'issuer', idProviderName);
     checkConfig(result, 'authorizationUrl', idProviderName);
