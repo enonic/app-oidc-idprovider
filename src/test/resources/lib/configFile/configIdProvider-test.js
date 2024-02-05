@@ -1,23 +1,12 @@
 const test = require('/lib/xp/testing');
 
 exports.testValidConfig = () => {
-    const wellKnownService = require('/lib/configFile/wellKnownService');
-
-    test.mock('/lib/configFile/wellKnownService', {
-        getWellKnownConfiguration: function (endpoint) {
-            return {
-                'issuer': 'CUSTOM ISSUER',
-            }
-        }
-    });
-
     test.mock('/lib/configFile/services/getConfig', {
         getConfigOrEmpty: function () {
             return {
                 'idprovider.myidp.displayName': 'displayName',
                 'idprovider.myidp.description': 'description',
 
-                'idprovider.myidp.oidcWellKnownEndpoint': 'endpoint', // TODO
                 'idprovider.myidp.issuer': 'issuer',
                 'idprovider.myidp.authorizationUrl': 'authorizationUrl',
                 'idprovider.myidp.tokenUrl': 'tokenUrl',
@@ -242,3 +231,41 @@ exports.testValidationOfEndSessionAdditionalParameters = () => {
     }
 };
 
+exports.testWhenOidcWellKnownEndpointSet = () => {
+    require('/lib/configFile/wellKnownService');
+
+    test.mock('/lib/configFile/wellKnownService', {
+        getWellKnownConfiguration: function (endpoint) {
+            return {
+                'issuer': 'customIssuer',
+                'authorization_endpoint': 'customAuthorizationUrl',
+                'token_endpoint': 'customTokenUrl',
+                'userinfo_endpoint': 'customUserinfoUrl',
+            }
+        }
+    });
+
+    test.mock('/lib/configFile/services/getConfig', {
+        getConfigOrEmpty: function () {
+            return {
+                'idprovider.myidp.oidcWellKnownEndpoint': 'endpoint',
+                'idprovider.myidp.issuer': 'issuer',
+                'idprovider.myidp.authorizationUrl': 'authorizationUrl',
+                'idprovider.myidp.tokenUrl': 'tokenUrl',
+                'idprovider.myidp.userinfoUrl': 'userinfoUrl',
+
+                'idprovider.myidp.clientId': 'clientId',
+                'idprovider.myidp.clientSecret': 'clientSecret',
+            }
+        }
+    });
+
+    const configProvider = require('./configProvider');
+
+    const config = configProvider.getIdProviderConfig('myidp');
+
+    test.assertEquals('customIssuer', config.issuer);
+    test.assertEquals('customAuthorizationUrl', config.authorizationUrl);
+    test.assertEquals('customTokenUrl', config.tokenUrl);
+    test.assertEquals('customUserinfoUrl', config.userinfoUrl);
+};

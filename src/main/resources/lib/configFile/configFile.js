@@ -13,18 +13,6 @@ const CONFIG_NAMESPACE = "idprovider";
 exports.CONFIG_NAMESPACE = CONFIG_NAMESPACE;
 
 
-// Prevent flooding of state logs, only log message on state change
-let alreadyLogged = null;
-const KIND_FILE = "_file_";
-const KIND_NODE = "_node_";
-function logStateOnce(messageKind, message) {
-    if (alreadyLogged !== messageKind) {
-        log.info(message);
-        alreadyLogged = messageKind;
-    }
-}
-
-
 /** Read out and return config from this-app.cfg that apply to the relevant id provider key.
  *  That is, the config keys are dot-separated,
  *      the first field must be "idprovider" (aka CONFIG_NAMESPACE),
@@ -37,8 +25,7 @@ function logStateOnce(messageKind, message) {
  *  @param idProviderName {string} - Name of ID provider, eg. "myidp"
  *
  *  @returns An object where the keys are the second subfield from well-formed configs, eg. { authorizationUrl: 'http://something', clientSecret: 'vs12jn56bn2ai4sjf' }, etc
- *  On invalid keys/datastructures, error is logged and null is returned. If no valid keys are found, returns null.
- *  A returned null is expected make the config fall back to old node-stored config, entirely skipping the file .cfg for the current idprovider name.
+ *  On invalid keys/datastructures, error is logged and '{}' is returned. If no valid keys are found, returns '{}'.
  */
 exports.getConfigForIdProvider = function (idProviderName) {
     const idProviderKeyBase = `${CONFIG_NAMESPACE}.${idProviderName}`;
@@ -47,19 +34,15 @@ exports.getConfigForIdProvider = function (idProviderName) {
         const config = configIdProvider.getIdProviderConfig(idProviderName);
 
         if (Object.keys(config).length) {
-            logStateOnce(KIND_FILE, `Found config for '${idProviderKeyBase}' in ${app.name}.cfg. Using that instead of node-stored config from authLib.`);
+            log.info(`Found config for '${idProviderKeyBase}' in ${app.name}.cfg.`);
             return config;
-
-        } else {
-            logStateOnce(KIND_NODE, `No config for '${idProviderKeyBase}' was found in ${app.name}.cfg. Using old node-stored config from authLib.`);
         }
     } catch (e) {
-        log.warning(`Error trying to parse keys below '${idProviderKeyBase}' in config file (${app.name}.cfg). Falling back to possible node-stored config from authLib. Reason: ${e.message}`);
+        log.warning(`Error trying to parse keys below '${idProviderKeyBase}' in config file (${app.name}.cfg).`);
     }
 
     return {};
 }
-
 
 
 /**
@@ -86,7 +69,6 @@ exports.getAllIdProviderNames = function () {
 
     return names;
 }
-
 
 
 /**

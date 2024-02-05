@@ -14,7 +14,7 @@ exports.getIdProviderConfig = function (idProviderName) {
     const appConfig = getConfigService.getConfigOrEmpty();
     Object.keys(appConfig).filter(k => k && (k.startsWith(idProviderKeyBase))).forEach(k => rawIdProviderConfig[k] = appConfig[k]);
 
-    const result = {
+    const config = {
         displayName: rawIdProviderConfig[`${idProviderKeyBase}.displayName`] || null,
         description: rawIdProviderConfig[`${idProviderKeyBase}.description`] || null,
 
@@ -61,22 +61,35 @@ exports.getIdProviderConfig = function (idProviderName) {
         },
     };
 
-    if (result.oidcWellKnownEndpoint) {
-        const wellKnownConfigurationBean = wellKnownService.getWellKnownConfiguration(result.oidcWellKnownEndpoint);
-        result.issuer = wellKnownConfigurationBean.issuer;
+    if (config.oidcWellKnownEndpoint) {
+        overrideConfig(config);
     }
 
-    checkConfig(result, 'issuer', idProviderName);
-    checkConfig(result, 'authorizationUrl', idProviderName);
-    checkConfig(result, 'tokenUrl', idProviderName);
-    checkConfig(result, 'clientId', idProviderName);
-    checkConfig(result, 'clientSecret', idProviderName);
+    validate(config, idProviderName);
 
-    checkArrayConfig(result.additionalEndpoints, 'additionalEndpoints', idProviderName);
-    checkArrayConfig(result.endSession.additionalParameters, 'endSession.additionalParameters', idProviderName);
-
-    return result;
+    return config;
 };
+
+function overrideConfig(config) {
+    const wellKnownConfigurationBean = wellKnownService.getWellKnownConfiguration(config.oidcWellKnownEndpoint);
+
+    config.issuer = wellKnownConfigurationBean.issuer;
+    config.authorizationUrl = wellKnownConfigurationBean.authorization_endpoint;
+    config.tokenUrl = wellKnownConfigurationBean.token_endpoint;
+    config.userinfoUrl = wellKnownConfigurationBean.userinfo_endpoint;
+    config.jwksUri = wellKnownConfigurationBean.jwks_uri;
+}
+
+function validate(config, idProviderName) {
+    checkConfig(config, 'issuer', idProviderName);
+    checkConfig(config, 'authorizationUrl', idProviderName);
+    checkConfig(config, 'tokenUrl', idProviderName);
+    checkConfig(config, 'clientId', idProviderName);
+    checkConfig(config, 'clientSecret', idProviderName);
+
+    checkArrayConfig(config.additionalEndpoints, 'additionalEndpoints', idProviderName);
+    checkArrayConfig(config.endSession.additionalParameters, 'endSession.additionalParameters', idProviderName);
+}
 
 function extractPropertiesToArray(rawConfig, basePropertyPath, propertyPattern) {
     const options = Object.keys(rawConfig).filter(k => k && k.startsWith(basePropertyPath));

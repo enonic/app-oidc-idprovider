@@ -158,7 +158,7 @@ idprovider.<idprovidername>.displayName=  (string, optional)
 idprovider.<idprovidername>.description=  (string, optional)
 
 idprovider.<idprovidername>.oidcWellKnownEndpoint= (string, optional) # if defined, then values for the rest of 4 props will be ignored
-idprovider.<idprovidername>.issuer=  (string, required)
+idprovider.<idprovidername>.issuer=  (string, optional)
 idprovider.<idprovidername>.authorizationUrl=  (string, optional)
 idprovider.<idprovidername>.tokenUrl=  (string, optional)
 idprovider.<idprovidername>.userinfoUrl=  (string, optional)
