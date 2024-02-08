@@ -1,6 +1,19 @@
 const test = require('/lib/xp/testing');
 
+function mockWellKnownService() {
+    test.mock('/lib/configFile/wellKnownService', {
+        cacheIdProviderConfig: function (idProviderName, configAsString) {
+            // to do nothing
+        },
+        getIdProviderConfig: function (idProviderName) {
+            return null;
+        },
+    });
+}
+
 exports.testValidConfig = () => {
+    mockWellKnownService();
+
     test.mock('/lib/configFile/services/getConfig', {
         getConfigOrEmpty: function () {
             return {
@@ -17,7 +30,6 @@ exports.testValidConfig = () => {
                 'idprovider.myidp.clientSecret': 'clientSecret',
                 'idprovider.myidp.defaultGroups': 'group:myidp:default group:myidp:dev',
                 'idprovider.myidp.claimUsername': 'username',
-                'idprovider.myidp.handle401.enabled': 'true',
 
                 'idprovider.myidp.additionalEndpoints.0.name': 'name0',
                 'idprovider.myidp.additionalEndpoints.0.url': 'url0',
@@ -37,13 +49,12 @@ exports.testValidConfig = () => {
 
                 'idprovider.myidp.rules.forceEmailVerification': 'true',
 
-                'idprovider.myidp.autoLogin.enabled': 'false',
+                'idprovider.myidp.autoLogin.enforce': 'false',
                 'idprovider.myidp.autoLogin.useUserinfo': 'false',
                 'idprovider.myidp.autoLogin.claimDisplayName': 'username',
                 'idprovider.myidp.autoLogin.claimEmail': 'oid',
                 'idprovider.myidp.autoLogin.createUsers': 'true',
                 'idprovider.myidp.autoLogin.createSession': 'true',
-                'idprovider.myidp.autoLogin.retrievalQueryParameter': 'code',
                 'idprovider.myidp.autoLogin.retrievalWsHeader': 'false',
                 'idprovider.myidp.autoLogin.validationAllowedSubjects': 'header1 header2   header3      header4',
             }
@@ -80,21 +91,19 @@ exports.testValidConfig = () => {
 
     test.assertTrue(config.rules.forceEmailVerification);
 
-    test.assertTrue(config.handle401.enabled);
-
-    test.assertFalse(config.autoLogin.enabled);
+    test.assertFalse(config.autoLogin.enforce);
     test.assertFalse(config.autoLogin.useUserinfo);
     test.assertEquals('username', config.autoLogin.claimDisplayName);
     test.assertEquals('oid', config.autoLogin.claimEmail);
     test.assertTrue(config.autoLogin.createUsers);
     test.assertTrue(config.autoLogin.createSession);
-    test.assertTrue(config.autoLogin.retrievalQueryParameter);
-    test.assertEquals('code', config.autoLogin.retrievalQueryParameter);
     test.assertFalse(config.autoLogin.retrievalWsHeader);
     test.assertJsonEquals(['header1', 'header2', 'header3', 'header4'], config.autoLogin.validationAllowedSubjects);
 };
 
 exports.testDefaultConfigWithRequiredOptions = () => {
+    mockWellKnownService();
+
     test.mock('/lib/configFile/services/getConfig', {
         getConfigOrEmpty: function () {
             return {
@@ -110,6 +119,8 @@ exports.testDefaultConfigWithRequiredOptions = () => {
     const configProvider = require('./configProvider');
 
     const config = configProvider.getIdProviderConfig('myidp');
+
+    test.assertEquals('myidp', config._idProviderName); // internal property
 
     test.assertNull(config.displayName);
     test.assertNull(config.description);
@@ -138,15 +149,12 @@ exports.testDefaultConfigWithRequiredOptions = () => {
 
     test.assertFalse(config.rules.forceEmailVerification);
 
-    test.assertTrue(config.handle401.enabled);
-
-    test.assertFalse(config.autoLogin.enabled);
+    test.assertFalse(config.autoLogin.enforce);
     test.assertFalse(config.autoLogin.useUserinfo);
     test.assertEquals('name', config.autoLogin.claimDisplayName);
     test.assertEquals('email', config.autoLogin.claimEmail);
     test.assertTrue(config.autoLogin.createUsers);
     test.assertFalse(config.autoLogin.createSession);
-    test.assertNull(config.autoLogin.retrievalQueryParameter);
     test.assertFalse(config.autoLogin.retrievalWsHeader);
     test.assertJsonEquals([], config.autoLogin.validationAllowedSubjects);
 };
@@ -157,6 +165,8 @@ exports.testValidateRequiredOptions = () => {
     const configuration = {};
 
     for (let i = 0; i < options.length; i++) {
+        mockWellKnownService();
+
         test.mock('/lib/configFile/services/getConfig', {
             getConfigOrEmpty: function () {
                 return configuration;
@@ -177,6 +187,8 @@ exports.testValidateRequiredOptions = () => {
 
 exports.testValidationOfAdditionalEndpoints = () => {
     const idProviderName = 'myidp';
+
+    mockWellKnownService();
 
     test.mock('/lib/configFile/services/getConfig', {
         getConfigOrEmpty: function () {
@@ -205,6 +217,8 @@ exports.testValidationOfAdditionalEndpoints = () => {
 
 exports.testValidationOfEndSessionAdditionalParameters = () => {
     const idProviderName = 'myidp';
+
+    mockWellKnownService();
 
     test.mock('/lib/configFile/services/getConfig', {
         getConfigOrEmpty: function () {
@@ -235,6 +249,12 @@ exports.testWhenOidcWellKnownEndpointSet = () => {
     require('/lib/configFile/wellKnownService');
 
     test.mock('/lib/configFile/wellKnownService', {
+        cacheIdProviderConfig: function (idProviderName, configAsString) {
+            // to do nothing
+        },
+        getIdProviderConfig: function (idProviderName) {
+            return null;
+        },
         getWellKnownConfiguration: function (endpoint) {
             return {
                 'issuer': 'customIssuer',

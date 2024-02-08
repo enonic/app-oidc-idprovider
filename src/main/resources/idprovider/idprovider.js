@@ -5,11 +5,19 @@ const requestLib = require('/lib/request');
 const preconditions = require('/lib/preconditions');
 const authLib = require('/lib/xp/auth');
 const portalLib = require('/lib/xp/portal');
+const jwtLib = require('/lib/jwt');
 
 function redirectToAuthorizationEndpoint() {
+    const idProviderConfig = configLib.getIdProviderConfig();
+
+    if (idProviderConfig.autoLogin.enforce && jwtLib.isAutoLoginFailed()) {
+        return {
+            status: 403,
+        }
+    }
+
     log.debug('Handling 401 error...');
 
-    const idProviderConfig = configLib.getIdProviderConfig();
     const redirectUri = generateRedirectUri();
 
     const state = oidcLib.generateToken();
@@ -182,3 +190,37 @@ exports.handle401 = redirectToAuthorizationEndpoint;
 exports.get = handleAuthenticationResponse;
 exports.logout = logout;
 
+exports.autoLogin = function (req) {
+    const idProviderConfig = configLib.getIdProviderConfig();
+    if (idProviderConfig.autoLogin.enforce && idProviderConfig.oidcWellKnownEndpoint && idProviderConfig.jwksUri) {
+        const jwtToken = extractJwtToken(req, idProviderConfig);
+        if (!jwtToken) {
+            return;
+        }
+
+        const payload = jwtLib.validateTokenAndGetPayload(jwtToken, idProviderConfig);
+
+        if (payload) {
+            loginLib.autoLogin(payload, idProviderConfig, jwtToken);
+        }
+    }
+};
+
+function extractJwtToken(req, config) {
+    const authHeader = req.headers['Authorization'];
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        return authHeader.replace('Bearer ', '');
+    }
+
+    if (config.autoLogin.retrievalWsHeader) {
+        const secWebSocketHeader = req.headers['Sec-WebSocket-Protocol'];
+        if (secWebSocketHeader) {
+            const matches = secWebSocketHeader.match(/\S+\.\S+\.\S+/g);
+            if (matches && matches.length === 1) {
+                return matches[0];
+            }
+        }
+    }
+
+    return null;
+}

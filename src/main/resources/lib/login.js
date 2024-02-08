@@ -4,6 +4,8 @@ const configLib = require('/lib/config');
 const commonLib = require('/lib/xp/common');
 const portalLib = require('/lib/xp/portal');
 const preconditions = require('/lib/preconditions');
+const oidcLib = require('./oidc');
+const jwtLib = require('/lib/jwt');
 
 const regExp = /\$\{([^\}]+)\}/g;
 
@@ -104,5 +106,75 @@ function removeNonSupportedKeys(claims) {
     return newClaims;
 }
 
+function autoLogin(payload, idProviderConfig, jwtToken) {
+    const idProviderKey = idProviderConfig._idProviderName;
+    const username = commonLib.sanitize(payload[idProviderConfig.autoLogin.claimDisplayName] || payload['sub']);
+    const principalKey = 'user:' + idProviderKey + ':' + username;
+
+    let user = contextLib.runAsSu(() => authLib.getPrincipal(principalKey));
+
+    if (!user && idProviderConfig.autoLogin.createUsers) {
+
+        let email, displayName;
+
+        if (idProviderConfig.autoLogin.useUserinfo) {
+            const userinfoClaims = oidcLib.requestOAuth2({
+                url: idProviderConfig.userinfoUrl,
+                accessToken: jwtToken,
+            });
+
+            if (idProviderConfig.rules.forceEmailVerification) {
+                if (userinfoClaims.email_verified !== true) {
+                    jwtLib.autoLoginFailed();
+                    return;
+                }
+            }
+
+            email = userinfoClaims.email;
+            displayName = userinfoClaims.preferred_username || userinfoClaims.name || email || userinfoClaims.sub;
+
+        } else {
+            email = payload[idProviderConfig.autoLogin.claimEmail];
+            displayName = payload[idProviderConfig.autoLogin.claimDisplayName] || payload['sub'];
+        }
+
+        if (!email) {
+            jwtLib.autoLoginFailed();
+            return;
+        }
+
+        try {
+            user = contextLib.runAsSu(() => authLib.createUser({
+                idProvider: idProviderKey,
+                name: username,
+                displayName: displayName,
+                email: email
+            }));
+        } catch (e) {
+            const errAsString = "" + e;
+
+            if (errAsString.startsWith('com.enonic.xp.security.PrincipalAlreadyExistsException')) {
+                user = contextLib.runAsSu(() => authLib.getPrincipal(principalKey));
+            } else {
+                log.error(`User '${username}' could not be provided: ${errAsString}`);
+            }
+        }
+    }
+
+    if (user) {
+        log.debug(`Logging in user '${user.login}'`);
+
+        authLib.login({
+            user: user.login,
+            idProvider: idProviderConfig._idProviderName,
+            skipAuth: true,
+            scope: idProviderConfig.autoLogin.createSession ? 'SESSION' : 'REQUEST',
+        });
+    } else {
+        jwtLib.autoLoginFailed();
+        log.debug(`User '${username}' not found.`);
+    }
+}
 
 exports.login = login;
+exports.autoLogin = autoLogin;

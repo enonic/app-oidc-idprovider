@@ -34,7 +34,7 @@ public class OIDCUtils
         final JWTClaimsSet jwtClaimsSet = JWTParser.parse( s ).getJWTClaimsSet();
 
         final IDTokenClaimsVerifier verifier =
-            new IDTokenClaimsVerifier( new Issuer( issuer ), new ClientID( clientID ), new Nonce( nonce ), 0 );
+            new IDTokenClaimsVerifier( new Issuer( issuer ), new ClientID( clientID ), new Nonce( nonce ), 1 );
         verifier.verify( jwtClaimsSet, null );
 
         return ClaimSetMapper.create().claimSet( jwtClaimsSet ).build();

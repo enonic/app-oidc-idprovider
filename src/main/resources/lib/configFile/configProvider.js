@@ -8,17 +8,23 @@ const parseStringArray = value => value ? value.split(' ').filter(v => !!v) : []
 const firstAtsToDollar = value => value ? value.replace(/@@\{/, '${') : value;
 
 exports.getIdProviderConfig = function (idProviderName) {
+    const cachedConfig = wellKnownService.getIdProviderConfig(idProviderName);
+    if (cachedConfig) {
+        return JSON.parse(cachedConfig);
+    }
+
     const idProviderKeyBase = `idprovider.${idProviderName}`;
 
-    const rawIdProviderConfig = {};
-    const appConfig = getConfigService.getConfigOrEmpty();
-    Object.keys(appConfig).filter(k => k && (k.startsWith(idProviderKeyBase))).forEach(k => rawIdProviderConfig[k] = appConfig[k]);
+    const rawIdProviderConfig = getRawIdProviderConfig(idProviderKeyBase);
 
     const config = {
+        _idProviderName: idProviderName,
+
         displayName: rawIdProviderConfig[`${idProviderKeyBase}.displayName`] || null,
         description: rawIdProviderConfig[`${idProviderKeyBase}.description`] || null,
 
-        oidcWellKnownEndpoint: rawIdProviderConfig[`${idProviderKeyBase}.oidcWellKnownEndpoint`],
+        oidcWellKnownEndpoint: rawIdProviderConfig[`${idProviderKeyBase}.oidcWellKnownEndpoint`] || null,
+        jwksUri: rawIdProviderConfig[`${idProviderKeyBase}.jwksUri`] || null,
         issuer: rawIdProviderConfig[`${idProviderKeyBase}.issuer`] || null,
         authorizationUrl: rawIdProviderConfig[`${idProviderKeyBase}.authorizationUrl`] || null,
         tokenUrl: rawIdProviderConfig[`${idProviderKeyBase}.tokenUrl`] || null,
@@ -45,17 +51,13 @@ exports.getIdProviderConfig = function (idProviderName) {
         },
         additionalEndpoints: extractPropertiesToArray(rawIdProviderConfig, `${idProviderKeyBase}.additionalEndpoints.`,
             ADDITIONAL_ENDPOINTS),
-        handle401: {
-            enabled: rawIdProviderConfig[`${idProviderKeyBase}.handle401.enabled`] === 'true' || true,
-        },
         autoLogin: {
-            enabled: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.enabled`] === 'true' || false,
+            enforce: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.enabled`] === 'true' || false,
             useUserinfo: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.useUserinfo`] === 'true' || false,
             claimDisplayName: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.claimDisplayName`] || 'name',
             claimEmail: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.claimEmail`] || 'email',
             createUsers: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.createUsers`] === 'true' || true,
             createSession: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.createSession`] === 'true' || false,
-            retrievalQueryParameter: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.retrievalQueryParameter`] || null,
             retrievalWsHeader: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.retrievalWsHeader`] === 'true' || false,
             validationAllowedSubjects: parseStringArray(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.validationAllowedSubjects`]),
         },
@@ -67,8 +69,19 @@ exports.getIdProviderConfig = function (idProviderName) {
 
     validate(config, idProviderName);
 
+    wellKnownService.cacheIdProviderConfig(idProviderName, config);
+
     return config;
 };
+
+function getRawIdProviderConfig(idProviderKeyBase) {
+    const result = {};
+    const appConfig = getConfigService.getConfigOrEmpty();
+
+    Object.keys(appConfig).filter(k => k && (k.startsWith(idProviderKeyBase))).forEach(k => result[k] = appConfig[k]);
+
+    return result;
+}
 
 function overrideConfig(config) {
     const wellKnownConfigurationBean = wellKnownService.getWellKnownConfiguration(config.oidcWellKnownEndpoint);
@@ -77,7 +90,6 @@ function overrideConfig(config) {
     config.authorizationUrl = wellKnownConfigurationBean.authorization_endpoint;
     config.tokenUrl = wellKnownConfigurationBean.token_endpoint;
     config.userinfoUrl = wellKnownConfigurationBean.userinfo_endpoint;
-    config.jwksUri = wellKnownConfigurationBean.jwks_uri;
 }
 
 function validate(config, idProviderName) {
@@ -86,6 +98,10 @@ function validate(config, idProviderName) {
     checkConfig(config, 'tokenUrl', idProviderName);
     checkConfig(config, 'clientId', idProviderName);
     checkConfig(config, 'clientSecret', idProviderName);
+
+    if (config.autoLogin.enforce && (!config.oidcWellKnownEndpoint || !config.jwksUri)) {
+        throw `Auto login is enforced but 'oidcWellKnownEndpoint' or 'jwksUri' is not configured for ID Provider '${idProviderName}'.`;
+    }
 
     checkArrayConfig(config.additionalEndpoints, 'additionalEndpoints', idProviderName);
     checkArrayConfig(config.endSession.additionalParameters, 'endSession.additionalParameters', idProviderName);
