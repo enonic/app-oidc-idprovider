@@ -25,23 +25,10 @@ exports.CONFIG_NAMESPACE = CONFIG_NAMESPACE;
  *  @param idProviderName {string} - Name of ID provider, eg. "myidp"
  *
  *  @returns An object where the keys are the second subfield from well-formed configs, eg. { authorizationUrl: 'http://something', clientSecret: 'vs12jn56bn2ai4sjf' }, etc
- *  On invalid keys/datastructures, error is logged and '{}' is returned. If no valid keys are found, returns '{}'.
+ *  On invalid keys/datastructures, error is thrown.
  */
 exports.getConfigForIdProvider = function (idProviderName) {
-    const idProviderKeyBase = `${CONFIG_NAMESPACE}.${idProviderName}`;
-
-    try {
-        const config = configIdProvider.getIdProviderConfig(idProviderName);
-
-        if (Object.keys(config).length) {
-            log.info(`Found config for '${idProviderKeyBase}' in ${app.name}.cfg.`);
-            return config;
-        }
-    } catch (e) {
-        log.warning(`Error trying to parse keys below '${idProviderKeyBase}' in config file (${app.name}.cfg).`);
-    }
-
-    return {};
+    return configIdProvider.getIdProviderConfig(idProviderName);
 }
 
 

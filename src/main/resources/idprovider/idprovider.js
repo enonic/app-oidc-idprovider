@@ -10,7 +10,7 @@ const jwtLib = require('/lib/jwt');
 function redirectToAuthorizationEndpoint() {
     const idProviderConfig = configLib.getIdProviderConfig();
 
-    if (idProviderConfig.autoLogin.enforce && jwtLib.isAutoLoginFailed()) {
+    if (idProviderConfig.autoLogin.enforce && requestLib.isAutoLoginFailed()) {
         return {
             status: 403,
         }
@@ -79,34 +79,11 @@ function handleAuthenticationResponse(req) {
         code: code
     });
 
-    const claims = {
-        userinfo: idToken.claims
-    };
-    if (idProviderConfig.userinfoUrl) {
-        const userinfoClaims = oidcLib.requestOAuth2({
-            url: idProviderConfig.userinfoUrl,
-            accessToken: idToken.accessToken
-        });
-        log.debug('User info claims: ' + JSON.stringify(userinfoClaims));
+    const claims = resolveClaims(idProviderConfig, idToken.accessToken, {
+        userinfo: idToken.claims,
+    }, false);
 
-        if (idToken.claims.sub !== userinfoClaims.sub) {
-            throw 'Invalid sub in user info : ' + userinfoClaims.sub;
-        }
-
-        claims.userinfo = oidcLib.mergeClaims(claims.userinfo, userinfoClaims);
-    }
-
-    idProviderConfig.additionalEndpoints.forEach(additionalEndpoint => {
-        const additionalClaims = oidcLib.requestOAuth2({
-            url: additionalEndpoint.url,
-            accessToken: idToken.accessToken
-        });
-        log.debug('OAuth2 endpoint [' + additionalEndpoint.name + '] claims: ' + JSON.stringify(additionalClaims));
-        claims[additionalEndpoint.name] = oidcLib.mergeClaims(claims[additionalEndpoint.name] || {}, additionalClaims);
-    });
-    log.debug('All claims: ' + JSON.stringify(claims));
-
-    loginLib.login(claims);
+    loginLib.login(claims, false);
 
     if (idProviderConfig.endSession.idTokenHintKey) {
         requestLib.storeIdToken(idToken.idToken);
@@ -192,16 +169,22 @@ exports.logout = logout;
 
 exports.autoLogin = function (req) {
     const idProviderConfig = configLib.getIdProviderConfig();
-    if (idProviderConfig.autoLogin.enforce && idProviderConfig.oidcWellKnownEndpoint && idProviderConfig.jwksUri) {
+
+    if (idProviderConfig.autoLogin.enforce) {
         const jwtToken = extractJwtToken(req, idProviderConfig);
         if (!jwtToken) {
             return;
         }
 
+        log.debug(`AutoLogin: JWT Token: ${jwtToken}`);
+
         const payload = jwtLib.validateTokenAndGetPayload(jwtToken, idProviderConfig);
 
         if (payload) {
-            loginLib.autoLogin(payload, idProviderConfig, jwtToken);
+            const claims = resolveClaims(idProviderConfig, jwtToken, payload, true);
+            loginLib.login(claims, true);
+        } else {
+            requestLib.autoLoginFailed();
         }
     }
 };
@@ -223,4 +206,31 @@ function extractJwtToken(req, config) {
     }
 
     return null;
+}
+
+function resolveClaims(idProviderConfig, accessToken, tokenClaims, isAutoLogin) {
+    const claims = tokenClaims;
+
+    if (idProviderConfig.userinfoUrl && idProviderConfig.useUserinfo) {
+        const userinfoClaims = oidcLib.requestOAuth2({
+            url: idProviderConfig.userinfoUrl,
+            accessToken: accessToken,
+        });
+
+        if (!isAutoLogin && tokenClaims.userinfo.sub !== userinfoClaims.sub) {
+            throw `Invalid sub in user info : ${userinfoClaims.sub}`;
+        }
+
+        claims.userinfo = isAutoLogin ? userinfoClaims : oidcLib.mergeClaims(claims.userinfo, userinfoClaims);
+    }
+
+    idProviderConfig.additionalEndpoints.forEach(additionalEndpoint => {
+        const additionalClaims = oidcLib.requestOAuth2({
+            url: additionalEndpoint.url,
+            accessToken: accessToken
+        });
+        log.debug(`OAuth2 endpoint [${additionalEndpoint.name}] claims: ${JSON.stringify(additionalClaims)}`);
+        claims[additionalEndpoint.name] = oidcLib.mergeClaims(claims[additionalEndpoint.name] || {}, additionalClaims);
+    });
+    return claims;
 }

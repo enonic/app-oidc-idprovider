@@ -157,12 +157,12 @@ autoinit=  (true | false, optional)
 idprovider.<idprovidername>.displayName=  (string, optional)
 idprovider.<idprovidername>.description=  (string, optional)
 
-idprovider.<idprovidername>.jwksUri= (string, optional)
 idprovider.<idprovidername>.oidcWellKnownEndpoint= (string, optional) # if defined, then values for the rest of 4 props will be ignored
 idprovider.<idprovidername>.issuer=  (string, optional)
 idprovider.<idprovidername>.authorizationUrl=  (string, optional)
 idprovider.<idprovidername>.tokenUrl=  (string, optional)
 idprovider.<idprovidername>.userinfoUrl=  (string, optional)
+idprovider.<idprovidername>.useUserinfo= (true|false, optional, default to "true")
 idprovider.<idprovidername>.claimUsername= (string, optional, default to "sub")
 idprovider.<idprovidername>.method=  ((basic|post|jwt), optional, default to "post")
 idprovider.<idprovidername>.scopes=  (space separated strings, optional, default to "profile email")
@@ -193,15 +193,11 @@ idprovider.<idprovidername>.defaultGroups=  (space separated group keys, optiona
 idprovider.<idprovidername>.rules.forceEmailVerification=  (true | false, required)
 
 idprovider.<idprovidername>.autoLogin.enforce= (true|false, optional)
-# if true, then claimDisplayName and claimEmail will be ignored
-idprovider.<idprovidername>.autoLogin.useUserinfo= (true|false, optional)
-idprovider.<idprovidername>.autoLogin.claimDisplayName=  (string, optional)
-idprovider.<idprovidername>.autoLogin.claimEmail=  (string, optional)
 idprovider.<idprovidername>.autoLogin.createUsers=  (true|false, optional)
 idprovider.<idprovidername>.autoLogin.createSession=  (true|false, optional)
 # Look for a token in the Sec-WebSocket-Protocol header.
 idprovider.<idprovidername>.autoLogin.retrievalWsHeader=  (true|false, optional)
-idprovider.<idprovidername>.autoLogin.validationAllowedSubjects=  (space separated strings, optional)
+idprovider.<idprovidername>.autoLogin.validationAllowedAudience=  (space separated strings, optional)
 ----
 
 {zwsp} +

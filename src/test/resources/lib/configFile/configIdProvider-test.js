@@ -11,6 +11,26 @@ function mockWellKnownService() {
     });
 }
 
+function mockWellKnownServiceWithCustomConfig() {
+    test.mock('/lib/configFile/wellKnownService', {
+        cacheIdProviderConfig: function (idProviderName, configAsString) {
+            // to do nothing
+        },
+        getIdProviderConfig: function (idProviderName) {
+            return null;
+        },
+        getWellKnownConfiguration: function (endpoint) {
+            return {
+                'issuer': 'customIssuer',
+                'authorization_endpoint': 'customAuthorizationUrl',
+                'token_endpoint': 'customTokenUrl',
+                'userinfo_endpoint': 'customUserinfoUrl',
+                'jwks_uri': 'customJwksUri',
+            }
+        }
+    });
+}
+
 exports.testValidConfig = () => {
     mockWellKnownService();
 
@@ -24,6 +44,7 @@ exports.testValidConfig = () => {
                 'idprovider.myidp.authorizationUrl': 'authorizationUrl',
                 'idprovider.myidp.tokenUrl': 'tokenUrl',
                 'idprovider.myidp.userinfoUrl': 'userinfoUrl',
+                'idprovider.myidp.useUserinfo': 'false',
                 'idprovider.myidp.method': 'post',
                 'idprovider.myidp.scopes': 'name  profile email     nikname',
                 'idprovider.myidp.clientId': 'clientId',
@@ -50,13 +71,10 @@ exports.testValidConfig = () => {
                 'idprovider.myidp.rules.forceEmailVerification': 'true',
 
                 'idprovider.myidp.autoLogin.enforce': 'false',
-                'idprovider.myidp.autoLogin.useUserinfo': 'false',
-                'idprovider.myidp.autoLogin.claimDisplayName': 'username',
-                'idprovider.myidp.autoLogin.claimEmail': 'oid',
                 'idprovider.myidp.autoLogin.createUsers': 'true',
                 'idprovider.myidp.autoLogin.createSession': 'true',
                 'idprovider.myidp.autoLogin.retrievalWsHeader': 'false',
-                'idprovider.myidp.autoLogin.validationAllowedSubjects': 'header1 header2   header3      header4',
+                'idprovider.myidp.autoLogin.validationAllowedAudience': 'audience1 audience2   audience3      audience4',
             }
         }
     });
@@ -71,6 +89,8 @@ exports.testValidConfig = () => {
     test.assertEquals('authorizationUrl', config.authorizationUrl);
     test.assertEquals('tokenUrl', config.tokenUrl);
     test.assertEquals('userinfoUrl', config.userinfoUrl);
+    test.assertFalse(config.useUserinfo);
+    test.assertNull(config.jwksUri);
     test.assertEquals('post', config.method);
     test.assertEquals('name profile email nikname', config.scopes);
     test.assertEquals('clientId', config.clientId);
@@ -92,13 +112,10 @@ exports.testValidConfig = () => {
     test.assertTrue(config.rules.forceEmailVerification);
 
     test.assertFalse(config.autoLogin.enforce);
-    test.assertFalse(config.autoLogin.useUserinfo);
-    test.assertEquals('username', config.autoLogin.claimDisplayName);
-    test.assertEquals('oid', config.autoLogin.claimEmail);
     test.assertTrue(config.autoLogin.createUsers);
     test.assertTrue(config.autoLogin.createSession);
     test.assertFalse(config.autoLogin.retrievalWsHeader);
-    test.assertJsonEquals(['header1', 'header2', 'header3', 'header4'], config.autoLogin.validationAllowedSubjects);
+    test.assertJsonEquals(['audience1', 'audience2', 'audience3', 'audience4'], config.autoLogin.validationAllowedAudience);
 };
 
 exports.testDefaultConfigWithRequiredOptions = () => {
@@ -128,6 +145,8 @@ exports.testDefaultConfigWithRequiredOptions = () => {
     test.assertEquals('authorizationUrl', config.authorizationUrl);
     test.assertEquals('tokenUrl', config.tokenUrl);
     test.assertNull(config.userinfoUrl);
+    test.assertNull(config.jwksUri);
+    test.assertTrue(config.useUserinfo);
     test.assertEquals('post', config.method);
     test.assertEquals('clientId', config.clientId);
     test.assertEquals('clientSecret', config.clientSecret);
@@ -150,13 +169,10 @@ exports.testDefaultConfigWithRequiredOptions = () => {
     test.assertFalse(config.rules.forceEmailVerification);
 
     test.assertFalse(config.autoLogin.enforce);
-    test.assertFalse(config.autoLogin.useUserinfo);
-    test.assertEquals('name', config.autoLogin.claimDisplayName);
-    test.assertEquals('email', config.autoLogin.claimEmail);
     test.assertTrue(config.autoLogin.createUsers);
     test.assertFalse(config.autoLogin.createSession);
     test.assertFalse(config.autoLogin.retrievalWsHeader);
-    test.assertJsonEquals([], config.autoLogin.validationAllowedSubjects);
+    test.assertJsonEquals([], config.autoLogin.validationAllowedAudience);
 };
 
 exports.testValidateRequiredOptions = () => {
@@ -248,22 +264,7 @@ exports.testValidationOfEndSessionAdditionalParameters = () => {
 exports.testWhenOidcWellKnownEndpointSet = () => {
     require('/lib/configFile/wellKnownService');
 
-    test.mock('/lib/configFile/wellKnownService', {
-        cacheIdProviderConfig: function (idProviderName, configAsString) {
-            // to do nothing
-        },
-        getIdProviderConfig: function (idProviderName) {
-            return null;
-        },
-        getWellKnownConfiguration: function (endpoint) {
-            return {
-                'issuer': 'customIssuer',
-                'authorization_endpoint': 'customAuthorizationUrl',
-                'token_endpoint': 'customTokenUrl',
-                'userinfo_endpoint': 'customUserinfoUrl',
-            }
-        }
-    });
+    mockWellKnownServiceWithCustomConfig();
 
     test.mock('/lib/configFile/services/getConfig', {
         getConfigOrEmpty: function () {
@@ -288,4 +289,5 @@ exports.testWhenOidcWellKnownEndpointSet = () => {
     test.assertEquals('customAuthorizationUrl', config.authorizationUrl);
     test.assertEquals('customTokenUrl', config.tokenUrl);
     test.assertEquals('customUserinfoUrl', config.userinfoUrl);
+    test.assertEquals('customJwksUri', config.jwksUri);
 };
