@@ -27,8 +27,6 @@ public class JwtHandler
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private static final int TIMEOUT_MS = 5000;
-
     private Supplier<IdProviderConfigService> idProviderConfigServiceSupplier;
 
     @Override
