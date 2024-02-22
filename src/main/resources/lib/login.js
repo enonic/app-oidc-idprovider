@@ -5,24 +5,23 @@ const commonLib = require('/lib/xp/common');
 const portalLib = require('/lib/xp/portal');
 const preconditions = require('/lib/preconditions');
 const requestLib = require('/lib/request');
+const oidcLib = require('./oidc');
 
 const regExp = /\$\{([^\}]+)\}/g;
 
-function login(claims, isAutoLogin) {
-
-    const userinfoClaims = claims.userinfo;
-
-    //Retrieves the user
+function login(token, tokenClaims, isAutoLogin) {
     const idProviderKey = portalLib.getIdProviderKey();
     const idProviderConfig = configLib.getIdProviderConfig();
-    const userName = commonLib.sanitize(preconditions.checkParameter(userinfoClaims, idProviderConfig.claimUsername));
+    const userName = commonLib.sanitize(preconditions.checkParameter(tokenClaims, idProviderConfig.claimUsername));
     const principalKey = 'user:' + idProviderKey + ':' + userName;
     const user = contextLib.runAsSu(() => authLib.getPrincipal(principalKey));
 
     try {
+        let claims = tokenClaims;
         if (!user) {
             if (!isAutoLogin || (isAutoLogin && idProviderConfig.autoLogin.createUsers)) {
-                doCreateUser(idProviderConfig, userinfoClaims, userName, isAutoLogin);
+                claims = resolveClaims(idProviderConfig, token, tokenClaims, isAutoLogin);
+                doCreateUser(idProviderConfig, claims.userinfo, userName, isAutoLogin);
             } else if (isAutoLogin) {
                 throwAutoLoginFailedError(`Auto login failed for user '${userName}'. User does not exist`);
             }
@@ -161,6 +160,34 @@ function doCreateUser(idProviderConfig, userinfoClaims, userName, isAutoLogin) {
             });
         });
     }
+}
+
+function resolveClaims(idProviderConfig, accessToken, tokenClaims, isAutoLogin) {
+    const claims = isAutoLogin ? tokenClaims : { userinfo: tokenClaims };
+
+    if (idProviderConfig.userinfoUrl && idProviderConfig.useUserinfo) {
+        const userinfoClaims = oidcLib.requestOAuth2({
+            url: idProviderConfig.userinfoUrl,
+            accessToken: accessToken,
+        });
+
+        if (!isAutoLogin && tokenClaims.sub !== userinfoClaims.sub) {
+            throw `Invalid sub in user info : ${userinfoClaims.sub}`;
+        }
+
+        claims.userinfo = isAutoLogin ? userinfoClaims : oidcLib.mergeClaims(claims.userinfo, userinfoClaims);
+    }
+
+    idProviderConfig.additionalEndpoints.forEach(additionalEndpoint => {
+        const additionalClaims = oidcLib.requestOAuth2({
+            url: additionalEndpoint.url,
+            accessToken: accessToken
+        });
+        log.debug(`OAuth2 endpoint [${additionalEndpoint.name}] claims: ${JSON.stringify(additionalClaims)}`);
+        claims[additionalEndpoint.name] = oidcLib.mergeClaims(claims[additionalEndpoint.name] || {}, additionalClaims);
+    });
+
+    return claims;
 }
 
 function throwAutoLoginFailedError(message) {

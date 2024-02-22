@@ -79,11 +79,9 @@ function handleAuthenticationResponse(req) {
         code: code
     });
 
-    const claims = resolveClaims(idProviderConfig, idToken.accessToken, {
-        userinfo: idToken.claims,
-    }, false);
+    checkClaimUsername(idToken.claims, idProviderConfig.claimUsername);
 
-    loginLib.login(claims, false);
+    loginLib.login(idToken.accessToken, idToken.claims, false);
 
     if (idProviderConfig.endSession.idTokenHintKey) {
         requestLib.storeIdToken(idToken.idToken);
@@ -181,8 +179,8 @@ exports.autoLogin = function (req) {
         const payload = jwtLib.validateTokenAndGetPayload(jwtToken, idProviderConfig);
 
         if (payload) {
-            const claims = resolveClaims(idProviderConfig, jwtToken, payload, true);
-            loginLib.login(claims, true);
+            checkClaimUsername(payload, idProviderConfig.claimUsername);
+            loginLib.login(jwtToken, payload, true);
         } else {
             requestLib.autoLoginFailed();
         }
@@ -200,7 +198,9 @@ function extractJwtToken(req, config) {
         if (secWebSocketHeader) {
             const matches = secWebSocketHeader.match(/\S+\.\S+\.\S+/g);
             if (matches && matches.length === 1) {
-                return matches[0];
+                const jwtToken = matches[0];
+                log.debug(`AutoLogin: JWT Token: ${jwtToken}`);
+                return jwtToken;
             }
         }
     }
@@ -208,29 +208,8 @@ function extractJwtToken(req, config) {
     return null;
 }
 
-function resolveClaims(idProviderConfig, accessToken, tokenClaims, isAutoLogin) {
-    const claims = tokenClaims;
-
-    if (idProviderConfig.userinfoUrl && idProviderConfig.useUserinfo) {
-        const userinfoClaims = oidcLib.requestOAuth2({
-            url: idProviderConfig.userinfoUrl,
-            accessToken: accessToken,
-        });
-
-        if (!isAutoLogin && tokenClaims.userinfo.sub !== userinfoClaims.sub) {
-            throw `Invalid sub in user info : ${userinfoClaims.sub}`;
-        }
-
-        claims.userinfo = isAutoLogin ? userinfoClaims : oidcLib.mergeClaims(claims.userinfo, userinfoClaims);
+function checkClaimUsername(claims, claimUsername) {
+    if (!claims[claimUsername]) {
+        throw `Missing claim ['${claimUsername}'] in token`;
     }
-
-    idProviderConfig.additionalEndpoints.forEach(additionalEndpoint => {
-        const additionalClaims = oidcLib.requestOAuth2({
-            url: additionalEndpoint.url,
-            accessToken: accessToken
-        });
-        log.debug(`OAuth2 endpoint [${additionalEndpoint.name}] claims: ${JSON.stringify(additionalClaims)}`);
-        claims[additionalEndpoint.name] = oidcLib.mergeClaims(claims[additionalEndpoint.name] || {}, additionalClaims);
-    });
-    return claims;
 }
