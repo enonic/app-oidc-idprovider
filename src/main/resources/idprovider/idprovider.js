@@ -12,7 +12,10 @@ function redirectToAuthorizationEndpoint() {
 
     if (idProviderConfig.autoLogin.enforce && requestLib.isAutoLoginFailed()) {
         return {
-            status: 403,
+            status: 401,
+            headers: {
+                'WWW-Authenticate': 'Bearer',
+            }
         }
     }
 
@@ -168,22 +171,23 @@ exports.logout = logout;
 exports.autoLogin = function (req) {
     const idProviderConfig = configLib.getIdProviderConfig();
 
-    if (idProviderConfig.autoLogin.enforce) {
-        const jwtToken = extractJwtToken(req, idProviderConfig);
-        if (!jwtToken) {
-            return;
-        }
+    const jwtToken = extractJwtToken(req, idProviderConfig);
+    log.debug(`AutoLogin: JWT Token: ${jwtToken}`);
 
-        log.debug(`AutoLogin: JWT Token: ${jwtToken}`);
-
-        const payload = jwtLib.validateTokenAndGetPayload(jwtToken, idProviderConfig);
-
-        if (payload) {
-            checkClaimUsername(payload, idProviderConfig.claimUsername);
-            loginLib.login(jwtToken, payload, true);
-        } else {
+    if (!jwtToken) {
+        if (idProviderConfig.autoLogin.enforce) {
             requestLib.autoLoginFailed();
         }
+        return;
+    }
+
+    const payload = jwtLib.validateTokenAndGetPayload(jwtToken, idProviderConfig);
+
+    if (payload) {
+        checkClaimUsername(payload, idProviderConfig.claimUsername);
+        loginLib.login(jwtToken, payload, true);
+    } else {
+        requestLib.autoLoginFailed();
     }
 };
 

@@ -19,8 +19,8 @@ function login(token, tokenClaims, isAutoLogin) {
     try {
         let claims = tokenClaims;
         if (!user) {
-            if (!isAutoLogin || (isAutoLogin && idProviderConfig.autoLogin.createUsers)) {
-                claims = resolveClaims(idProviderConfig, token, tokenClaims, isAutoLogin);
+            if (!isAutoLogin || idProviderConfig.autoLogin.createUsers) {
+                claims = resolveClaims(idProviderConfig, token, tokenClaims);
                 doCreateUser(idProviderConfig, claims.userinfo, userName, isAutoLogin);
             } else if (isAutoLogin) {
                 throwAutoLoginFailedError(`Auto login failed for user '${userName}'. User does not exist`);
@@ -31,7 +31,7 @@ function login(token, tokenClaims, isAutoLogin) {
         doLogin(idProviderConfig, userName, isAutoLogin);
     } catch (error) {
         if (error.name === 'AutoLoginFailedError') {
-            log.error('AutoLogin failed.', error);
+            log.debug('AutoLogin failed.', error);
             requestLib.autoLoginFailed();
             return;
         }
@@ -162,8 +162,8 @@ function doCreateUser(idProviderConfig, userinfoClaims, userName, isAutoLogin) {
     }
 }
 
-function resolveClaims(idProviderConfig, accessToken, tokenClaims, isAutoLogin) {
-    const claims = isAutoLogin ? tokenClaims : { userinfo: tokenClaims };
+function resolveClaims(idProviderConfig, accessToken, tokenClaims) {
+    const claims = {userinfo: tokenClaims};
 
     if (idProviderConfig.userinfoUrl && idProviderConfig.useUserinfo) {
         const userinfoClaims = oidcLib.requestOAuth2({
@@ -171,11 +171,11 @@ function resolveClaims(idProviderConfig, accessToken, tokenClaims, isAutoLogin) 
             accessToken: accessToken,
         });
 
-        if (!isAutoLogin && tokenClaims.sub !== userinfoClaims.sub) {
+        if (tokenClaims.sub !== userinfoClaims.sub) {
             throw `Invalid sub in user info : ${userinfoClaims.sub}`;
         }
 
-        claims.userinfo = isAutoLogin ? userinfoClaims : oidcLib.mergeClaims(claims.userinfo, userinfoClaims);
+        claims.userinfo = oidcLib.mergeClaims(claims.userinfo, userinfoClaims);
     }
 
     idProviderConfig.additionalEndpoints.forEach(additionalEndpoint => {
