@@ -18,16 +18,20 @@ function login(token, tokenClaims, isAutoLogin) {
 
     try {
         let claims = tokenClaims;
+        let wasUserCreated = false;
         if (!user) {
             if (!isAutoLogin || idProviderConfig.autoLogin.createUsers) {
                 claims = resolveClaims(idProviderConfig, token, tokenClaims);
                 doCreateUser(idProviderConfig, claims.userinfo, userName, isAutoLogin);
+                wasUserCreated = true;
             } else if (isAutoLogin) {
                 throwAutoLoginFailedError(`Auto login failed for user '${userName}'. User does not exist`);
             }
         }
 
-        modifyUserProfile(claims, principalKey);
+        if (wasUserCreated || !isAutoLogin) {
+            saveClaims(claims, principalKey);
+        }
         doLogin(idProviderConfig, userName, isAutoLogin);
     } catch (error) {
         if (error.name === 'AutoLoginFailedError') {
@@ -75,7 +79,7 @@ function removeNonSupportedKeys(claims) {
     return newClaims;
 }
 
-function modifyUserProfile(claims, principalKey) {
+function saveClaims(claims, principalKey) {
     const profile = contextLib.runAsSu(() => authLib.modifyProfile({
         key: principalKey,
         scope: 'oidc',

@@ -73,8 +73,8 @@ exports.testValidConfig = () => {
                 'idprovider.myidp.autoLogin.enforce': 'false',
                 'idprovider.myidp.autoLogin.createUsers': 'true',
                 'idprovider.myidp.autoLogin.createSession': 'true',
-                'idprovider.myidp.autoLogin.retrievalWsHeader': 'false',
-                'idprovider.myidp.autoLogin.validationAllowedAudience': 'audience1 audience2   audience3      audience4',
+                'idprovider.myidp.autoLogin.wsHeader': 'false',
+                'idprovider.myidp.autoLogin.allowedAudience': 'audience1 audience2   audience3      audience4',
             }
         }
     });
@@ -114,8 +114,8 @@ exports.testValidConfig = () => {
     test.assertFalse(config.autoLogin.enforce);
     test.assertTrue(config.autoLogin.createUsers);
     test.assertTrue(config.autoLogin.createSession);
-    test.assertFalse(config.autoLogin.retrievalWsHeader);
-    test.assertJsonEquals(['audience1', 'audience2', 'audience3', 'audience4'], config.autoLogin.validationAllowedAudience);
+    test.assertFalse(config.autoLogin.wsHeader);
+    test.assertJsonEquals(['audience1', 'audience2', 'audience3', 'audience4'], config.autoLogin.allowedAudience);
 };
 
 exports.testDefaultConfigWithRequiredOptions = () => {
@@ -171,8 +171,8 @@ exports.testDefaultConfigWithRequiredOptions = () => {
     test.assertFalse(config.autoLogin.enforce);
     test.assertTrue(config.autoLogin.createUsers);
     test.assertFalse(config.autoLogin.createSession);
-    test.assertFalse(config.autoLogin.retrievalWsHeader);
-    test.assertJsonEquals([], config.autoLogin.validationAllowedAudience);
+    test.assertFalse(config.autoLogin.wsHeader);
+    test.assertJsonEquals([], config.autoLogin.allowedAudience);
 };
 
 exports.testValidateRequiredOptions = () => {

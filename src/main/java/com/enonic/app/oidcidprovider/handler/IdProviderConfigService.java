@@ -1,24 +1,23 @@
 package com.enonic.app.oidcidprovider.handler;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 
 import com.enonic.app.oidcidprovider.jwt.RSAAlgorithmProvider;
 
 @Component(immediate = true, service = IdProviderConfigService.class, configurationPid = "com.enonic.app.oidcidprovider")
 public class IdProviderConfigService
 {
-    private static final Cache<String, IdProviderManager> CACHE = CacheBuilder.newBuilder().build();
+    private static final ConcurrentMap<String, IdProviderManager> CACHE = new ConcurrentHashMap<>();
 
     @Activate
     public void activate()
     {
-        CACHE.invalidateAll();
+        CACHE.clear();
     }
 
     public void storeConfig( final String key, final Map<String, Object> config )
@@ -29,13 +28,13 @@ public class IdProviderConfigService
 
     public Map<String, Object> getConfig( final String key )
     {
-        final IdProviderManager idProviderManager = CACHE.getIfPresent( key );
+        final IdProviderManager idProviderManager = CACHE.get( key );
         return idProviderManager != null ? idProviderManager.getIdProviderConfig() : null;
     }
 
     public RSAAlgorithmProvider getAlgorithmProvider( final String key )
     {
-        final IdProviderManager idProviderManager = CACHE.getIfPresent( key );
+        final IdProviderManager idProviderManager = CACHE.get( key );
         return idProviderManager != null ? idProviderManager.getAlgorithmProvider() : null;
     }
 }

@@ -15,13 +15,12 @@ public class IdProviderManager
 
     private final Map<String, Object> idProviderConfig;
 
-    private RSAAlgorithmProvider algorithmProvider;
+    private final RSAAlgorithmProvider algorithmProvider;
 
     public IdProviderManager( final Map<String, Object> idProviderConfig )
     {
         this.idProviderConfig = Objects.requireNonNull( idProviderConfig, "idProviderConfig must be set" );
-
-        initAlgorithmProvider();
+        this.algorithmProvider = resolveAlgorithmProvider();
     }
 
     public Map<String, Object> getIdProviderConfig()
@@ -34,15 +33,12 @@ public class IdProviderManager
         return algorithmProvider;
     }
 
-    private void initAlgorithmProvider()
+    private RSAAlgorithmProvider resolveAlgorithmProvider()
     {
         try
         {
             final JwkProvider jwkProvider = getJwkProvider();
-            if ( jwkProvider != null )
-            {
-                this.algorithmProvider = new RSAAlgorithmProvider( getJwkProvider() );
-            }
+            return jwkProvider != null ? new RSAAlgorithmProvider( jwkProvider ) : null;
         }
         catch ( Exception e )
         {

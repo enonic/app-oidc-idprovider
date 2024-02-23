@@ -196,8 +196,8 @@ idprovider.<idprovidername>.autoLogin.enforce= (true|false, optional)
 idprovider.<idprovidername>.autoLogin.createUsers=  (true|false, optional)
 idprovider.<idprovidername>.autoLogin.createSession=  (true|false, optional)
 # Look for a token in the Sec-WebSocket-Protocol header.
-idprovider.<idprovidername>.autoLogin.retrievalWsHeader=  (true|false, optional)
-idprovider.<idprovidername>.autoLogin.validationAllowedAudience=  (space separated strings, optional)
+idprovider.<idprovidername>.autoLogin.wsHeader=  (true|false, optional)
+idprovider.<idprovidername>.autoLogin.allowedAudience=  (space separated strings, optional)
 ----
 
 {zwsp} +
