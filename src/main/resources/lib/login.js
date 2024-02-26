@@ -22,7 +22,7 @@ function login(token, tokenClaims, isAutoLogin) {
         if (!user) {
             if (!isAutoLogin || idProviderConfig.autoLogin.createUsers) {
                 claims = resolveClaims(idProviderConfig, token, tokenClaims);
-                doCreateUser(idProviderConfig, claims.userinfo, userName, isAutoLogin);
+                doCreateUser(idProviderConfig, claims, userName, isAutoLogin);
                 wasUserCreated = true;
             } else if (isAutoLogin) {
                 throwAutoLoginFailedError(`Auto login failed for user '${userName}'. User does not exist`);
@@ -115,7 +115,9 @@ function doLogin(idProviderConfig, userName, isAutoLogin) {
     }
 }
 
-function doCreateUser(idProviderConfig, userinfoClaims, userName, isAutoLogin) {
+function doCreateUser(idProviderConfig, claims, userName, isAutoLogin) {
+    const userinfoClaims = claims.userinfo;
+
     if (idProviderConfig.rules.forceEmailVerification) {
         if (userinfoClaims.email_verified !== true) {
             if (isAutoLogin) {
@@ -125,10 +127,10 @@ function doCreateUser(idProviderConfig, userinfoClaims, userName, isAutoLogin) {
         }
     }
 
-    const email = idProviderConfig.mappings.email.replace(regExp, (match, claimKey) => getClaim(userinfoClaims, claimKey)) ||
+    const email = idProviderConfig.mappings.email.replace(regExp, (match, claimKey) => getClaim(claims, claimKey)) ||
                   userinfoClaims.email;
     const displayName = idProviderConfig.mappings.displayName.replace(regExp,
-                            (match, claimKey) => getClaim(userinfoClaims, claimKey)) ||
+                            (match, claimKey) => getClaim(claims, claimKey)) ||
                         userinfoClaims.preferred_username || userinfoClaims.name || email || userinfoClaims.sub;
 
     if (!email) {
