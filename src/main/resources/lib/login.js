@@ -16,31 +16,22 @@ function login(token, tokenClaims, isAutoLogin) {
     const principalKey = 'user:' + idProviderKey + ':' + userName;
     const user = contextLib.runAsSu(() => authLib.getPrincipal(principalKey));
 
-    try {
-        let claims = tokenClaims;
-        let wasUserCreated = false;
-        if (!user) {
-            if (!isAutoLogin || idProviderConfig.autoLogin.createUsers) {
-                claims = resolveClaims(idProviderConfig, token, tokenClaims);
-                doCreateUser(idProviderConfig, claims, userName, isAutoLogin);
-                wasUserCreated = true;
-            } else if (isAutoLogin) {
-                throwAutoLoginFailedError(`Auto login failed for user '${userName}'. User does not exist`);
-            }
+    let claims = tokenClaims;
+    let wasUserCreated = false;
+    if (!user) {
+        if (!isAutoLogin || idProviderConfig.autoLogin.createUser) {
+            claims = resolveClaims(idProviderConfig, token, tokenClaims);
+            doCreateUser(idProviderConfig, claims, userName, isAutoLogin);
+            wasUserCreated = true;
+        } else if (isAutoLogin) {
+            throwAutoLoginFailedError(`Auto login failed for user '${userName}'. User does not exist`);
         }
-
-        if (wasUserCreated || !isAutoLogin) {
-            saveClaims(claims, principalKey);
-        }
-        doLogin(idProviderConfig, userName, isAutoLogin);
-    } catch (error) {
-        if (error.name === 'AutoLoginFailedError') {
-            log.debug('AutoLogin failed.', error);
-            requestLib.autoLoginFailed();
-            return;
-        }
-        throw error;
     }
+
+    if (wasUserCreated || !isAutoLogin) {
+        saveClaims(claims, principalKey);
+    }
+    doLogin(idProviderConfig, userName, isAutoLogin);
 }
 
 function getClaim(claims, claimKey) {
@@ -148,7 +139,7 @@ function doCreateUser(idProviderConfig, claims, userName, isAutoLogin) {
             displayName: displayName,
             email: email
         }));
-        log.info(`User [${user.key}] created`);
+        log.info(`User [${user.key}] created in ID Provider [${idProviderConfig._idProviderName}]`);
     } catch (e) {
         if (`${e}`.startsWith('com.enonic.xp.security.PrincipalAlreadyExistsException')) {
             const principalKey = `user:${idProviderConfig._idProviderName}:${userName}`

@@ -112,7 +112,7 @@ exports.testValidConfig = () => {
     test.assertTrue(config.rules.forceEmailVerification);
 
     test.assertFalse(config.autoLogin.enforce);
-    test.assertTrue(config.autoLogin.createUsers);
+    test.assertTrue(config.autoLogin.createUser);
     test.assertTrue(config.autoLogin.createSession);
     test.assertFalse(config.autoLogin.wsHeader);
     test.assertJsonEquals(['audience1', 'audience2', 'audience3', 'audience4'], config.autoLogin.allowedAudience);
@@ -169,7 +169,7 @@ exports.testDefaultConfigWithRequiredOptions = () => {
     test.assertFalse(config.rules.forceEmailVerification);
 
     test.assertFalse(config.autoLogin.enforce);
-    test.assertTrue(config.autoLogin.createUsers);
+    test.assertTrue(config.autoLogin.createUser);
     test.assertFalse(config.autoLogin.createSession);
     test.assertFalse(config.autoLogin.wsHeader);
     test.assertJsonEquals([], config.autoLogin.allowedAudience);

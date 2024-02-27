@@ -184,8 +184,15 @@ exports.autoLogin = function (req) {
     const payload = jwtLib.validateTokenAndGetPayload(jwtToken, idProviderConfig);
 
     if (payload) {
-        checkClaimUsername(payload, idProviderConfig.claimUsername);
-        loginLib.login(jwtToken, payload, true);
+        try {
+            checkClaimUsername(payload, idProviderConfig.claimUsername);
+            loginLib.login(jwtToken, payload, true);
+        } catch (error) {
+            if (error.name === 'AutoLoginFailedError') {
+                requestLib.autoLoginFailed();
+            }
+            throw error;
+        }
     } else {
         requestLib.autoLoginFailed();
     }
@@ -197,14 +204,12 @@ function extractJwtToken(req, config) {
         return authHeader.replace('Bearer ', '');
     }
 
-    if (config.autoLogin.retrievalWsHeader) {
+    if (config.autoLogin.wsHeader) {
         const secWebSocketHeader = req.headers['Sec-WebSocket-Protocol'];
         if (secWebSocketHeader) {
             const matches = secWebSocketHeader.match(/\S+\.\S+\.\S+/g);
             if (matches && matches.length === 1) {
-                const jwtToken = matches[0];
-                log.debug(`AutoLogin: JWT Token: ${jwtToken}`);
-                return jwtToken;
+                return matches[0];
             }
         }
     }

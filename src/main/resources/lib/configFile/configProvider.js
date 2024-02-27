@@ -55,7 +55,7 @@ exports.getIdProviderConfig = function (idProviderName) {
             ADDITIONAL_ENDPOINTS),
         autoLogin: {
             enforce: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.enforce`] === 'true' || false,
-            createUsers: defaultBooleanTrue(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.createUsers`]),
+            createUser: defaultBooleanTrue(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.createUser`]),
             createSession: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.createSession`] === 'true' || false,
             wsHeader: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.wsHeader`] === 'true' || false,
             allowedAudience: parseStringArray(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.allowedAudience`]),
