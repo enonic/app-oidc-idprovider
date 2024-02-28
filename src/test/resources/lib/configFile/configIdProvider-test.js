@@ -1,21 +1,42 @@
 const test = require('/lib/xp/testing');
 
+function mockWellKnownService() {
+    test.mock('/lib/configFile/wellKnownService', {
+        cacheIdProviderConfig: function (idProviderName, configAsString) {
+            // to do nothing
+        },
+        getIdProviderConfig: function (idProviderName) {
+            return null;
+        },
+        getWellKnownConfiguration: function (endpoint) {
+            return {
+                'issuer': 'issuer',
+                'authorization_endpoint': 'authorizationUrl',
+                'token_endpoint': 'tokenUrl',
+                'userinfo_endpoint': 'userinfoUrl',
+                'jwks_uri': 'jwksUri',
+            }
+        }
+    });
+}
+
 exports.testValidConfig = () => {
+    mockWellKnownService();
+
     test.mock('/lib/configFile/services/getConfig', {
         getConfigOrEmpty: function () {
             return {
                 'idprovider.myidp.displayName': 'displayName',
                 'idprovider.myidp.description': 'description',
 
-                'idprovider.myidp.issuer': 'issuer',
-                'idprovider.myidp.authorizationUrl': 'authorizationUrl',
-                'idprovider.myidp.tokenUrl': 'tokenUrl',
-                'idprovider.myidp.userinfoUrl': 'userinfoUrl',
+                'idprovider.myidp.oidcWellKnownEndpoint': 'wellKnownEndpoint',
+                'idprovider.myidp.useUserinfo': 'false',
                 'idprovider.myidp.method': 'post',
                 'idprovider.myidp.scopes': 'name  profile email     nikname',
                 'idprovider.myidp.clientId': 'clientId',
                 'idprovider.myidp.clientSecret': 'clientSecret',
                 'idprovider.myidp.defaultGroups': 'group:myidp:default group:myidp:dev',
+                'idprovider.myidp.claimUsername': 'username',
 
                 'idprovider.myidp.additionalEndpoints.0.name': 'name0',
                 'idprovider.myidp.additionalEndpoints.0.url': 'url0',
@@ -34,6 +55,11 @@ exports.testValidConfig = () => {
                 'idprovider.myidp.endSession.additionalParameters.1.value': 'v1',
 
                 'idprovider.myidp.rules.forceEmailVerification': 'true',
+
+                'idprovider.myidp.autoLogin.createUser': 'true',
+                'idprovider.myidp.autoLogin.createSession': 'true',
+                'idprovider.myidp.autoLogin.wsHeader': 'false',
+                'idprovider.myidp.autoLogin.allowedAudience': 'audience1 audience2   audience3      audience4',
             }
         }
     });
@@ -44,15 +70,19 @@ exports.testValidConfig = () => {
 
     test.assertEquals('displayName', config.displayName);
     test.assertEquals('description', config.description);
+    test.assertEquals('wellKnownEndpoint', config.oidcWellKnownEndpoint);
     test.assertEquals('issuer', config.issuer);
     test.assertEquals('authorizationUrl', config.authorizationUrl);
     test.assertEquals('tokenUrl', config.tokenUrl);
+    test.assertEquals('jwksUri', config.jwksUri);
     test.assertEquals('userinfoUrl', config.userinfoUrl);
+    test.assertFalse(config.useUserinfo);
     test.assertEquals('post', config.method);
+    test.assertEquals('name profile email nikname', config.scopes);
     test.assertEquals('clientId', config.clientId);
     test.assertEquals('clientSecret', config.clientSecret);
     test.assertJsonEquals(['group:myidp:default', 'group:myidp:dev'], config.defaultGroups);
-    test.assertEquals('name profile email nikname', config.scopes);
+    test.assertEquals('username', config.claimUsername);
 
     test.assertJsonEquals([{name: 'name0', url: 'url0'}, {name: 'name1', url: 'url1'}], config.additionalEndpoints);
 
@@ -65,17 +95,20 @@ exports.testValidConfig = () => {
     test.assertJsonEquals([{key: 'k0', value: 'v0'}, {key: 'k1', value: 'v1'}], config.endSession.additionalParameters);
 
     test.assertTrue(config.rules.forceEmailVerification);
+
+    test.assertTrue(config.autoLogin.createUser);
+    test.assertTrue(config.autoLogin.createSession);
+    test.assertFalse(config.autoLogin.wsHeader);
+    test.assertJsonEquals(['audience1', 'audience2', 'audience3', 'audience4'], config.autoLogin.allowedAudience);
 };
 
 exports.testDefaultConfigWithRequiredOptions = () => {
+    mockWellKnownService();
+
     test.mock('/lib/configFile/services/getConfig', {
         getConfigOrEmpty: function () {
             return {
-                'idprovider.myidp.issuer': 'issuer',
-                'idprovider.myidp.authorizationUrl': 'authorizationUrl',
-                'idprovider.myidp.tokenUrl': 'tokenUrl',
-                'idprovider.myidp.clientId': 'clientId',
-                'idprovider.myidp.clientSecret': 'clientSecret',
+                'idprovider.myidp.oidcWellKnownEndpoint': 'wellKnownEndpoint',
             }
         }
     });
@@ -84,17 +117,24 @@ exports.testDefaultConfigWithRequiredOptions = () => {
 
     const config = configProvider.getIdProviderConfig('myidp');
 
+    test.assertEquals('myidp', config._idProviderName); // internal property
+
     test.assertNull(config.displayName);
     test.assertNull(config.description);
+    test.assertEquals('wellKnownEndpoint', config.oidcWellKnownEndpoint);
     test.assertEquals('issuer', config.issuer);
     test.assertEquals('authorizationUrl', config.authorizationUrl);
     test.assertEquals('tokenUrl', config.tokenUrl);
-    test.assertNull(config.userinfoUrl);
+    test.assertEquals('userinfoUrl', config.userinfoUrl);
+    test.assertEquals('jwksUri', config.jwksUri);
+    test.assertTrue(config.useUserinfo);
     test.assertEquals('post', config.method);
-    test.assertEquals('clientId', config.clientId);
-    test.assertEquals('clientSecret', config.clientSecret);
+    test.assertNull(config.clientId);
+    test.assertNull(config.clientSecret);
     test.assertJsonEquals([], config.defaultGroups);
+
     test.assertEquals('profile email', config.scopes);
+    test.assertEquals('sub', config.claimUsername);
 
     test.assertJsonEquals([], config.additionalEndpoints);
 
@@ -107,14 +147,21 @@ exports.testDefaultConfigWithRequiredOptions = () => {
     test.assertJsonEquals([], config.endSession.additionalParameters);
 
     test.assertFalse(config.rules.forceEmailVerification);
+
+    test.assertTrue(config.autoLogin.createUser);
+    test.assertFalse(config.autoLogin.createSession);
+    test.assertFalse(config.autoLogin.wsHeader);
+    test.assertJsonEquals([], config.autoLogin.allowedAudience);
 };
 
 exports.testValidateRequiredOptions = () => {
-    const options = ['issuer', 'authorizationUrl', 'tokenUrl', 'clientId', 'clientSecret'];
+    const options = ['oidcWellKnownEndpoint', 'issuer', 'authorizationUrl', 'tokenUrl'];
     const idProviderName = 'myidp';
     const configuration = {};
 
     for (let i = 0; i < options.length; i++) {
+        mockWellKnownService();
+
         test.mock('/lib/configFile/services/getConfig', {
             getConfigOrEmpty: function () {
                 return configuration;
@@ -136,14 +183,12 @@ exports.testValidateRequiredOptions = () => {
 exports.testValidationOfAdditionalEndpoints = () => {
     const idProviderName = 'myidp';
 
+    mockWellKnownService();
+
     test.mock('/lib/configFile/services/getConfig', {
         getConfigOrEmpty: function () {
             return {
-                'idprovider.myidp.issuer': 'issuer',
-                'idprovider.myidp.authorizationUrl': 'authorizationUrl',
-                'idprovider.myidp.tokenUrl': 'tokenUrl',
-                'idprovider.myidp.clientId': 'clientId',
-                'idprovider.myidp.clientSecret': 'clientSecret',
+                'idprovider.myidp.oidcWellKnownEndpoint': 'wellKnownEndpoint',
 
                 'idprovider.myidp.additionalEndpoints.0.name': 'name0', // url is missing for this endpoint
                 'idprovider.myidp.additionalEndpoints.1.name': 'name1',
@@ -164,14 +209,12 @@ exports.testValidationOfAdditionalEndpoints = () => {
 exports.testValidationOfEndSessionAdditionalParameters = () => {
     const idProviderName = 'myidp';
 
+    mockWellKnownService();
+
     test.mock('/lib/configFile/services/getConfig', {
         getConfigOrEmpty: function () {
             return {
-                'idprovider.myidp.issuer': 'issuer',
-                'idprovider.myidp.authorizationUrl': 'authorizationUrl',
-                'idprovider.myidp.tokenUrl': 'tokenUrl',
-                'idprovider.myidp.clientId': 'clientId',
-                'idprovider.myidp.clientSecret': 'clientSecret',
+                'idprovider.myidp.oidcWellKnownEndpoint': 'wellKnownEndpoint',
 
                 'idprovider.myidp.endSession.additionalParameters.0.key': 'k0',
                 'idprovider.myidp.endSession.additionalParameters.0.value': 'v0',
@@ -188,4 +231,3 @@ exports.testValidationOfEndSessionAdditionalParameters = () => {
         test.assertEquals(`Invalid configuration of 'endSession.additionalParameters' for ID Provider '${idProviderName}'.`, e);
     }
 };
-

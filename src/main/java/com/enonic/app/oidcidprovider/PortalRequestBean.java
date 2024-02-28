@@ -19,6 +19,8 @@ import com.enonic.xp.web.servlet.ServletRequestUrlHelper;
 public class PortalRequestBean
     implements ScriptBean
 {
+    private static final String AUTO_LOGIN_FAILED_ATTRIBUTE = PortalRequestBean.class.getName() + ".autoLoginFailed";
+
     private static final String CONTEXT_KEY = "com.enonic.app.oidcidprovider.context";
 
     private static final String ID_TOKEN_KEY = "com.enonic.app.oidcidprovider.idtoken";
@@ -112,6 +114,16 @@ public class PortalRequestBean
     {
         final HttpSession session = portalRequest.getRawRequest().getSession( false );
         return session != null ? (String) session.getAttribute( ID_TOKEN_KEY ) : null;
+    }
+
+    public void autoLoginFailed()
+    {
+        this.portalRequest.getRawRequest().setAttribute( AUTO_LOGIN_FAILED_ATTRIBUTE, Boolean.TRUE );
+    }
+
+    public boolean isAutoLoginFailed()
+    {
+        return Boolean.TRUE.equals( this.portalRequest.getRawRequest().getAttribute( AUTO_LOGIN_FAILED_ATTRIBUTE ) );
     }
 
     @Override

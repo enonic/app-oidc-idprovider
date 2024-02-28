@@ -4,68 +4,34 @@ const configLib = require('/lib/config');
 const commonLib = require('/lib/xp/common');
 const portalLib = require('/lib/xp/portal');
 const preconditions = require('/lib/preconditions');
+const requestLib = require('/lib/request');
+const oidcLib = require('./oidc');
 
 const regExp = /\$\{([^\}]+)\}/g;
 
-function login(claims) {
-
-    const userinfoClaims = claims.userinfo;
-
-    //Retrieves the user
+function login(token, tokenClaims, isAutoLogin) {
     const idProviderKey = portalLib.getIdProviderKey();
-    const userName = commonLib.sanitize(preconditions.checkParameter(userinfoClaims, 'sub'));
-    const principalKey = 'user:' + idProviderKey + ':' + userName;
+    const idProviderConfig = configLib.getIdProviderConfig();
+    const userName = commonLib.sanitize(preconditions.checkParameter(tokenClaims, idProviderConfig.claimUsername));
+    const principalKey = `user:${idProviderKey}:${userName}`;
     const user = contextLib.runAsSu(() => authLib.getPrincipal(principalKey));
 
-    //If the user does not exist
+    let claims = tokenClaims;
+    let wasUserCreated = false;
     if (!user) {
-
-        //Creates the users
-        const idProviderConfig = configLib.getIdProviderConfig();
-
-        if (idProviderConfig.rules.forceEmailVerification) {
-            preconditions.check(userinfoClaims.email_verified === true, 'Email must be verified');
+        if (!isAutoLogin || idProviderConfig.autoLogin.createUser) {
+            claims = resolveClaims(idProviderConfig, token, tokenClaims);
+            doCreateUser(idProviderConfig, claims, userName, isAutoLogin);
+            wasUserCreated = true;
+        } else if (isAutoLogin) {
+            throwAutoLoginFailedError(`Auto login failed for user '${userName}'. User does not exist`);
         }
-
-        const email = idProviderConfig.mappings.email.replace(regExp, (match, claimKey) => getClaim(claims, claimKey)) || null;
-        const displayName = idProviderConfig.mappings.displayName.replace(regExp, (match, claimKey) => getClaim(claims, claimKey)) ||
-                            userinfoClaims.preferred_username || userinfoClaims.name || email || userinfoClaims.sub;
-
-        const user = contextLib.runAsSu(() => authLib.createUser({
-            idProvider: idProviderKey,
-            name: userName,
-            displayName: displayName,
-            email: email
-        }));
-        log.info(`User [${user.key}] created`);
-
-        contextLib.runAsSu(() => {
-            idProviderConfig.defaultGroups.forEach(function (defaultGroup) {
-                authLib.addMembers(defaultGroup, [user.key]);
-                log.debug(`User [${user.key}] added to group [${defaultGroup}]`);
-            });
-        });
     }
 
-    //Updates the profile
-    const profile = contextLib.runAsSu(() => authLib.modifyProfile({
-        key: principalKey,
-        scope: 'oidc',
-        editor: () => removeNonSupportedKeys(claims)
-    }));
-    log.debug(`Modified profile of [${principalKey}]: ${JSON.stringify(profile)}`);
-
-    //Logs in the user
-    const loginResult = authLib.login({
-        user: userName,
-        idProvider: idProviderKey,
-        skipAuth: true
-    });
-    if (loginResult.authenticated) {
-        log.debug(`Logged in user [${principalKey}]`);
-    } else {
-        throw `Error while logging user [${principalKey}]`;
+    if (wasUserCreated || !isAutoLogin) {
+        saveClaims(claims, principalKey);
     }
+    doLogin(idProviderConfig, userName, isAutoLogin);
 }
 
 function getClaim(claims, claimKey) {
@@ -104,5 +70,128 @@ function removeNonSupportedKeys(claims) {
     return newClaims;
 }
 
+function saveClaims(claims, principalKey) {
+    const profile = contextLib.runAsSu(() => authLib.modifyProfile({
+        key: principalKey,
+        scope: 'oidc',
+        editor: () => removeNonSupportedKeys(claims)
+    }));
+
+    log.debug(`Modified profile of [${principalKey}]: ${JSON.stringify(profile)}`);
+}
+
+function doLogin(idProviderConfig, userName, isAutoLogin) {
+    const idProviderKey = idProviderConfig._idProviderName;
+    const principalKey = `user:${idProviderKey}:${userName}`;
+
+    const loginParams = {
+        user: userName,
+        idProvider: idProviderKey,
+        skipAuth: true
+    };
+
+    if (isAutoLogin) {
+        loginParams.scope = idProviderConfig.autoLogin.createSession ? 'SESSION' : 'REQUEST';
+    }
+
+    //Logs in the user
+    const loginResult = authLib.login(loginParams);
+    if (loginResult.authenticated) {
+        log.debug(`Logged in user [${principalKey}]`);
+    } else {
+        if (isAutoLogin) {
+            throwAutoLoginFailedError(`Auto login failed for user [${principalKey}]`);
+        }
+        throw `Error while logging user [${principalKey}]`;
+    }
+}
+
+function doCreateUser(idProviderConfig, claims, userName, isAutoLogin) {
+    const userinfoClaims = claims.userinfo;
+
+    if (idProviderConfig.rules.forceEmailVerification) {
+        if (userinfoClaims.email_verified !== true) {
+            if (isAutoLogin) {
+                throwAutoLoginFailedError(`Auto login failed for user '${userName}'. Email must be verified`);
+            }
+            throw 'Email must be verified';
+        }
+    }
+
+    const email = idProviderConfig.mappings.email.replace(regExp, (match, claimKey) => getClaim(claims, claimKey)) ||
+                  userinfoClaims.email;
+    const displayName = idProviderConfig.mappings.displayName.replace(regExp,
+                            (match, claimKey) => getClaim(claims, claimKey)) ||
+                        userinfoClaims.preferred_username || userinfoClaims.name || email || userinfoClaims.sub;
+
+    if (!email) {
+        if (isAutoLogin) {
+            throwAutoLoginFailedError(`Auto login failed for user '${userName}'. User can not be created without email.`);
+        }
+        throw 'User can not be created without email';
+    }
+
+    let user;
+    try {
+        user = contextLib.runAsSu(() => authLib.createUser({
+            idProvider: idProviderConfig._idProviderName,
+            name: userName,
+            displayName: displayName,
+            email: email
+        }));
+        log.info(`User [${user.key}] created in ID Provider [${idProviderConfig._idProviderName}]`);
+    } catch (e) {
+        if (`${e}`.startsWith('com.enonic.xp.security.PrincipalAlreadyExistsException')) {
+            const principalKey = `user:${idProviderConfig._idProviderName}:${userName}`
+            user = contextLib.runAsSu(() => authLib.getPrincipal(principalKey));
+        } else {
+            throw `User '${userName}' could not be provided: ${e}`;
+        }
+    }
+
+    if (user) {
+        contextLib.runAsSu(() => {
+            idProviderConfig.defaultGroups.forEach(function (defaultGroup) {
+                authLib.addMembers(defaultGroup, [user.key]);
+                log.debug(`User [${user.key}] added to group [${defaultGroup}]`);
+            });
+        });
+    }
+}
+
+function resolveClaims(idProviderConfig, accessToken, tokenClaims) {
+    const claims = {userinfo: tokenClaims};
+
+    if (idProviderConfig.userinfoUrl && idProviderConfig.useUserinfo) {
+        const userinfoClaims = oidcLib.requestOAuth2({
+            url: idProviderConfig.userinfoUrl,
+            accessToken: accessToken,
+        });
+
+        if (tokenClaims.sub !== userinfoClaims.sub) {
+            throw `Invalid sub in user info : ${userinfoClaims.sub}`;
+        }
+
+        claims.userinfo = oidcLib.mergeClaims(claims.userinfo, userinfoClaims);
+    }
+
+    idProviderConfig.additionalEndpoints.forEach(additionalEndpoint => {
+        const additionalClaims = oidcLib.requestOAuth2({
+            url: additionalEndpoint.url,
+            accessToken: accessToken
+        });
+        log.debug(`OAuth2 endpoint [${additionalEndpoint.name}] claims: ${JSON.stringify(additionalClaims)}`);
+        claims[additionalEndpoint.name] = oidcLib.mergeClaims(claims[additionalEndpoint.name] || {}, additionalClaims);
+    });
+
+    return claims;
+}
+
+function throwAutoLoginFailedError(message) {
+    const error = Error(message);
+    error.name = 'AutoLoginFailedError';
+
+    throw error;
+}
 
 exports.login = login;

@@ -5,11 +5,22 @@ const requestLib = require('/lib/request');
 const preconditions = require('/lib/preconditions');
 const authLib = require('/lib/xp/auth');
 const portalLib = require('/lib/xp/portal');
+const jwtLib = require('/lib/jwt');
 
 function redirectToAuthorizationEndpoint() {
+    const idProviderConfig = configLib.getIdProviderConfig();
+
+    if (idProviderConfig.clientId == null) {
+        return {
+            status: 401,
+            headers: {
+                'WWW-Authenticate': 'Bearer',
+            }
+        }
+    }
+
     log.debug('Handling 401 error...');
 
-    const idProviderConfig = configLib.getIdProviderConfig();
     const redirectUri = generateRedirectUri();
 
     const state = oidcLib.generateToken();
@@ -71,34 +82,9 @@ function handleAuthenticationResponse(req) {
         code: code
     });
 
-    const claims = {
-        userinfo: idToken.claims
-    };
-    if (idProviderConfig.userinfoUrl) {
-        const userinfoClaims = oidcLib.requestOAuth2({
-            url: idProviderConfig.userinfoUrl,
-            accessToken: idToken.accessToken
-        });
-        log.debug('User info claims: ' + JSON.stringify(userinfoClaims));
+    checkClaimUsername(idToken.claims, idProviderConfig.claimUsername);
 
-        if (idToken.claims.sub !== userinfoClaims.sub) {
-            throw 'Invalid sub in user info : ' + userinfoClaims.sub;
-        }
-
-        claims.userinfo = oidcLib.mergeClaims(claims.userinfo, userinfoClaims);
-    }
-
-    idProviderConfig.additionalEndpoints.forEach(additionalEndpoint => {
-        const additionalClaims = oidcLib.requestOAuth2({
-            url: additionalEndpoint.url,
-            accessToken: idToken.accessToken
-        });
-        log.debug('OAuth2 endpoint [' + additionalEndpoint.name + '] claims: ' + JSON.stringify(additionalClaims));
-        claims[additionalEndpoint.name] = oidcLib.mergeClaims(claims[additionalEndpoint.name] || {}, additionalClaims);
-    });
-    log.debug('All claims: ' + JSON.stringify(claims));
-
-    loginLib.login(claims);
+    loginLib.login(idToken.accessToken, idToken.claims, false);
 
     if (idProviderConfig.endSession.idTokenHintKey) {
         requestLib.storeIdToken(idToken.idToken);
@@ -182,3 +168,57 @@ exports.handle401 = redirectToAuthorizationEndpoint;
 exports.get = handleAuthenticationResponse;
 exports.logout = logout;
 
+exports.autoLogin = function (req) {
+    const idProviderConfig = configLib.getIdProviderConfig();
+
+    const jwtToken = extractJwtToken(req, idProviderConfig);
+    log.debug(`AutoLogin: JWT Token: ${jwtToken}`);
+
+    if (!jwtToken) {
+        requestLib.autoLoginFailed();
+        return;
+    }
+
+    const payload = jwtLib.validateTokenAndGetPayload(jwtToken, idProviderConfig);
+
+    if (payload) {
+        try {
+            checkClaimUsername(payload, idProviderConfig.claimUsername);
+            loginLib.login(jwtToken, payload, true);
+        } catch (error) {
+            if (error.name === 'AutoLoginFailedError') {
+                log.debug(`AutoLogin failed: ${error.message}`, error);
+                requestLib.autoLoginFailed();
+                return;
+            }
+            throw error;
+        }
+    } else {
+        requestLib.autoLoginFailed();
+    }
+};
+
+function extractJwtToken(req, config) {
+    const authHeader = req.headers['Authorization'];
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        return authHeader.replace('Bearer ', '');
+    }
+
+    if (config.autoLogin.wsHeader) {
+        const secWebSocketHeader = req.headers['Sec-WebSocket-Protocol'];
+        if (secWebSocketHeader) {
+            const matches = secWebSocketHeader.match(/\S+\.\S+\.\S+/g);
+            if (matches && matches.length === 1) {
+                return matches[0];
+            }
+        }
+    }
+
+    return null;
+}
+
+function checkClaimUsername(claims, claimUsername) {
+    if (!claims[claimUsername]) {
+        throw `Missing claim ['${claimUsername}'] in token`;
+    }
+}
