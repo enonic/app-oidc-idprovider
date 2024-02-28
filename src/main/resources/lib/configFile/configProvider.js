@@ -25,11 +25,8 @@ exports.getIdProviderConfig = function (idProviderName) {
         displayName: rawIdProviderConfig[`${idProviderKeyBase}.displayName`] || null,
         description: rawIdProviderConfig[`${idProviderKeyBase}.description`] || null,
 
-        oidcWellKnownEndpoint: rawIdProviderConfig[`${idProviderKeyBase}.oidcWellKnownEndpoint`] || null,
-        issuer: rawIdProviderConfig[`${idProviderKeyBase}.issuer`] || null,
-        authorizationUrl: rawIdProviderConfig[`${idProviderKeyBase}.authorizationUrl`] || null,
-        tokenUrl: rawIdProviderConfig[`${idProviderKeyBase}.tokenUrl`] || null,
-        userinfoUrl: rawIdProviderConfig[`${idProviderKeyBase}.userinfoUrl`] || null,
+        oidcWellKnownEndpoint: required(rawIdProviderConfig[`${idProviderKeyBase}.oidcWellKnownEndpoint`], 'oidcWellKnownEndpoint',
+            idProviderName),
         useUserinfo: defaultBooleanTrue(rawIdProviderConfig[`${idProviderKeyBase}.useUserinfo`]),
         method: rawIdProviderConfig[`${idProviderKeyBase}.method`] || 'post',
         scopes: parseStringArray(rawIdProviderConfig[`${idProviderKeyBase}.scopes`]).join(' ') || 'profile email',
@@ -54,7 +51,6 @@ exports.getIdProviderConfig = function (idProviderName) {
         additionalEndpoints: extractPropertiesToArray(rawIdProviderConfig, `${idProviderKeyBase}.additionalEndpoints.`,
             ADDITIONAL_ENDPOINTS),
         autoLogin: {
-            enforce: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.enforce`] === 'true' || false,
             createUser: defaultBooleanTrue(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.createUser`]),
             createSession: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.createSession`] === 'true' || false,
             wsHeader: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.wsHeader`] === 'true' || false,
@@ -62,9 +58,7 @@ exports.getIdProviderConfig = function (idProviderName) {
         },
     };
 
-    if (config.oidcWellKnownEndpoint) {
-        overrideConfig(config);
-    }
+    takeConfigurationFromWellKnownEndpoint(config);
 
     validate(config, idProviderName);
 
@@ -82,7 +76,7 @@ function getRawIdProviderConfig(idProviderKeyBase) {
     return result;
 }
 
-function overrideConfig(config) {
+function takeConfigurationFromWellKnownEndpoint(config) {
     const wellKnownConfiguration = wellKnownService.getWellKnownConfiguration(config.oidcWellKnownEndpoint);
 
     config.issuer = wellKnownConfiguration.issuer;
@@ -97,13 +91,11 @@ function validate(config, idProviderName) {
     checkConfig(config, 'authorizationUrl', idProviderName);
     checkConfig(config, 'tokenUrl', idProviderName);
 
-    if (!config.autoLogin.enforce) {
-        checkConfig(config, 'clientId', idProviderName);
+    if (config.clientId != null) {
         checkConfig(config, 'clientSecret', idProviderName);
     }
-
-    if (config.autoLogin.enforce && !config.oidcWellKnownEndpoint) {
-        throw `Auto login is enforced but 'oidcWellKnownEndpoint' is not configured for ID Provider '${idProviderName}'.`;
+    if (config.clientSecret != null) {
+        checkConfig(config, 'clientId', idProviderName);
     }
 
     checkArrayConfig(config.additionalEndpoints, 'additionalEndpoints', idProviderName);
@@ -130,12 +122,16 @@ function extractPropertiesToArray(rawConfig, basePropertyPath, propertyPattern) 
     return result;
 }
 
-function checkConfig(params, name, idProviderName) {
-    const value = params[name];
+function required(value, name, idProviderName) {
     if (value == null) {
         throw `Missing config '${name}' for ID Provider '${idProviderName}'.`;
     }
     return value;
+}
+
+function checkConfig(params, name, idProviderName) {
+    const value = params[name];
+    return required(value, name, idProviderName);
 }
 
 function checkArrayConfig(items, name, idProviderName) {

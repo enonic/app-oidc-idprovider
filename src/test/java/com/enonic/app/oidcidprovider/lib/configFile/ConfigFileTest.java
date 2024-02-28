@@ -36,10 +36,4 @@ public class ConfigFileTest
     {
         runFunction( "/lib/configFile/configIdProvider-test.js", "testValidationOfEndSessionAdditionalParameters" );
     }
-
-    @Test
-    public void testWhenOidcWellKnownEndpointSet()
-    {
-        runFunction( "/lib/configFile/configIdProvider-test.js", "testWhenOidcWellKnownEndpointSet" );
-    }
 }

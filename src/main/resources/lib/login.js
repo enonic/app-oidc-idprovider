@@ -13,7 +13,7 @@ function login(token, tokenClaims, isAutoLogin) {
     const idProviderKey = portalLib.getIdProviderKey();
     const idProviderConfig = configLib.getIdProviderConfig();
     const userName = commonLib.sanitize(preconditions.checkParameter(tokenClaims, idProviderConfig.claimUsername));
-    const principalKey = 'user:' + idProviderKey + ':' + userName;
+    const principalKey = `user:${idProviderKey}:${userName}`;
     const user = contextLib.runAsSu(() => authLib.getPrincipal(principalKey));
 
     let claims = tokenClaims;

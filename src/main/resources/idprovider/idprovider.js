@@ -10,7 +10,7 @@ const jwtLib = require('/lib/jwt');
 function redirectToAuthorizationEndpoint() {
     const idProviderConfig = configLib.getIdProviderConfig();
 
-    if (idProviderConfig.autoLogin.enforce && requestLib.isAutoLoginFailed()) {
+    if (idProviderConfig.clientId == null) {
         return {
             status: 401,
             headers: {
@@ -175,9 +175,7 @@ exports.autoLogin = function (req) {
     log.debug(`AutoLogin: JWT Token: ${jwtToken}`);
 
     if (!jwtToken) {
-        if (idProviderConfig.autoLogin.enforce) {
-            requestLib.autoLoginFailed();
-        }
+        requestLib.autoLoginFailed();
         return;
     }
 
@@ -189,7 +187,9 @@ exports.autoLogin = function (req) {
             loginLib.login(jwtToken, payload, true);
         } catch (error) {
             if (error.name === 'AutoLoginFailedError') {
+                log.debug(`AutoLogin failed: ${error.message}`, error);
                 requestLib.autoLoginFailed();
+                return;
             }
             throw error;
         }
