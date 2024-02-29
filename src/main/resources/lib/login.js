@@ -4,7 +4,6 @@ const configLib = require('/lib/config');
 const commonLib = require('/lib/xp/common');
 const portalLib = require('/lib/xp/portal');
 const preconditions = require('/lib/preconditions');
-const requestLib = require('/lib/request');
 const oidcLib = require('./oidc');
 
 const regExp = /\$\{([^\}]+)\}/g;
@@ -16,11 +15,13 @@ function login(token, tokenClaims, isAutoLogin) {
     const principalKey = `user:${idProviderKey}:${userName}`;
     const user = contextLib.runAsSu(() => authLib.getPrincipal(principalKey));
 
-    let claims = tokenClaims;
+    let claims = isAutoLogin? tokenClaims : resolveClaims(idProviderConfig, token, tokenClaims);
     let wasUserCreated = false;
     if (!user) {
         if (!isAutoLogin || idProviderConfig.autoLogin.createUser) {
-            claims = resolveClaims(idProviderConfig, token, tokenClaims);
+            if (isAutoLogin) {
+                claims = resolveClaims(idProviderConfig, token, tokenClaims);
+            }
             doCreateUser(idProviderConfig, claims, userName, isAutoLogin);
             wasUserCreated = true;
         } else if (isAutoLogin) {
@@ -31,6 +32,11 @@ function login(token, tokenClaims, isAutoLogin) {
     if (wasUserCreated || !isAutoLogin) {
         saveClaims(claims, principalKey);
     }
+
+    if (!wasUserCreated && !isAutoLogin) {
+        updateUserData(claims, idProviderConfig, user);
+    }
+
     doLogin(idProviderConfig, userName, isAutoLogin);
 }
 
@@ -118,11 +124,8 @@ function doCreateUser(idProviderConfig, claims, userName, isAutoLogin) {
         }
     }
 
-    const email = idProviderConfig.mappings.email.replace(regExp, (match, claimKey) => getClaim(claims, claimKey)) ||
-                  userinfoClaims.email;
-    const displayName = idProviderConfig.mappings.displayName.replace(regExp,
-                            (match, claimKey) => getClaim(claims, claimKey)) ||
-                        userinfoClaims.preferred_username || userinfoClaims.name || email || userinfoClaims.sub;
+    const email = resolveEmail(claims, idProviderConfig);
+    const displayName = resolveDisplayName(claims, idProviderConfig) || email;
 
     if (!email) {
         if (isAutoLogin) {
@@ -160,7 +163,9 @@ function doCreateUser(idProviderConfig, claims, userName, isAutoLogin) {
 }
 
 function resolveClaims(idProviderConfig, accessToken, tokenClaims) {
-    const claims = {userinfo: tokenClaims};
+    const claims = {
+        userinfo: tokenClaims
+    };
 
     if (idProviderConfig.userinfoUrl && idProviderConfig.useUserinfo) {
         const userinfoClaims = oidcLib.requestOAuth2({
@@ -192,6 +197,35 @@ function throwAutoLoginFailedError(message) {
     error.name = 'AutoLoginFailedError';
 
     throw error;
+}
+
+function resolveEmail(claims, idProviderConfig) {
+    return idProviderConfig.mappings.email.replace(regExp, (match, claimKey) => getClaim(claims, claimKey)) ||
+           claims.userinfo.email;
+}
+
+function resolveDisplayName(claims, idProviderConfig) {
+    const userinfoClaims = claims.userinfo;
+    return idProviderConfig.mappings.displayName.replace(regExp,
+        (match, claimKey) => getClaim(claims, claimKey)) || userinfoClaims.preferred_username || userinfoClaims.name || userinfoClaims.sub;
+}
+
+function updateUserData(claims, idProviderConfig, user) {
+    const email = resolveEmail(claims, idProviderConfig);
+    const displayName = resolveDisplayName(claims, idProviderConfig) || email;
+
+    if (user.displayName !== displayName || user.email !== email) {
+        contextLib.runAsSu(() => authLib.modifyUser({
+            key: user.key,
+            editor: function (c) {
+                c.displayName = displayName;
+                c.email = email;
+                return c;
+            }
+        }));
+
+        log.debug(`User [${user.key}] updated with displayName [${displayName}] and email [${email}]`);
+    }
 }
 
 exports.login = login;
