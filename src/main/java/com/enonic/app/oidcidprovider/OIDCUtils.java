@@ -1,8 +1,12 @@
 package com.enonic.app.oidcidprovider;
 
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.text.ParseException;
+import java.util.Base64;
 import java.util.Map;
 
 import com.nimbusds.jose.JWSAlgorithm;
@@ -23,9 +27,37 @@ import com.enonic.app.oidcidprovider.mapper.ClaimSetMapper;
 
 public class OIDCUtils
 {
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     public static String generateToken()
     {
-        return new BigInteger( 130, new SecureRandom() ).toString( 32 );
+        return new BigInteger( 130, SECURE_RANDOM ).toString( 32 );
+    }
+
+    public static String generateVerifier()
+    {
+        final byte[] bytes = new byte[32];
+        SECURE_RANDOM.nextBytes( bytes );
+        return Base64.getUrlEncoder().withoutPadding().encodeToString( bytes );
+    }
+
+    public static String generateChallenge( String verifier )
+    {
+        return Base64.getUrlEncoder()
+            .withoutPadding()
+            .encodeToString( sha256().digest( verifier.getBytes( StandardCharsets.ISO_8859_1 ) ) );
+    }
+
+    public static MessageDigest sha256()
+    {
+        try
+        {
+            return MessageDigest.getInstance( "SHA-256" );
+        }
+        catch ( NoSuchAlgorithmException e )
+        {
+            throw new AssertionError( e );
+        }
     }
 
     public static ClaimSetMapper parseClaims( final String s, final String issuer, final String clientID, final String nonce )
