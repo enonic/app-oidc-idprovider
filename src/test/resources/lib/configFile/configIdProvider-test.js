@@ -29,7 +29,11 @@ exports.testValidConfig = () => {
                 'idprovider.myidp.displayName': 'displayName',
                 'idprovider.myidp.description': 'description',
 
-                'idprovider.myidp.oidcWellKnownEndpoint': 'wellKnownEndpoint',
+                'idprovider.myidp.issuer': 'custom_issuer',
+                'idprovider.myidp.authorizationUrl': 'custom_authorizationUrl',
+                'idprovider.myidp.tokenUrl': 'custom_tokenUrl',
+                'idprovider.myidp.userinfoUrl': 'custom_userinfoUrl',
+                'idprovider.myidp.jwksUri': 'custom_jwksUri',
                 'idprovider.myidp.useUserinfo': 'false',
                 'idprovider.myidp.method': 'post',
                 'idprovider.myidp.scopes': 'name  profile email     nikname',
@@ -56,7 +60,7 @@ exports.testValidConfig = () => {
 
                 'idprovider.myidp.rules.forceEmailVerification': 'true',
 
-                'idprovider.myidp.autoLogin.createUser': 'true',
+                'idprovider.myidp.autoLogin.createUsers': 'true',
                 'idprovider.myidp.autoLogin.createSession': 'true',
                 'idprovider.myidp.autoLogin.wsHeader': 'false',
                 'idprovider.myidp.autoLogin.allowedAudience': 'audience1 audience2   audience3      audience4',
@@ -70,12 +74,11 @@ exports.testValidConfig = () => {
 
     test.assertEquals('displayName', config.displayName);
     test.assertEquals('description', config.description);
-    test.assertEquals('wellKnownEndpoint', config.oidcWellKnownEndpoint);
-    test.assertEquals('issuer', config.issuer);
-    test.assertEquals('authorizationUrl', config.authorizationUrl);
-    test.assertEquals('tokenUrl', config.tokenUrl);
-    test.assertEquals('jwksUri', config.jwksUri);
-    test.assertEquals('userinfoUrl', config.userinfoUrl);
+    test.assertEquals('custom_issuer', config.issuer);
+    test.assertEquals('custom_authorizationUrl', config.authorizationUrl);
+    test.assertEquals('custom_tokenUrl', config.tokenUrl);
+    test.assertEquals('custom_userinfoUrl', config.userinfoUrl);
+    test.assertEquals('custom_jwksUri', config.jwksUri);
     test.assertFalse(config.useUserinfo);
     test.assertEquals('post', config.method);
     test.assertEquals('name profile email nikname', config.scopes);
@@ -96,7 +99,7 @@ exports.testValidConfig = () => {
 
     test.assertTrue(config.rules.forceEmailVerification);
 
-    test.assertTrue(config.autoLogin.createUser);
+    test.assertTrue(config.autoLogin.createUsers);
     test.assertTrue(config.autoLogin.createSession);
     test.assertFalse(config.autoLogin.wsHeader);
     test.assertJsonEquals(['audience1', 'audience2', 'audience3', 'audience4'], config.autoLogin.allowedAudience);
@@ -148,14 +151,14 @@ exports.testDefaultConfigWithRequiredOptions = () => {
 
     test.assertFalse(config.rules.forceEmailVerification);
 
-    test.assertTrue(config.autoLogin.createUser);
+    test.assertTrue(config.autoLogin.createUsers);
     test.assertFalse(config.autoLogin.createSession);
     test.assertFalse(config.autoLogin.wsHeader);
     test.assertJsonEquals([], config.autoLogin.allowedAudience);
 };
 
 exports.testValidateRequiredOptions = () => {
-    const options = ['oidcWellKnownEndpoint', 'issuer', 'authorizationUrl', 'tokenUrl'];
+    const options = ['issuer', 'authorizationUrl', 'tokenUrl'];
     const idProviderName = 'myidp';
     const configuration = {};
 
