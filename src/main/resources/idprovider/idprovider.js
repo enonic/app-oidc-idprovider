@@ -68,6 +68,10 @@ function handleAuthenticationResponse(req) {
     }
 
     const idProviderConfig = configLib.getIdProviderConfig();
+    if (!idProviderConfig.clientSecret) {
+        throw `Missing clientSecret configuration for ${idProviderConfig._idProviderName} ID Provider`;
+    }
+
     const code = params.code;
 
     //https://tools.ietf.org/html/rfc6749#section-2.3.1
@@ -170,6 +174,9 @@ exports.logout = logout;
 
 exports.autoLogin = function (req) {
     const idProviderConfig = configLib.getIdProviderConfig();
+    if (!idProviderConfig.jwksUri) {
+        return;
+    }
 
     const jwtToken = extractJwtToken(req, idProviderConfig);
     log.debug(`AutoLogin: JWT Token: ${jwtToken}`);

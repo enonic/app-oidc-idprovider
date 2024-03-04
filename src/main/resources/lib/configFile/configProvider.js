@@ -25,8 +25,12 @@ exports.getIdProviderConfig = function (idProviderName) {
         displayName: rawIdProviderConfig[`${idProviderKeyBase}.displayName`] || null,
         description: rawIdProviderConfig[`${idProviderKeyBase}.description`] || null,
 
-        oidcWellKnownEndpoint: required(rawIdProviderConfig[`${idProviderKeyBase}.oidcWellKnownEndpoint`], 'oidcWellKnownEndpoint',
-            idProviderName),
+        oidcWellKnownEndpoint: rawIdProviderConfig[`${idProviderKeyBase}.oidcWellKnownEndpoint`] || null,
+        issuer: rawIdProviderConfig[`${idProviderKeyBase}.issuer`] || null,
+        authorizationUrl: rawIdProviderConfig[`${idProviderKeyBase}.authorizationUrl`] || null,
+        tokenUrl: rawIdProviderConfig[`${idProviderKeyBase}.tokenUrl`] || null,
+        userinfoUrl: rawIdProviderConfig[`${idProviderKeyBase}.userinfoUrl`] || null,
+        jwksUri: rawIdProviderConfig[`${idProviderKeyBase}.jwksUri`] || null,
         useUserinfo: defaultBooleanTrue(rawIdProviderConfig[`${idProviderKeyBase}.useUserinfo`]),
         method: rawIdProviderConfig[`${idProviderKeyBase}.method`] || 'post',
         scopes: parseStringArray(rawIdProviderConfig[`${idProviderKeyBase}.scopes`]).join(' ') || 'profile email',
@@ -51,14 +55,16 @@ exports.getIdProviderConfig = function (idProviderName) {
         additionalEndpoints: extractPropertiesToArray(rawIdProviderConfig, `${idProviderKeyBase}.additionalEndpoints.`,
             ADDITIONAL_ENDPOINTS),
         autoLogin: {
-            createUser: defaultBooleanTrue(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.createUser`]),
+            createUsers: defaultBooleanTrue(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.createUsers`]),
             createSession: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.createSession`] === 'true' || false,
             wsHeader: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.wsHeader`] === 'true' || false,
             allowedAudience: parseStringArray(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.allowedAudience`]),
         },
     };
 
-    takeConfigurationFromWellKnownEndpoint(config);
+    if (config.oidcWellKnownEndpoint != null) {
+        takeConfigurationFromWellKnownEndpoint(config);
+    }
 
     validate(config, idProviderName);
 

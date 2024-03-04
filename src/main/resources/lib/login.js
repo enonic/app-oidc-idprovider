@@ -18,7 +18,7 @@ function login(token, tokenClaims, isAutoLogin) {
     let claims = isAutoLogin? tokenClaims : resolveClaims(idProviderConfig, token, tokenClaims);
     let wasUserCreated = false;
     if (!user) {
-        if (!isAutoLogin || idProviderConfig.autoLogin.createUser) {
+        if (!isAutoLogin || idProviderConfig.autoLogin.createUsers) {
             if (isAutoLogin) {
                 claims = resolveClaims(idProviderConfig, token, tokenClaims);
             }
