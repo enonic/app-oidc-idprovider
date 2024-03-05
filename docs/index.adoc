@@ -45,15 +45,17 @@ It has the following format:  `[VHost source]/_/idprovider/[ID Provider name]`. 
 
 You will need to gather the following information from the Authorization Server setup, for the <<#id_provider_creation, ID Provider configuration>>
 
-. The Client ID
-. The Client secret
+. The Client ID. Must be set, if log in via form is enabled.
+. The Client secret. Must be set, if log in via form is enabled.
 . The Issuer Identifier (URL)
 . The Authorization endpoint URL
 . The Token endpoint URL
+. The JWKS URI
+. The `oidcWellKnownEndpoint` (OpenID Provider Configuration URL), to obtain the values for the above fields and for `userinfoUrl`.
 
 You might have been given only the Issuer URL instead of the list of endpoint URLs.
 In that case the endpoint URLs are accessible under: `[Issuer URL]/.well-known/openid-configuration`
-The JSON result will contain the required information: `issuer`, `authorization_endpoint` and `token_endpoint`.
+The JSON result will contain the required information: `issuer`, `authorization_endpoint`, `token_endpoint` and `jwks_uri`.
 
 {zwsp} +
 
@@ -157,11 +159,12 @@ autoinit=  (true | false, optional)
 idprovider.<idprovidername>.displayName=  (string, optional)
 idprovider.<idprovidername>.description=  (string, optional)
 
-idprovider.<idprovidername>.oidcWellKnownEndpoint= (string, optional) # if defined, then values for the rest of 4 props will be ignored
+idprovider.<idprovidername>.oidcWellKnownEndpoint= (string, optional) # if defined, then values for the 'issuer', 'authorizationUrl','tokenUrl','userinfoUrl','jwksUri' properties will be fetched from the well-known endpoint.
 idprovider.<idprovidername>.issuer=  (string, optional)
 idprovider.<idprovidername>.authorizationUrl=  (string, optional)
 idprovider.<idprovidername>.tokenUrl=  (string, optional)
 idprovider.<idprovidername>.userinfoUrl=  (string, optional)
+idprovider.<idprovidername>.jwksUri=  (string, required)
 idprovider.<idprovidername>.useUserinfo= (true|false, optional, default to "true")
 idprovider.<idprovidername>.claimUsername= (string, optional, default to "sub")
 idprovider.<idprovidername>.method=  ((basic|post|jwt), optional, default to "post")
@@ -182,21 +185,20 @@ idprovider.<idprovidername>.endSession.postLogoutRedirectUriKey=  (string, optio
 idprovider.<idprovidername>.endSession.additionalParameters.0.key=  (string, required)
 idprovider.<idprovidername>.endSession.additionalParameters.0.value=  (string, required)
 
-idprovider.<idprovidername>.clientId=  (string, required)
-idprovider.<idprovidername>.clientSecret=  (string, required)
+idprovider.<idprovidername>.clientId=  (string, optional)
+idprovider.<idprovidername>.clientSecret=  (string, optional)
 
-idprovider.<idprovidername>.mappings.displayName=  (string, required, default to ${preferred_username})
-idprovider.<idprovidername>.mappings.email=  (string, required, default to ${email})
+idprovider.<idprovidername>.mappings.displayName=  (string, required, default to ${userinfo.preferred_username})
+idprovider.<idprovidername>.mappings.email=  (string, required, default to ${userinfo.email})
 
 idprovider.<idprovidername>.defaultGroups=  (space separated group keys, optional)
 
 idprovider.<idprovidername>.rules.forceEmailVerification=  (true | false, required)
 
-idprovider.<idprovidername>.autoLogin.enforce= (true|false, optional)
-idprovider.<idprovidername>.autoLogin.createUsers=  (true|false, optional)
-idprovider.<idprovidername>.autoLogin.createSession=  (true|false, optional)
+idprovider.<idprovidername>.autoLogin.createUsers=  (true|false, optional, default to "true")
+idprovider.<idprovidername>.autoLogin.createSession=  (true|false, optional, default to "false")
 # Look for a token in the Sec-WebSocket-Protocol header.
-idprovider.<idprovidername>.autoLogin.wsHeader=  (true|false, optional)
+idprovider.<idprovidername>.autoLogin.wsHeader=  (true|false, optional, default to "false")
 idprovider.<idprovidername>.autoLogin.allowedAudience=  (space separated strings, optional)
 ----
 
@@ -206,12 +208,19 @@ idprovider.<idprovidername>.autoLogin.allowedAudience=  (space separated strings
 ==== Fields in the config
 
 * `autoinit`: Automatic initialization. If the config file contains `autoinit=true`, then during startup this app will automatically create ID providers for all settings declared in the file, if they don't already exist. For example, `idprovider.myfirstidp.someKey=someValue` and `idprovider.anotheridp.anotherKey=anotherValue` will declare two idproviders named `myfirstidp` and `anotheridp`.
+* `displayName`: Display name of ID Provider in User app.
+* `description`: Description of ID Provider in User app.
+* `useUserinfo`: Use the Userinfo endpoint to retrieve user claims.
+* `claimUsername`: Claim to use as username. The value is a string, the default value is `sub`.
 
 **Authorization Server**
 
+* `oidcWellKnownEndpoint`: OpenID Provider Configuration URL. If defined, then values for the `issuer`, `authorizationUrl`,`tokenUrl`,`userinfoUrl`,`jwksUri` properties will be fetched from the well-known endpoint.
 * `issuer`: Issuer identifier. Value of `issuer` in your OpenID Provider <<#information_required_for_config, configuration>>.
 * `authorizationUrl`: Authorization endpoint URL. Value of `authorization_endpoint` in your OpenID Provider <<#information_required_for_config, configuration>>.
 * `tokenUrl`: Token endpoint URL. Value of `token_endpoint` in your OpenID Provider <<#information_required_for_config, configuration>>.
+* `userinfoUrl`: Userinfo endpoint URL. Value of `userinfo_endpoint` in your OpenID Provider configuration.
+* `jwksUri`: JSON Web Key Set (JWKS) endpoint URL. Value of `jwks_uri` in your OpenID Provider configuration.
 * `method`: Client authentication method.  The value is a string, either `post`, `basic`, or `jwt`.
 * `scopes`: Scope/Claims to retrieve in addition to the mandatory "openid" scope. We recommend setting the two standard scopes: _profile_ and _email_. The value is a space-separated list of scopes, eg. `profile email`.
 
@@ -243,6 +252,17 @@ idprovider.<idprovidername>.autoLogin.allowedAudience=  (space separated strings
   ** `displayName`: Template for the display name in format of `@@{expression}`, e.g. `@@{userinfo.preferred_username}`.
   ** `email`: Template for the email in format of `@@{expression}`, e.g. `@@{userinfo.email}`.
 * `defaultGroups` (`idprovider.<idprovidername>.defaultGroups`): Groups to assign to this user on creation. A list of space-separated group keys. The key must be in the format `group:[idprovidername]:[groupname]`, e.g. `group:myoidcprovider:authors`.
+
+
+**Auto Login**
+
+* `autoLogin...` (`idprovider.<idprovidername>.autoLogin...` namespace): Auto login configuration.
+  ** `createUsers`: Create users automatically. If set to `true`, users will be created automatically if they don't exist.
+  ** `createSession`: Automatically create a session. If set to `true`, a session will be established upon the user's login. By default, the user will be logged in with `REQUEST` scope.
+  ** `wsHeader`: Look for a token in the Sec-WebSocket-Protocol header. If set to `true`, the app will look for a token in the Sec-WebSocket-Protocol header.
+  ** `allowedAudience`: Allowed audience. A list of space-separated strings. If set, the app will only accept tokens with an audience that matches one of the values in this list.
+
+To disable the ability to log in via the form, `clientId` and `clientSecret` must be omitted.
 
 **Rules**
 
@@ -293,6 +313,16 @@ Example: **Difi/ID-porten/VER1**
 {zwsp} +
 
 == Upgrade Notes
+
+=== Version 3
+
+Version `3.0` of this app introduces a breaking change:
+
+- The `jwksUri` field is now required in the ID Provider configuration to verify the token signature.
+- The `clientId` and `clientSecret` fields are now optional in the ID Provider configuration. If you want to disable the ability to log in via the form, these fields must be omitted.
+
+=== Version 2
+
 Version `2.0` of this app introduces a breaking change: ID Providers can only be configured via the config file (`com.enonic.app.oidcidprovider.cfg`) instead of editing the ID Provider form in the Users app UI. So, no configuration will be stored in / read from the data layer anymore.
 
 The following upgrade notes assume you currently have an earlier (`1.x`) version of OIDC ID provider app installed:
@@ -305,3 +335,4 @@ When editing an ID provider in the Users app, the ID provider name (1) is found 
 Create `com.enonic.app.oidcidprovider.cfg` in your XP instance's `config` folder. Then in the XP backoffice, open the Users app and edit the ID provider. Note the ID provider name (without the leading slash), and click the edit-form icon to view the configuration entered in the old app. Transfer the values into the `.cfg` file, the way it's specified above (the order may vary).
 
 For mapping config (`idprovider.<idprovidername>.mappings.displayName` and `idprovider.<idprovidername>.mappings.email`), remember the `@@`` syntax for the placeholders. Replace any `${` in the values with `@@{`!
+
