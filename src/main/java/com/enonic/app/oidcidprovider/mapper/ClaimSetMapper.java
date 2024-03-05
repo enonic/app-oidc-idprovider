@@ -2,19 +2,17 @@ package com.enonic.app.oidcidprovider.mapper;
 
 import java.util.Map;
 
-import com.nimbusds.jwt.JWTClaimsSet;
-
 import com.enonic.xp.script.serializer.MapGenerator;
 import com.enonic.xp.script.serializer.MapSerializable;
 
 public class ClaimSetMapper
     implements MapSerializable
 {
-    private final JWTClaimsSet claimSet;
+    private final Map<String, Object> claimMap;
 
     private ClaimSetMapper( final Builder builder )
     {
-        claimSet = builder.claimSet;
+        claimMap = builder.claimMap;
     }
 
     public static Builder create()
@@ -25,7 +23,6 @@ public class ClaimSetMapper
     @Override
     public void serialize( final MapGenerator gen )
     {
-        final Map<String, Object> claimMap = claimSet.getClaims();
         for ( Map.Entry<String, Object> claimEntry : claimMap.entrySet() )
         {
             gen.value( claimEntry.getKey(), claimEntry.getValue() );
@@ -34,15 +31,15 @@ public class ClaimSetMapper
 
     public static final class Builder
     {
-        private JWTClaimsSet claimSet;
+        private Map<String, Object> claimMap;
 
         private Builder()
         {
         }
 
-        public Builder claimSet( final JWTClaimsSet claimSet )
+        public Builder claimMap( final Map<String, Object> claimMap )
         {
-            this.claimSet = claimSet;
+            this.claimMap = claimMap;
             return this;
         }
 

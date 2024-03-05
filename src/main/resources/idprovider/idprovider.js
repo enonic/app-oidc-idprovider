@@ -76,6 +76,7 @@ function handleAuthenticationResponse(req) {
 
     //https://tools.ietf.org/html/rfc6749#section-2.3.1
     const idToken = oidcLib.requestIDToken({
+        idProviderName: idProviderConfig._idProviderName,
         issuer: idProviderConfig.issuer,
         tokenUrl: idProviderConfig.tokenUrl,
         method: idProviderConfig.method,

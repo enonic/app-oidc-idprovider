@@ -96,6 +96,7 @@ function validate(config, idProviderName) {
     checkConfig(config, 'issuer', idProviderName);
     checkConfig(config, 'authorizationUrl', idProviderName);
     checkConfig(config, 'tokenUrl', idProviderName);
+    checkConfig(config, 'jwksUri', idProviderName);
 
     if (config.clientId != null) {
         checkConfig(config, 'clientSecret', idProviderName);
