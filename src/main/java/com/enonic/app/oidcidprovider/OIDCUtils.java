@@ -37,17 +37,20 @@ public class OIDCUtils
 
         RSAAlgorithmProvider rsaAlgorithmProvider = idProviderConfigServiceSupplier.get().getAlgorithmProvider( idProviderName );
 
-        Algorithm algorithm = rsaAlgorithmProvider.getAlgorithm( decodedJWT.getAlgorithm() );
+        if ( rsaAlgorithmProvider != null )
+        {
+            Algorithm algorithm = rsaAlgorithmProvider.getAlgorithm( decodedJWT.getAlgorithm() );
 
-        DecodedJWT verifiedJWT = JWT.require( algorithm ).
-            withIssuer( issuer ).
-            withAudience( clientID ).
-            withClaim( "nonce", nonce ).
-            acceptLeeway( 1 ).   // 1 sec for nbf and iat
-            build().
-            verify( decodedJWT );
+            JWT.require( algorithm ).
+                withIssuer( issuer ).
+                withAudience( clientID ).
+                withClaim( "nonce", nonce ).
+                acceptLeeway( 1 ).   // 1 sec for nbf and iat
+                build().
+                verify( decodedJWT );
+        }
 
-        Map<String, Object> claims = MAPPER.readValue( Base64.getDecoder().decode( verifiedJWT.getPayload() ), Map.class );
+        Map<String, Object> claims = MAPPER.readValue( Base64.getDecoder().decode( decodedJWT.getPayload() ), Map.class );
 
         return ClaimSetMapper.create().claimMap( claims ).build();
     }
