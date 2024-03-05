@@ -39,8 +39,9 @@ exports.getIdProviderConfig = function (idProviderName) {
         defaultGroups: parseStringArray(rawIdProviderConfig[`${idProviderKeyBase}.defaultGroups`]),
         claimUsername: rawIdProviderConfig[`${idProviderKeyBase}.claimUsername`] || 'sub',
         mappings: {
-            displayName: firstAtsToDollar(rawIdProviderConfig[`${idProviderKeyBase}.mappings.displayName`]) || '${preferred_username}',
-            email: firstAtsToDollar(rawIdProviderConfig[`${idProviderKeyBase}.mappings.email`]) || '${email}',
+            displayName: firstAtsToDollar(rawIdProviderConfig[`${idProviderKeyBase}.mappings.displayName`]) ||
+                         '${userinfo.preferred_username}',
+            email: firstAtsToDollar(rawIdProviderConfig[`${idProviderKeyBase}.mappings.email`]) || '${userinfo.email}',
         },
         endSession: {
             url: rawIdProviderConfig[`${idProviderKeyBase}.endSession.url`] || null,
@@ -55,7 +56,7 @@ exports.getIdProviderConfig = function (idProviderName) {
         additionalEndpoints: extractPropertiesToArray(rawIdProviderConfig, `${idProviderKeyBase}.additionalEndpoints.`,
             ADDITIONAL_ENDPOINTS),
         autoLogin: {
-            createUsers: defaultBooleanTrue(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.createUsers`]),
+            createUser: defaultBooleanTrue(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.createUser`]),
             createSession: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.createSession`] === 'true' || false,
             wsHeader: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.wsHeader`] === 'true' || false,
             allowedAudience: parseStringArray(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.allowedAudience`]),

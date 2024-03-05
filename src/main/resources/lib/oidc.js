@@ -2,16 +2,19 @@ const preconditions = require('/lib/preconditions');
 const httpClient = require('/lib/http-client');
 
 function generateToken() {
-    return Java.type('com.enonic.app.oidcidprovider.OIDCUtils').generateToken();
+    const bean = __.newBean('com.enonic.app.oidcidprovider.OIDCUtils');
+    return bean.generateToken();
 }
 
-function parseClaims(jwt, issuer, clientId, nonce) {
-    const parsedJwt = Java.type('com.enonic.app.oidcidprovider.OIDCUtils').parseClaims(jwt, issuer, clientId, nonce);
+function parseClaims(jwt, issuer, clientId, nonce, idProviderName) {
+    const bean = __.newBean('com.enonic.app.oidcidprovider.OIDCUtils');
+    const parsedJwt = bean.parseClaims(jwt, issuer, clientId, nonce, idProviderName);
     return __.toNativeObject(parsedJwt);
 }
 
 function generateJwt(jwtData, clientSecret) {
-    return Java.type('com.enonic.app.oidcidprovider.OIDCUtils').generateJwt(jwtData, clientSecret);
+    const bean = __.newBean('com.enonic.app.oidcidprovider.OIDCUtils');
+    return bean.generateJwt(jwtData, clientSecret);
 }
 
 function generateAuthorizationUrl(params) {
@@ -40,6 +43,7 @@ function requestIDToken(params) {
     const redirectUri = preconditions.checkParameter(params, 'redirectUri');
     const nonce = preconditions.checkParameter(params, 'nonce');
     const code = preconditions.checkParameter(params, 'code');
+    const idProviderName = preconditions.checkParameter(params, 'idProviderName');
     const method = params.method;
 
     //https://openid.net/specs/openid-connect-core-1_0.html#TokenRequest
@@ -92,7 +96,7 @@ function requestIDToken(params) {
         throw 'Token error [' + params.error + ']' + (params.error_description ? ': ' + params.error_description : '');
     }
 
-    const claims = parseClaims(responseBody.id_token, issuer, clientId, nonce);
+    const claims = parseClaims(responseBody.id_token, issuer, clientId, nonce, idProviderName);
     log.debug('Parsed claims: ' + JSON.stringify(claims));
 
     return {

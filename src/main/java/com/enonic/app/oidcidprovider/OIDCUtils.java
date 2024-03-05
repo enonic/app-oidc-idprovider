@@ -2,52 +2,67 @@ package com.enonic.app.oidcidprovider;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.text.ParseException;
+import java.util.Base64;
 import java.util.Map;
+import java.util.function.Supplier;
 
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSObject;
-import com.nimbusds.jose.JWSSigner;
-import com.nimbusds.jose.Payload;
-import com.nimbusds.jose.crypto.MACSigner;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.JWTParser;
-import com.nimbusds.jwt.proc.BadJWTException;
-import com.nimbusds.oauth2.sdk.id.ClientID;
-import com.nimbusds.oauth2.sdk.id.Issuer;
-import com.nimbusds.openid.connect.sdk.Nonce;
-import com.nimbusds.openid.connect.sdk.validators.IDTokenClaimsVerifier;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.enonic.app.oidcidprovider.handler.IdProviderConfigService;
+import com.enonic.app.oidcidprovider.jwt.RSAAlgorithmProvider;
 import com.enonic.app.oidcidprovider.mapper.ClaimSetMapper;
+import com.enonic.xp.script.bean.BeanContext;
+import com.enonic.xp.script.bean.ScriptBean;
 
 public class OIDCUtils
+    implements ScriptBean
 {
-    public static String generateToken()
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    private Supplier<IdProviderConfigService> idProviderConfigServiceSupplier;
+
+    public String generateToken()
     {
         return new BigInteger( 130, new SecureRandom() ).toString( 32 );
     }
 
-    public static ClaimSetMapper parseClaims( final String s, final String issuer, final String clientID, final String nonce )
-        throws ParseException, BadJWTException
-    {
-        final JWTClaimsSet jwtClaimsSet = JWTParser.parse( s ).getJWTClaimsSet();
-
-        final IDTokenClaimsVerifier verifier =
-            new IDTokenClaimsVerifier( new Issuer( issuer ), new ClientID( clientID ), new Nonce( nonce ), 1 );
-        verifier.verify( jwtClaimsSet, null );
-
-        return ClaimSetMapper.create().claimSet( jwtClaimsSet ).build();
-    }
-
-    public static String generateJwt( final Map message, final String clientSecret )
+    public ClaimSetMapper parseClaims( final String jwtToken, final String issuer, final String clientID, final String nonce,
+                                       final String idProviderName )
         throws Exception
     {
-        final JWSSigner signer = new MACSigner( clientSecret );
-        final JWSObject jwsObject = new JWSObject( new JWSHeader( JWSAlgorithm.HS256 ), new Payload( message ) );
+        DecodedJWT decodedJWT = JWT.decode( jwtToken );
 
-        jwsObject.sign( signer );
+        RSAAlgorithmProvider rsaAlgorithmProvider = idProviderConfigServiceSupplier.get().getAlgorithmProvider( idProviderName );
 
-        return jwsObject.serialize();
+        if ( rsaAlgorithmProvider != null )
+        {
+            Algorithm algorithm = rsaAlgorithmProvider.getAlgorithm( decodedJWT.getAlgorithm() );
+
+            JWT.require( algorithm ).
+                withIssuer( issuer ).
+                withAudience( clientID ).
+                withClaim( "nonce", nonce ).
+                acceptLeeway( 1 ).   // 1 sec for nbf and iat
+                build().
+                verify( decodedJWT );
+        }
+
+        Map<String, Object> claims = MAPPER.readValue( Base64.getDecoder().decode( decodedJWT.getPayload() ), Map.class );
+
+        return ClaimSetMapper.create().claimMap( claims ).build();
+    }
+
+    public String generateJwt( final Map<String, Object> message, final String clientSecret )
+    {
+        return JWT.create().withPayload( message ).sign( Algorithm.HMAC256( clientSecret ) );
+    }
+
+    @Override
+    public void initialize( final BeanContext beanContext )
+    {
+        this.idProviderConfigServiceSupplier = beanContext.getService( IdProviderConfigService.class );
     }
 }
