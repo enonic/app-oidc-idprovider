@@ -45,17 +45,17 @@ It has the following format:  `[VHost source]/_/idprovider/[ID Provider name]`. 
 
 You will need to gather the following information from the Authorization Server setup, for the <<#id_provider_creation, ID Provider configuration>>
 
-. The Client ID. Must be set, if log in via form is enabled.
-. The Client secret. Must be set, if log in via form is enabled.
+. The Client ID. Not required authentication is done only by Auto Login.
+. The Client secret. Not required authentication is done only by Auto Login.
 . The Issuer Identifier (URL)
 . The Authorization endpoint URL
 . The Token endpoint URL
 . The JWKS URI
-. The `oidcWellKnownEndpoint` (OpenID Provider Configuration URL), to obtain the values for the above fields and for `userinfoUrl`.
+. The `oidcWellKnownEndpoint` (Provider's OpenID Connect Discovery URL), to obtain the values for the above fields and for `userinfoUrl`.
 
 You might have been given only the Issuer URL instead of the list of endpoint URLs.
 In that case the endpoint URLs are accessible under: `[Issuer URL]/.well-known/openid-configuration`
-The JSON result will contain the required information: `issuer`, `authorization_endpoint`, `token_endpoint` and `jwks_uri`.
+The JSON result will contain the additional information: `issuer`, `authorization_endpoint`, `token_endpoint` and `jwks_uri`.
 
 {zwsp} +
 
@@ -165,8 +165,8 @@ idprovider.<idprovidername>.authorizationUrl=  (string, optional)
 idprovider.<idprovidername>.tokenUrl=  (string, optional)
 idprovider.<idprovidername>.userinfoUrl=  (string, optional)
 idprovider.<idprovidername>.jwksUri=  (string, optional)
-idprovider.<idprovidername>.useUserinfo= (true|false, optional, default to "true")
-idprovider.<idprovidername>.claimUsername= (string, optional, default to "sub")
+idprovider.<idprovidername>.useUserinfo= (true|false, optional, defaults to "true")
+idprovider.<idprovidername>.claimUsername= (string, optional, defaults to "sub")
 idprovider.<idprovidername>.method=  ((basic|post|jwt), optional, default to "post")
 idprovider.<idprovidername>.scopes=  (space separated strings, optional, default to "profile email")
 
@@ -188,15 +188,15 @@ idprovider.<idprovidername>.endSession.additionalParameters.0.value=  (string, r
 idprovider.<idprovidername>.clientId=  (string, optional)
 idprovider.<idprovidername>.clientSecret=  (string, optional)
 
-idprovider.<idprovidername>.mappings.displayName=  (string, required, default to ${userinfo.preferred_username})
-idprovider.<idprovidername>.mappings.email=  (string, required, default to ${userinfo.email})
+idprovider.<idprovidername>.mappings.displayName=  (string, required, defaults to ${userinfo.preferred_username})
+idprovider.<idprovidername>.mappings.email=  (string, required, defaults to ${userinfo.email})
 
 idprovider.<idprovidername>.defaultGroups=  (space separated group keys, optional)
 
 idprovider.<idprovidername>.rules.forceEmailVerification=  (true | false, required)
 
-idprovider.<idprovidername>.autoLogin.createUser=  (true|false, optional, default to "true")
-idprovider.<idprovidername>.autoLogin.createSession=  (true|false, optional, default to "false")
+idprovider.<idprovidername>.autoLogin.createUser=  (true|false, optional, defaults to "true")
+idprovider.<idprovidername>.autoLogin.createSession=  (true|false, optional, defaults to "false")
 # Look for a token in the Sec-WebSocket-Protocol header.
 idprovider.<idprovidername>.autoLogin.wsHeader=  (true|false, optional, default to "false")
 idprovider.<idprovidername>.autoLogin.allowedAudience=  (space separated strings, optional)
@@ -208,8 +208,8 @@ idprovider.<idprovidername>.autoLogin.allowedAudience=  (space separated strings
 ==== Fields in the config
 
 * `autoinit`: Automatic initialization. If the config file contains `autoinit=true`, then during startup this app will automatically create ID providers for all settings declared in the file, if they don't already exist. For example, `idprovider.myfirstidp.someKey=someValue` and `idprovider.anotheridp.anotherKey=anotherValue` will declare two idproviders named `myfirstidp` and `anotheridp`.
-* `displayName`: Display name of ID Provider in User app.
-* `description`: Description of ID Provider in User app.
+* `displayName`: Display name of ID Provider in Users app.
+* `description`: Description of ID Provider in Users app.
 * `useUserinfo`: Use the Userinfo endpoint to retrieve user claims.
 * `claimUsername`: Claim to use as username. The value is a string, the default value is `sub`.
 
@@ -262,7 +262,7 @@ idprovider.<idprovidername>.autoLogin.allowedAudience=  (space separated strings
   ** `wsHeader`: Look for a token in the Sec-WebSocket-Protocol header. If set to `true`, the app will look for a token in the Sec-WebSocket-Protocol header.
   ** `allowedAudience`: Allowed audience. A list of space-separated strings. If set, the app will only accept tokens with an audience that matches one of the values in this list.
 
-To disable the ability to log in via the form, `clientId` and `clientSecret` must be omitted.
+To disable the ability to auth by Authorization Code Flow, `clientId` should be omitted.
 
 **Rules**
 
@@ -319,7 +319,7 @@ Example: **Difi/ID-porten/VER1**
 Version `3.0` of this app introduces a breaking change:
 
 - To verify the token signature the `jwksUri` field is now required in the ID Provider configuration.
-- The `clientId` and `clientSecret` fields are now optional in the ID Provider configuration. If you want to disable the ability to log in via the form, these fields must be omitted.
+- The `clientId` and `clientSecret` fields are now optional in the ID Provider configuration. If you want to disable the ability to auth by Authorization Code Flow, `clientId` should be omitted.
 
 === Version 2
 
