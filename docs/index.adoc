@@ -164,7 +164,7 @@ idprovider.<idprovidername>.issuer=  (string, optional)
 idprovider.<idprovidername>.authorizationUrl=  (string, optional)
 idprovider.<idprovidername>.tokenUrl=  (string, optional)
 idprovider.<idprovidername>.userinfoUrl=  (string, optional)
-idprovider.<idprovidername>.jwksUri=  (string, required)
+idprovider.<idprovidername>.jwksUri=  (string, optional)
 idprovider.<idprovidername>.useUserinfo= (true|false, optional, default to "true")
 idprovider.<idprovidername>.claimUsername= (string, optional, default to "sub")
 idprovider.<idprovidername>.method=  ((basic|post|jwt), optional, default to "post")
@@ -195,7 +195,7 @@ idprovider.<idprovidername>.defaultGroups=  (space separated group keys, optiona
 
 idprovider.<idprovidername>.rules.forceEmailVerification=  (true | false, required)
 
-idprovider.<idprovidername>.autoLogin.createUsers=  (true|false, optional, default to "true")
+idprovider.<idprovidername>.autoLogin.createUser=  (true|false, optional, default to "true")
 idprovider.<idprovidername>.autoLogin.createSession=  (true|false, optional, default to "false")
 # Look for a token in the Sec-WebSocket-Protocol header.
 idprovider.<idprovidername>.autoLogin.wsHeader=  (true|false, optional, default to "false")
@@ -256,9 +256,9 @@ idprovider.<idprovidername>.autoLogin.allowedAudience=  (space separated strings
 
 **Auto Login**
 
-* `autoLogin...` (`idprovider.<idprovidername>.autoLogin...` namespace): Auto login configuration.
-  ** `createUsers`: Create users automatically. If set to `true`, users will be created automatically if they don't exist.
-  ** `createSession`: Automatically create a session. If set to `true`, a session will be established upon the user's login. By default, the user will be logged in with `REQUEST` scope.
+* `autoLogin...` (`idprovider.<idprovidername>.autoLogin...` namespace): Auto login configuration. To enable auto login, the `jwksUri` config must be set.
+  ** `createUser`: Create a user. If set to `true`, a user will be created automatically if they don't exist.
+  ** `createSession`: Create a session. If set to `true`, a session will be established upon the user's login. By default, the user will be logged in with `REQUEST` scope.
   ** `wsHeader`: Look for a token in the Sec-WebSocket-Protocol header. If set to `true`, the app will look for a token in the Sec-WebSocket-Protocol header.
   ** `allowedAudience`: Allowed audience. A list of space-separated strings. If set, the app will only accept tokens with an audience that matches one of the values in this list.
 
@@ -318,7 +318,7 @@ Example: **Difi/ID-porten/VER1**
 
 Version `3.0` of this app introduces a breaking change:
 
-- The `jwksUri` field is now required in the ID Provider configuration to verify the token signature.
+- To verify the token signature the `jwksUri` field is now required in the ID Provider configuration.
 - The `clientId` and `clientSecret` fields are now optional in the ID Provider configuration. If you want to disable the ability to log in via the form, these fields must be omitted.
 
 === Version 2
