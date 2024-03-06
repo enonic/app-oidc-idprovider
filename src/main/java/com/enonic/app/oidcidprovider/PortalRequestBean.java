@@ -34,7 +34,7 @@ public class PortalRequestBean
         return ServletRequestUrlHelper.getFullUrl( this.portalRequest.getRawRequest() );
     }
 
-    public void storeContext( final String state, final String nonce, final String originalUrl, final String redirectUri )
+    public void storeContext( final String state, final String nonce, final String originalUrl, final String redirectUri, final String codeVerifier )
     {
         LOCK.lock();
         try
@@ -50,7 +50,7 @@ public class PortalRequestBean
             }
 
             final Context context =
-                Context.create().state( state ).nonce( nonce ).originalUrl( originalUrl ).redirectUri( redirectUri ).build();
+                Context.create().state( state ).nonce( nonce ).originalUrl( originalUrl ).redirectUri( redirectUri ).codeVerifier( codeVerifier ).build();
 
             contextMap.put( state, context.asMap() );
 

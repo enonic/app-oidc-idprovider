@@ -31,6 +31,7 @@ public class ContextMapper
         gen.value( "nonce", context.getNonce() );
         gen.value( "originalUrl", context.getOriginalUrl() );
         gen.value( "redirectUri", context.getRedirectUri() );
+        gen.value( "codeVerifier", context.getCodeVerifier() );
     }
 
     public static final class Builder

@@ -1,6 +1,9 @@
 package com.enonic.app.oidcidprovider;
 
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Map;
@@ -20,13 +23,41 @@ import com.enonic.xp.script.bean.ScriptBean;
 public class OIDCUtils
     implements ScriptBean
 {
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private Supplier<IdProviderConfigService> idProviderConfigServiceSupplier;
 
     public String generateToken()
     {
-        return new BigInteger( 130, new SecureRandom() ).toString( 32 );
+        return new BigInteger( 130, SECURE_RANDOM ).toString( 32 );
+    }
+
+    public String generateVerifier()
+    {
+        final byte[] bytes = new byte[32];
+        SECURE_RANDOM.nextBytes( bytes );
+        return Base64.getUrlEncoder().withoutPadding().encodeToString( bytes );
+    }
+
+    public String generateChallenge( String verifier )
+    {
+        return Base64.getUrlEncoder()
+            .withoutPadding()
+            .encodeToString( sha256().digest( verifier.getBytes( StandardCharsets.ISO_8859_1 ) ) );
+    }
+
+    public MessageDigest sha256()
+    {
+        try
+        {
+            return MessageDigest.getInstance( "SHA-256" );
+        }
+        catch ( NoSuchAlgorithmException e )
+        {
+            throw new AssertionError( e );
+        }
     }
 
     public ClaimSetMapper parseClaims( final String jwtToken, final String issuer, final String clientID, final String nonce,

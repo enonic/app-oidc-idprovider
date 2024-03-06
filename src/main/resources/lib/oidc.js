@@ -17,6 +17,14 @@ function generateJwt(jwtData, clientSecret) {
     return bean.generateJwt(jwtData, clientSecret);
 }
 
+function generateVerifier() {
+    return __.newBean('com.enonic.app.oidcidprovider.OIDCUtils').generateVerifier();
+}
+
+function generateChallenge(verifier) {
+    return __.newBean('com.enonic.app.oidcidprovider.OIDCUtils').generateChallenge(verifier);
+}
+
 function generateAuthorizationUrl(params) {
     const authorizationUrl = preconditions.checkParameter(params, 'authorizationUrl');
     const clientId = preconditions.checkParameter(params, 'clientId');
@@ -24,15 +32,17 @@ function generateAuthorizationUrl(params) {
     const scope = preconditions.checkParameter(params, 'scopes');
     const state = preconditions.checkParameter(params, 'state');
     const nonce = preconditions.checkParameter(params, 'nonce');
+    const codeChallenge = params.codeChallenge;
 
     //https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest
     return authorizationUrl
-           + '?scope=' + encodeURIComponent(scope)
-           + '&response_type=code'
+           + '?response_type=code'
+           + '&scope=' + encodeURIComponent(scope)
            + '&client_id=' + encodeURIComponent(clientId)
            + '&redirect_uri=' + encodeURIComponent(redirectUri)
            + '&state=' + state
-           + '&nonce=' + nonce;
+           + '&nonce=' + nonce
+           + (codeChallenge ? '&code_challenge_method=S256' + '&code_challenge=' + codeChallenge : '');
 }
 
 function requestIDToken(params) {
@@ -45,9 +55,14 @@ function requestIDToken(params) {
     const code = preconditions.checkParameter(params, 'code');
     const idProviderName = preconditions.checkParameter(params, 'idProviderName');
     const method = params.method;
+    const codeVerifier = params.codeVerifier;
 
     //https://openid.net/specs/openid-connect-core-1_0.html#TokenRequest
     let requestParams = {'grant_type': 'authorization_code', 'code': code, 'redirect_uri': redirectUri};
+
+    if (codeVerifier) {
+        requestParams.code_verifier = codeVerifier;
+    }
 
     let headers = null;
 
@@ -136,3 +151,5 @@ exports.generateAuthorizationUrl = generateAuthorizationUrl;
 exports.requestIDToken = requestIDToken;
 exports.requestOAuth2 = requestOAuth2;
 exports.mergeClaims = mergeClaims;
+exports.generateVerifier = generateVerifier;
+exports.generateChallenge = generateChallenge;

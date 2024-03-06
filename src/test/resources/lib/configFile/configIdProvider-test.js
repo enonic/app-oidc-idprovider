@@ -29,6 +29,7 @@ exports.testValidConfig = () => {
                 'idprovider.myidp.displayName': 'displayName',
                 'idprovider.myidp.description': 'description',
 
+                'idprovider.myidp.usePkce': 'false',
                 'idprovider.myidp.issuer': 'custom_issuer',
                 'idprovider.myidp.authorizationUrl': 'custom_authorizationUrl',
                 'idprovider.myidp.tokenUrl': 'custom_tokenUrl',
@@ -74,6 +75,7 @@ exports.testValidConfig = () => {
 
     test.assertEquals('displayName', config.displayName);
     test.assertEquals('description', config.description);
+    test.assertFalse(config.usePkce);
     test.assertEquals('custom_issuer', config.issuer);
     test.assertEquals('custom_authorizationUrl', config.authorizationUrl);
     test.assertEquals('custom_tokenUrl', config.tokenUrl);
@@ -124,6 +126,7 @@ exports.testDefaultConfigWithRequiredOptions = () => {
 
     test.assertNull(config.displayName);
     test.assertNull(config.description);
+    test.assertTrue(config.usePkce);
     test.assertEquals('wellKnownEndpoint', config.oidcWellKnownEndpoint);
     test.assertEquals('issuer', config.issuer);
     test.assertEquals('authorizationUrl', config.authorizationUrl);
@@ -144,10 +147,7 @@ exports.testDefaultConfigWithRequiredOptions = () => {
     test.assertEquals('${userinfo.preferred_username}', config.mappings.displayName);
     test.assertEquals('${userinfo.email}', config.mappings.email);
 
-    test.assertNull(config.endSession.url);
-    test.assertNull(config.endSession.idTokenHintKey);
-    test.assertNull(config.endSession.postLogoutRedirectUriKey);
-    test.assertJsonEquals([], config.endSession.additionalParameters);
+    test.assertNull(config.endSession);
 
     test.assertFalse(config.rules.forceEmailVerification);
 
@@ -219,6 +219,7 @@ exports.testValidationOfEndSessionAdditionalParameters = () => {
             return {
                 'idprovider.myidp.oidcWellKnownEndpoint': 'wellKnownEndpoint',
 
+                'idprovider.myidp.endSession.url': 'logoutUrl',
                 'idprovider.myidp.endSession.additionalParameters.0.key': 'k0',
                 'idprovider.myidp.endSession.additionalParameters.0.value': 'v0',
                 'idprovider.myidp.endSession.additionalParameters.1.value': 'v1',  // key is missing for this parameter
