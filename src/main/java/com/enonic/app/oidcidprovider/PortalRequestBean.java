@@ -19,6 +19,8 @@ import com.enonic.xp.web.servlet.ServletRequestUrlHelper;
 public class PortalRequestBean
     implements ScriptBean
 {
+    private static final String AUTO_LOGIN_FAILED_ATTRIBUTE = PortalRequestBean.class.getName() + ".autoLoginFailed";
+
     private static final String CONTEXT_KEY = "com.enonic.app.oidcidprovider.context";
 
     private static final String ID_TOKEN_KEY = "com.enonic.app.oidcidprovider.idtoken";
@@ -32,7 +34,7 @@ public class PortalRequestBean
         return ServletRequestUrlHelper.getFullUrl( this.portalRequest.getRawRequest() );
     }
 
-    public void storeContext( final String state, final String nonce, final String originalUrl, final String redirectUri )
+    public void storeContext( final String state, final String nonce, final String originalUrl, final String redirectUri, final String codeVerifier )
     {
         LOCK.lock();
         try
@@ -48,7 +50,7 @@ public class PortalRequestBean
             }
 
             final Context context =
-                Context.create().state( state ).nonce( nonce ).originalUrl( originalUrl ).redirectUri( redirectUri ).build();
+                Context.create().state( state ).nonce( nonce ).originalUrl( originalUrl ).redirectUri( redirectUri ).codeVerifier( codeVerifier ).build();
 
             contextMap.put( state, context.asMap() );
 
@@ -112,6 +114,16 @@ public class PortalRequestBean
     {
         final HttpSession session = portalRequest.getRawRequest().getSession( false );
         return session != null ? (String) session.getAttribute( ID_TOKEN_KEY ) : null;
+    }
+
+    public void autoLoginFailed()
+    {
+        this.portalRequest.getRawRequest().setAttribute( AUTO_LOGIN_FAILED_ATTRIBUTE, Boolean.TRUE );
+    }
+
+    public boolean isAutoLoginFailed()
+    {
+        return Boolean.TRUE.equals( this.portalRequest.getRawRequest().getAttribute( AUTO_LOGIN_FAILED_ATTRIBUTE ) );
     }
 
     @Override

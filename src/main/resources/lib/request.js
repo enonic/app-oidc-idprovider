@@ -5,7 +5,7 @@ function getRequestUrl() {
 
 function storeContext(params) {
     var bean = __.newBean('com.enonic.app.oidcidprovider.PortalRequestBean');
-    bean.storeContext(params.state, params.nonce, params.originalUrl, params.redirectUri);
+    bean.storeContext(params.state, params.nonce, params.originalUrl, params.redirectUri, params.codeVerifier);
 }
 
 function removeContext(state) {
@@ -23,8 +23,20 @@ function getIdToken() {
     return bean.getIdToken();
 }
 
+function autoLoginFailed() {
+    const bean = __.newBean('com.enonic.app.oidcidprovider.PortalRequestBean');
+    bean.autoLoginFailed();
+}
+
+function isAutoLoginFailed() {
+    const bean = __.newBean('com.enonic.app.oidcidprovider.PortalRequestBean');
+    return bean.isAutoLoginFailed();
+}
+
 exports.getRequestUrl = getRequestUrl;
 exports.storeContext = storeContext;
 exports.removeContext = removeContext;
 exports.storeIdToken = storeIdToken;
 exports.getIdToken = getIdToken;
+exports.autoLoginFailed = autoLoginFailed;
+exports.isAutoLoginFailed = isAutoLoginFailed;

@@ -2,16 +2,27 @@ const preconditions = require('/lib/preconditions');
 const httpClient = require('/lib/http-client');
 
 function generateToken() {
-    return Java.type('com.enonic.app.oidcidprovider.OIDCUtils').generateToken();
+    const bean = __.newBean('com.enonic.app.oidcidprovider.OIDCUtils');
+    return bean.generateToken();
 }
 
-function parseClaims(jwt, issuer, clientId, nonce) {
-    const parsedJwt = Java.type('com.enonic.app.oidcidprovider.OIDCUtils').parseClaims(jwt, issuer, clientId, nonce);
+function parseClaims(jwt, issuer, clientId, nonce, idProviderName) {
+    const bean = __.newBean('com.enonic.app.oidcidprovider.OIDCUtils');
+    const parsedJwt = bean.parseClaims(jwt, issuer, clientId, nonce, idProviderName);
     return __.toNativeObject(parsedJwt);
 }
 
 function generateJwt(jwtData, clientSecret) {
-    return Java.type('com.enonic.app.oidcidprovider.OIDCUtils').generateJwt(jwtData, clientSecret);
+    const bean = __.newBean('com.enonic.app.oidcidprovider.OIDCUtils');
+    return bean.generateJwt(jwtData, clientSecret);
+}
+
+function generateVerifier() {
+    return __.newBean('com.enonic.app.oidcidprovider.OIDCUtils').generateVerifier();
+}
+
+function generateChallenge(verifier) {
+    return __.newBean('com.enonic.app.oidcidprovider.OIDCUtils').generateChallenge(verifier);
 }
 
 function generateAuthorizationUrl(params) {
@@ -21,15 +32,17 @@ function generateAuthorizationUrl(params) {
     const scope = preconditions.checkParameter(params, 'scopes');
     const state = preconditions.checkParameter(params, 'state');
     const nonce = preconditions.checkParameter(params, 'nonce');
+    const codeChallenge = params.codeChallenge;
 
     //https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest
     return authorizationUrl
-           + '?scope=' + encodeURIComponent(scope)
-           + '&response_type=code'
+           + '?response_type=code'
+           + '&scope=' + encodeURIComponent(scope)
            + '&client_id=' + encodeURIComponent(clientId)
            + '&redirect_uri=' + encodeURIComponent(redirectUri)
            + '&state=' + state
-           + '&nonce=' + nonce;
+           + '&nonce=' + nonce
+           + (codeChallenge ? '&code_challenge_method=S256' + '&code_challenge=' + codeChallenge : '');
 }
 
 function requestIDToken(params) {
@@ -40,10 +53,16 @@ function requestIDToken(params) {
     const redirectUri = preconditions.checkParameter(params, 'redirectUri');
     const nonce = preconditions.checkParameter(params, 'nonce');
     const code = preconditions.checkParameter(params, 'code');
+    const idProviderName = preconditions.checkParameter(params, 'idProviderName');
     const method = params.method;
+    const codeVerifier = params.codeVerifier;
 
     //https://openid.net/specs/openid-connect-core-1_0.html#TokenRequest
     let requestParams = {'grant_type': 'authorization_code', 'code': code, 'redirect_uri': redirectUri};
+
+    if (codeVerifier) {
+        requestParams.code_verifier = codeVerifier;
+    }
 
     let headers = null;
 
@@ -92,7 +111,7 @@ function requestIDToken(params) {
         throw 'Token error [' + params.error + ']' + (params.error_description ? ': ' + params.error_description : '');
     }
 
-    const claims = parseClaims(responseBody.id_token, issuer, clientId, nonce);
+    const claims = parseClaims(responseBody.id_token, issuer, clientId, nonce, idProviderName);
     log.debug('Parsed claims: ' + JSON.stringify(claims));
 
     return {
@@ -132,3 +151,5 @@ exports.generateAuthorizationUrl = generateAuthorizationUrl;
 exports.requestIDToken = requestIDToken;
 exports.requestOAuth2 = requestOAuth2;
 exports.mergeClaims = mergeClaims;
+exports.generateVerifier = generateVerifier;
+exports.generateChallenge = generateChallenge;
