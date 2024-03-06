@@ -5,7 +5,7 @@ function getRequestUrl() {
 
 function storeContext(params) {
     var bean = __.newBean('com.enonic.app.oidcidprovider.PortalRequestBean');
-    bean.storeContext(params.state, params.nonce, params.originalUrl, params.redirectUri);
+    bean.storeContext(params.state, params.nonce, params.originalUrl, params.redirectUri, params.codeVerifier);
 }
 
 function removeContext(state) {

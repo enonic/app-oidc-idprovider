@@ -12,12 +12,15 @@ public class Context
 
     private final String originalUrl;
 
+    private final String codeVerifier;
+
     private Context( final Builder builder )
     {
         state = builder.state;
         nonce = builder.nonce;
         redirectUri = builder.redirectUri;
         originalUrl = builder.originalUrl;
+        codeVerifier = builder.codeVerifier;
     }
 
     public static Builder create()
@@ -45,17 +48,21 @@ public class Context
         return originalUrl;
     }
 
-    public Map<String, String> asMap() {
-        return Map.of( "state", state, "nonce", nonce, "redirectUri", redirectUri, "originalUrl", originalUrl );
+    public String getCodeVerifier()
+    {
+        return codeVerifier;
     }
 
-    public static Context fromMap( final Map<String, String> map ) {
-        return Context.create().
-                state( map.get("state") ).
-                nonce( map.get("nonce") ).
-                redirectUri( map.get("redirectUri") ).
-                originalUrl( map.get("originalUrl") ).
-                build();
+    public Map<String, String> asMap()
+    {
+        return Map.of( "state", state, "nonce", nonce, "redirectUri", redirectUri, "originalUrl", originalUrl, "codeVerifier",
+                       codeVerifier );
+    }
+
+    public static Context fromMap( final Map<String, String> map )
+    {
+        return Context.create().state( map.get( "state" ) ).nonce( map.get( "nonce" ) ).redirectUri( map.get( "redirectUri" ) ).originalUrl(
+            map.get( "originalUrl" ) ).codeVerifier( map.get( "codeVerifier" ) ).build();
     }
 
     public static final class Builder
@@ -67,6 +74,8 @@ public class Context
         private String redirectUri;
 
         private String originalUrl;
+
+        private String codeVerifier;
 
         private Builder()
         {
@@ -93,6 +102,12 @@ public class Context
         public Builder originalUrl( final String originalUrl )
         {
             this.originalUrl = originalUrl;
+            return this;
+        }
+
+        public Builder codeVerifier( final String codeVerifier )
+        {
+            this.codeVerifier = codeVerifier;
             return this;
         }
 

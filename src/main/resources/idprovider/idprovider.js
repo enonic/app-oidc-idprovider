@@ -21,14 +21,19 @@ function redirectToAuthorizationEndpoint() {
 
     log.debug('Handling 401 error...');
 
+    const usePkce = idProviderConfig.usePkce;
     const redirectUri = generateRedirectUri();
 
     const state = oidcLib.generateToken();
     const nonce = oidcLib.generateToken();
+    const codeVerifier = usePkce ? oidcLib.generateVerifier() : undefined
+    const codeChallenge = usePkce ? oidcLib.generateChallenge(codeVerifier) : undefined;
+
     const originalUrl = requestLib.getRequestUrl();
     const context = {
         state: state,
         nonce: nonce,
+        codeVerifier: codeVerifier,
         originalUrl: originalUrl,
         redirectUri: redirectUri
     };
@@ -41,7 +46,8 @@ function redirectToAuthorizationEndpoint() {
         redirectUri: redirectUri,
         scopes: 'openid' + (idProviderConfig.scopes ? ' ' + idProviderConfig.scopes : ''),
         state: state,
-        nonce: nonce
+        nonce: nonce,
+        codeChallenge: codeChallenge,
     });
     log.debug('Generated authorization URL: ' + authorizationUrl);
 
@@ -84,6 +90,7 @@ function handleAuthenticationResponse(req) {
         clientSecret: idProviderConfig.clientSecret,
         redirectUri: context.redirectUri,
         nonce: context.nonce,
+        codeVerifier: context.codeVerifier,
         code: code
     });
 

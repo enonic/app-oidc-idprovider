@@ -29,6 +29,7 @@ exports.testValidConfig = () => {
                 'idprovider.myidp.displayName': 'displayName',
                 'idprovider.myidp.description': 'description',
 
+                'idprovider.myidp.usePkce': 'false',
                 'idprovider.myidp.issuer': 'custom_issuer',
                 'idprovider.myidp.authorizationUrl': 'custom_authorizationUrl',
                 'idprovider.myidp.tokenUrl': 'custom_tokenUrl',
@@ -74,6 +75,7 @@ exports.testValidConfig = () => {
 
     test.assertEquals('displayName', config.displayName);
     test.assertEquals('description', config.description);
+    test.assertFalse(config.usePkce);
     test.assertEquals('custom_issuer', config.issuer);
     test.assertEquals('custom_authorizationUrl', config.authorizationUrl);
     test.assertEquals('custom_tokenUrl', config.tokenUrl);
@@ -124,6 +126,7 @@ exports.testDefaultConfigWithRequiredOptions = () => {
 
     test.assertNull(config.displayName);
     test.assertNull(config.description);
+    test.assertTrue(config.usePkce);
     test.assertEquals('wellKnownEndpoint', config.oidcWellKnownEndpoint);
     test.assertEquals('issuer', config.issuer);
     test.assertEquals('authorizationUrl', config.authorizationUrl);

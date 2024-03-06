@@ -22,6 +22,7 @@ exports.getIdProviderConfig = function (idProviderName) {
     const config = {
         _idProviderName: idProviderName,
 
+        usePkce: defaultBooleanTrue(rawIdProviderConfig[`${idProviderKeyBase}.usePkce`]),
         displayName: rawIdProviderConfig[`${idProviderKeyBase}.displayName`] || null,
         description: rawIdProviderConfig[`${idProviderKeyBase}.description`] || null,
 
