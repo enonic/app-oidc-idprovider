@@ -169,6 +169,7 @@ idprovider.<idprovidername>.useUserinfo= (true|false, optional, defaults to "tru
 idprovider.<idprovidername>.claimUsername= (string, optional, defaults to "sub")
 idprovider.<idprovidername>.method=  ((basic|post|jwt), optional, default to "post")
 idprovider.<idprovidername>.scopes=  (space separated strings, optional, default to "profile email")
+idprovider.<idprovidername>.usePkce= (true|false, optional, defaults to "true")
 
 # Optional 'additionalEndpoints' namespace
 # Is an array, that uses index (integer, starts from 0) to set items with 'name' and 'url' fields
@@ -223,6 +224,7 @@ idprovider.<idprovidername>.autoLogin.allowedAudience=  (space separated strings
 * `jwksUri`: JSON Web Key Set (JWKS) endpoint URL. Value of `jwks_uri` in your OpenID Provider configuration.
 * `method`: Client authentication method.  The value is a string, either `post`, `basic`, or `jwt`.
 * `scopes`: Scope/Claims to retrieve in addition to the mandatory "openid" scope. We recommend setting the two standard scopes: _profile_ and _email_. The value is a space-separated list of scopes, eg. `profile email`.
+* `usePkce`: Use PKCE. If set to `true`, the app will use PKCE for the Authorization Code Flow.
 
 **Additional OAuth2 endpoints**
 
