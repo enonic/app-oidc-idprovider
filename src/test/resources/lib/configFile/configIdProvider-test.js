@@ -147,10 +147,7 @@ exports.testDefaultConfigWithRequiredOptions = () => {
     test.assertEquals('${userinfo.preferred_username}', config.mappings.displayName);
     test.assertEquals('${userinfo.email}', config.mappings.email);
 
-    test.assertNull(config.endSession.url);
-    test.assertNull(config.endSession.idTokenHintKey);
-    test.assertNull(config.endSession.postLogoutRedirectUriKey);
-    test.assertJsonEquals([], config.endSession.additionalParameters);
+    test.assertNull(config.endSession);
 
     test.assertFalse(config.rules.forceEmailVerification);
 
@@ -222,6 +219,7 @@ exports.testValidationOfEndSessionAdditionalParameters = () => {
             return {
                 'idprovider.myidp.oidcWellKnownEndpoint': 'wellKnownEndpoint',
 
+                'idprovider.myidp.endSession.url': 'logoutUrl',
                 'idprovider.myidp.endSession.additionalParameters.0.key': 'k0',
                 'idprovider.myidp.endSession.additionalParameters.0.value': 'v0',
                 'idprovider.myidp.endSession.additionalParameters.1.value': 'v1',  // key is missing for this parameter

@@ -98,7 +98,7 @@ function handleAuthenticationResponse(req) {
 
     loginLib.login(idToken.accessToken, idToken.claims, false);
 
-    if (idProviderConfig.endSession.idTokenHintKey) {
+    if (idProviderConfig.endSession && idProviderConfig.endSession.idTokenHintKey) {
         requestLib.storeIdToken(idToken.idToken);
     }
 

@@ -44,13 +44,6 @@ exports.getIdProviderConfig = function (idProviderName) {
                          '${userinfo.preferred_username}',
             email: firstAtsToDollar(rawIdProviderConfig[`${idProviderKeyBase}.mappings.email`]) || '${userinfo.email}',
         },
-        endSession: {
-            url: rawIdProviderConfig[`${idProviderKeyBase}.endSession.url`] || null,
-            idTokenHintKey: rawIdProviderConfig[`${idProviderKeyBase}.endSession.idTokenHintKey`] || null,
-            postLogoutRedirectUriKey: rawIdProviderConfig[`${idProviderKeyBase}.endSession.postLogoutRedirectUriKey`] || null,
-            additionalParameters: extractPropertiesToArray(rawIdProviderConfig, `${idProviderKeyBase}.endSession.additionalParameters.`,
-                END_SESSION_ADDITIONAL_PARAMETERS_PATTERN),
-        },
         rules: {
             forceEmailVerification: rawIdProviderConfig[`${idProviderKeyBase}.rules.forceEmailVerification`] === 'true',
         },
@@ -63,6 +56,16 @@ exports.getIdProviderConfig = function (idProviderName) {
             allowedAudience: parseStringArray(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.allowedAudience`]),
         },
     };
+
+    if (hasProperty(rawIdProviderConfig, idProviderKeyBase, 'endSession')) {
+        config.endSession = {
+            url: required(rawIdProviderConfig[`${idProviderKeyBase}.endSession.url`], 'endSession.url', idProviderName),
+            idTokenHintKey: rawIdProviderConfig[`${idProviderKeyBase}.endSession.idTokenHintKey`] || null,
+            postLogoutRedirectUriKey: rawIdProviderConfig[`${idProviderKeyBase}.endSession.postLogoutRedirectUriKey`] || null,
+            additionalParameters: extractPropertiesToArray(rawIdProviderConfig, `${idProviderKeyBase}.endSession.additionalParameters.`,
+                END_SESSION_ADDITIONAL_PARAMETERS_PATTERN),
+        }
+    }
 
     if (config.oidcWellKnownEndpoint != null) {
         takeConfigurationFromWellKnownEndpoint(config);
@@ -82,6 +85,11 @@ function getRawIdProviderConfig(idProviderKeyBase) {
     Object.keys(appConfig).filter(k => k && (k.startsWith(idProviderKeyBase))).forEach(k => result[k] = appConfig[k]);
 
     return result;
+}
+
+function hasProperty(idProviderConfig, idProviderKeyBase, property) {
+    const properties = Object.keys(idProviderConfig).filter(k => k.startsWith(`${idProviderKeyBase}.${property}`));
+    return properties.length > 0;
 }
 
 function takeConfigurationFromWellKnownEndpoint(config) {
@@ -107,7 +115,9 @@ function validate(config, idProviderName) {
     }
 
     checkArrayConfig(config.additionalEndpoints, 'additionalEndpoints', idProviderName);
-    checkArrayConfig(config.endSession.additionalParameters, 'endSession.additionalParameters', idProviderName);
+    if (config.endSession) {
+        checkArrayConfig(config.endSession.additionalParameters, 'endSession.additionalParameters', idProviderName);
+    }
 }
 
 function extractPropertiesToArray(rawConfig, basePropertyPath, propertyPattern) {
