@@ -205,7 +205,7 @@ idprovider.<idprovidername>.defaultGroups=  (space separated group keys, optiona
 
 idprovider.<idprovidername>.rules.forceEmailVerification=  (true | false, required)
 
-idprovider.<idprovidername>.autoLogin.createUser=  (true|false, optional, defaults to "true")
+idprovider.<idprovidername>.autoLogin.createUsers=  (true|false, optional, defaults to "true")
 idprovider.<idprovidername>.autoLogin.createSession=  (true|false, optional, defaults to "false")
 # Look for a token in the Sec-WebSocket-Protocol header.
 idprovider.<idprovidername>.autoLogin.wsHeader=  (true|false, optional, default to "false")
