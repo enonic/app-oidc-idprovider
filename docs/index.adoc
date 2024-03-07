@@ -349,7 +349,7 @@ Example: **Difi/ID-porten/VER1**
 
 - User `displayName` and `email` are now automatically updated when the user logs in with Authorization Code Flow.
 - Authorization Code Flow with PKCE is now supported and used by default. Disable it (`usePkce = false`) if your provider does not support it.
-- In Authorization Code Flow, the ID Token versification is now done with the public keys from the JWKS URI (`jwksUri`). Since this field is optional the verification will not be done if the field is not set. Note, that if `oidcWellKnownEndpoint` is set, the `jwksUri` will be fetched from the well-known endpoint automatically.
+- In Authorization Code Flow, the ID Token verification is now done with the public keys from the JWKS URI (`jwksUri`). Since this field is optional the verification will not be done if the field is not set. Note, that if `oidcWellKnownEndpoint` is set, the `jwksUri` will be fetched from the well-known endpoint automatically.
 - The `clientId` and `clientSecret` fields are now optional in the ID Provider configuration. If you want to disable Authorization Code Flow, `clientId` should be omitted.
 
 === Version 2
