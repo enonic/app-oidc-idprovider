@@ -264,7 +264,7 @@ User profile updated with the claims from the ID Token, Userinfo endpoint and Ad
 **Auto Login**
 
 * `autoLogin...` (`idprovider.<idprovidername>.autoLogin...` namespace): Auto login configuration. To enable auto login, the `jwksUri` config must be set.
-  ** `createUsers`: Create a user. If set to `true`, a user will be created automatically if it doesn't exist.
+  ** `createUser`: Create a user. If set to `true`, a user will be created automatically if it doesn't exist.
   ** `createSession`: Create a session. If set to `true`, a session will be established upon the user's login. By default, the user will be logged in with `REQUEST` scope.
   ** `wsHeader`: Look for a token in the Sec-WebSocket-Protocol header. If set to `true`, the app will look for a token in the Sec-WebSocket-Protocol header.
   ** `allowedAudience`: Allowed audience. A list of space-separated strings. If set, the app will only accept tokens with an audience that matches one of the values in this list. It is highly recommended to set this value to make sure the correct tokens are used for the auto login.
