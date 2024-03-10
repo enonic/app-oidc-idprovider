@@ -60,42 +60,17 @@ NOTE: Starting from version 3.0, it is possible to specify `oidcWellKnownEndpoin
 You might have been given only the Issuer URL instead of the list of endpoint URLs.
 In that case the endpoint URLs are likely accessible under: `[Issuer URL]/.well-known/openid-configuration`
 
-{zwsp} +
 
-Example: **Auth0**
+Examples of OpenID Connect Discovery URL:
 
-- OpenID Provider Configuration URL: `[Domain URL]/.well-known/openid-configuration`
-- Issuer Identifier: `[Domain URL]/`
-- Authorization endpoint URL: `[Domain URL]/authorize`
-- Token endpoint URL: `[Domain URL]/oauth/token`
+- **Auth0**: https://`YOUR_AUTH0_DOMAIN`/.well-known/openid-configuration
 
-{zwsp} +
+- **Google**: https://accounts.google.com/.well-known/openid-configuration
 
-Example: **Google**
+- **Azure AD**: https://login.microsoftonline.com/`TenantID`/.well-known/openid-configuration
 
-- OpenID Provider Configuration URL: https://accounts.google.com/.well-known/openid-configuration
-- Issuer Identifier: https://accounts.google.com
-- Authorization endpoint URL: https://accounts.google.com/o/oauth2/v2/auth
-- Token endpoint URL: https://oauth2.googleapis.com/token
+- **ID-porten**: https://idporten.no/.well-known/openid-configuration
 
-{zwsp} +
-Example: **Azure AD**
-
-- OpenID Provider Configuration URL: https://login.microsoftonline.com/{TenantID}/.well-known/openid-configuration
-- Issuer Identifier: https://sts.windows.net/{TenantID}/
-- Authorization endpoint URL: https://login.microsoftonline.com/{TenantID}/oauth2/authorize
-- Token endpoint URL: https://login.microsoftonline.com/{TenantID}/oauth2/token
-
-{zwsp} +
-
-Example: **Difi/ID-porten/VER1**
-
-- OpenID Provider Configuration URL: https://oidc-ver1.difi.no/idporten-oidc-provider/.well-known/openid-configuration
-- Issuer Identifier: https://oidc-ver1.difi.no/idporten-oidc-provider/
-- Authorization endpoint URL: https://oidc-ver1.difi.no/idporten-oidc-provider/authorize
-- Token endpoint URL: https://oidc-ver1.difi.no/idporten-oidc-provider/token
-
-{zwsp} +
 {zwsp} +
 
 [[information_required_for_config_auto_login]]
@@ -289,7 +264,7 @@ User profile updated with the claims from the ID Token, Userinfo endpoint and Ad
 **Auto Login**
 
 * `autoLogin...` (`idprovider.<idprovidername>.autoLogin...` namespace): Auto login configuration. To enable auto login, the `jwksUri` config must be set.
-  ** `createUsers`: Create a user. If set to `true`, a user will be created automatically if it  doesn't exist.
+  ** `createUsers`: Create a user. If set to `true`, a user will be created automatically if it doesn't exist.
   ** `createSession`: Create a session. If set to `true`, a session will be established upon the user's login. By default, the user will be logged in with `REQUEST` scope.
   ** `wsHeader`: Look for a token in the Sec-WebSocket-Protocol header. If set to `true`, the app will look for a token in the Sec-WebSocket-Protocol header.
   ** `allowedAudience`: Allowed audience. A list of space-separated strings. If set, the app will only accept tokens with an audience that matches one of the values in this list. It is highly recommended to set this value to make sure the correct tokens are used for the auto login.
@@ -313,7 +288,7 @@ The ID Provider Configuration schema tries to be dynamic enough to handle all ca
 
 Example: **Auth0**
 
-* End Session URL: [Domain URL]/v2/logout
+* End Session URL: https://`YOUR_AUTH0_DOMAIN`/v2/logout
 * Post Logout Redirect URI parameter name: `returnTo`
 * Additional Parameters:
 ** clientId = [Client ID]
@@ -324,19 +299,18 @@ Example: **Google**
 
 Not available
 
-
 {zwsp} +
 
 Example: **Azure AD**
 
-* End Session URL: https://login.microsoftonline.com/{TenantID}/oauth2/logout
+* End Session URL: https://login.microsoftonline.com/`TenantID`/oauth2/logout
 * Post Logout Redirect URI parameter name: `post_logout_redirect_uri`
 
 {zwsp} +
 
-Example: **Difi/ID-porten/VER1**
+Example: **ID-porten**
 
-* End Session URL: https://oidc-ver1.difi.no/idporten-oidc-provider/endsession
+* End Session URL: https://login.idporten.no/logout
 * ID Token Hint parameter name: `id_token_hint`
 * Post Logout Redirect URI parameter name: `post_logout_redirect_uri`
 
@@ -349,7 +323,7 @@ Example: **Difi/ID-porten/VER1**
 
 - User `displayName` and `email` are now automatically updated when the user logs in with Authorization Code Flow.
 - Authorization Code Flow with PKCE is now supported and used by default. Disable it (`usePkce = false`) if your provider does not support it.
-- In Authorization Code Flow, the ID Token verification is now done with the public keys from the JWKS URI (`jwksUri`). Since this field is optional the verification will not be done if the field is not set. Note, that if `oidcWellKnownEndpoint` is set, the `jwksUri` will be fetched from the well-known endpoint automatically.
+- In Authorization Code Flow, the ID Token verification is now done with the public keys from the JWKS URI (`jwksUri`). Since this field is optional the signature verification will not be done if the field is not set. Note, that if `oidcWellKnownEndpoint` is set, the `jwksUri` will be fetched from the well-known endpoint automatically.
 - The `clientId` and `clientSecret` fields are now optional in the ID Provider configuration. If you want to disable Authorization Code Flow, `clientId` should be omitted.
 
 === Version 2
