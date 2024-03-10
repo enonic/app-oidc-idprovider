@@ -247,7 +247,7 @@ The claims for user creation are retrieved from the following sources:
 - Additional OAuth2 endpoints (if specified)
 - Bearer token (Auto Login only)
 
-It is possible to disable User creation for the Auto Login by setting `autoLogin.createUsers` to `false`.
+It is possible to disable User creation for the Auto Login by setting `autoLogin.createUser` to `false`.
 
 The following settings are used to create the user:
 
