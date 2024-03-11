@@ -6,9 +6,9 @@ function generateToken() {
     return bean.generateToken();
 }
 
-function parseClaims(jwt, issuer, clientId, nonce, idProviderName) {
+function parseClaims(idToken, issuer, clientId, nonce, idProviderName) {
     const bean = __.newBean('com.enonic.app.oidcidprovider.OIDCUtils');
-    const parsedJwt = bean.parseClaims(jwt, issuer, clientId, nonce, idProviderName);
+    const parsedJwt = bean.parseClaims(idToken, issuer, clientId, nonce, idProviderName);
     return __.toNativeObject(parsedJwt);
 }
 
