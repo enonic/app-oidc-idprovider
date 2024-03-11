@@ -48,7 +48,7 @@ exports.testValidConfig = () => {
                 'idprovider.myidp.additionalEndpoints.1.name': 'name1',
                 'idprovider.myidp.additionalEndpoints.1.url': 'url1',
 
-                'idprovider.myidp.mappings.displayName': '@@{nikname}',
+                'idprovider.myidp.mappings.displayName': '@@{nikname} - @@{userinfo.name}',
                 'idprovider.myidp.mappings.email': '@@{email}',
 
                 'idprovider.myidp.endSession.url': 'endSessionUrl',
@@ -91,7 +91,7 @@ exports.testValidConfig = () => {
 
     test.assertJsonEquals([{name: 'name0', url: 'url0'}, {name: 'name1', url: 'url1'}], config.additionalEndpoints);
 
-    test.assertEquals('${nikname}', config.mappings.displayName);
+    test.assertEquals('${nikname} - ${userinfo.name}', config.mappings.displayName);
     test.assertEquals('${email}', config.mappings.email);
 
     test.assertEquals('endSessionUrl', config.endSession.url);
