@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Asciidoctor 2.0.20">
+<meta name="generator" content="Asciidoctor 2.0.21">
 <title>Open ID Connect ID Provider</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
@@ -140,7 +140,7 @@ p a>code:hover{color:rgba(0,0,0,.9)}
 #content::before{content:none}
 #header>h1:first-child{color:rgba(0,0,0,.85);margin-top:2.25rem;margin-bottom:0}
 #header>h1:first-child+#toc{margin-top:8px;border-top:1px solid #dddddf}
-#header>h1:only-child,body.toc2 #header>h1:nth-last-child(2){border-bottom:1px solid #dddddf;padding-bottom:8px}
+#header>h1:only-child{border-bottom:1px solid #dddddf;padding-bottom:8px}
 #header .details{border-bottom:1px solid #dddddf;line-height:1.45;padding-top:.25em;padding-bottom:.25em;padding-left:.25em;color:rgba(0,0,0,.6);display:flex;flex-flow:row wrap}
 #header .details span:first-child{margin-left:-.125em}
 #header .details span.email a{color:rgba(0,0,0,.85)}
@@ -162,6 +162,7 @@ p a>code:hover{color:rgba(0,0,0,.9)}
 #toctitle{color:#7a2518;font-size:1.2em}
 @media screen and (min-width:768px){#toctitle{font-size:1.375em}
 body.toc2{padding-left:15em;padding-right:0}
+body.toc2 #header>h1:nth-last-child(2){border-bottom:1px solid #dddddf;padding-bottom:8px}
 #toc.toc2{margin-top:0!important;background:#f8f8f7;position:fixed;width:15em;left:0;top:0;border-right:1px solid #e7e7e9;border-top-width:0!important;border-bottom-width:0!important;z-index:1000;padding:1.25em 1em;height:100%;overflow:auto}
 #toc.toc2 #toctitle{margin-top:0;margin-bottom:.8rem;font-size:1.2em}
 #toc.toc2>ul{font-size:.9em;margin-bottom:0}
@@ -327,7 +328,7 @@ a.image{text-decoration:none;display:inline-block}
 a.image object{pointer-events:none}
 sup.footnote,sup.footnoteref{font-size:.875em;position:static;vertical-align:super}
 sup.footnote a,sup.footnoteref a{text-decoration:none}
-sup.footnote a:active,sup.footnoteref a:active{text-decoration:underline}
+sup.footnote a:active,sup.footnoteref a:active,#footnotes .footnote a:first-of-type:active{text-decoration:underline}
 #footnotes{padding-top:.75em;padding-bottom:.75em;margin-bottom:.625em}
 #footnotes hr{width:20%;min-width:6.25em;margin:-.25em 0 .75em;border-width:1px 0 0}
 #footnotes .footnote{padding:0 .375em 0 .225em;line-height:1.3334;font-size:.875em;margin-left:1.2em;margin-bottom:.2em}
@@ -450,6 +451,8 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </li>
 <li><a href="#upgrade_notes">Upgrade Notes</a>
 <ul class="sectlevel2">
+<li><a href="#version_3">Version 3</a></li>
+<li><a href="#version_2">Version 2</a></li>
 <li><a href="#migrate_the_configuration">Migrate the configuration</a></li>
 </ul>
 </li>
@@ -466,9 +469,15 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>Authenticate your users using Open ID Connect.</p>
 </div>
 <div class="paragraph">
-<p>This ID Provider application, acting as a OIDC Relying Party, will verify the identity of End-Users based on the authentication performed by your OIDC Authorization Server.
+<p>This ID Provider application, acting as an OIDC Relying Party, will verify the identity of End-Users based on the authentication performed by your OIDC Authorization Server.
 It will redirect unauthenticated users to the Authentication Server and obtain basic information in order to create a user within Enonic XP.
-This ID Provider application follows the Authorization Code Flow and uses one of the <code>client_secret_post</code>, <code>client_secret_basic</code> or <code>client_secret_jwt</code> auth methods.</p>
+This ID Provider application follows the Authorization Code Flow and uses one of the <code>client_secret_post</code>, <code>client_secret_basic</code> or <code>client_secret_jwt</code> client authentication methods.</p>
+</div>
+<div class="paragraph">
+<p>This ID Provider supports also Auto Login by JWT Bearer Token, making it suitable for Stateless Authentication.</p>
+</div>
+<div class="paragraph">
+<p>It is possible to mix the two authentication methods in the same ID Provider.</p>
 </div>
 <div class="paragraph">
 <p>&#8203;<br>
@@ -497,7 +506,7 @@ It will typically require the creation and configuration of a Client/Application
 <p>Once authenticated by the Authorization Server, the End-User will be redirected to Enonic XP.
 During the configuration of your Client/Application, you will have to register this callback URL.
 The callback URL depends on the VHost mapping and the name of the ID Provider.
-It has the following format:  <code>[VHost source]/_/idprovider/[ID Provider name]</code>. Make sure the ID provider name exactly <a href="#id_provider_creation">matches the name of the ID provider</a> (or "userstore") in the User Admin app.</p>
+It has the following format:  <code>[VHost source]/_/idprovider/[ID Provider name]</code>. Make sure the ID Provider name exactly <a href="#id_provider_creation">matches the name of the ID provider</a> (aka "userstore") in the User Admin app.</p>
 </div>
 <div class="paragraph">
 <p>&#8203;<br></p>
@@ -513,123 +522,72 @@ It has the following format:  <code>[VHost source]/_/idprovider/[ID Provider nam
 </div>
 </div>
 <div class="sect3">
-<h4 id="information_required_for_config"><a class="link" href="#information_required_for_config">Information required for the ID Provider Config</a></h4>
+<h4 id="information_required_for_config"><a class="link" href="#information_required_for_config">Information required for the ID Provider Config for Authorization Code Flow</a></h4>
 <div class="paragraph">
 <p>You will need to gather the following information from the Authorization Server setup, for the <a href="#id_provider_creation">ID Provider configuration</a></p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>The Client ID</p>
+<p>The Client ID.</p>
 </li>
 <li>
-<p>The Client secret</p>
+<p>The Client secret.</p>
 </li>
 <li>
-<p>The Issuer Identifier (URL)</p>
+<p>The Issuer Identifier (URL). <code>issuer</code></p>
 </li>
 <li>
-<p>The Authorization endpoint URL</p>
+<p>The Authorization endpoint URL. <code>authorization_endpoint</code></p>
 </li>
 <li>
-<p>The Token endpoint URL</p>
+<p>The Token endpoint URL. <code>token_endpoint</code></p>
 </li>
 </ol>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Starting from version 3.0, it is possible to specify <code>oidcWellKnownEndpoint</code> (Provider&#8217;s OpenID Connect Discovery URL) configuration that ID Provider uses to obtain the values for the <code>issuer</code>, <code>authorization_endpoint</code>, <code>token_endpoint</code> as well as optional <code>userinfo_endpoint</code> and <code>jwks_uri</code>  properties.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>You might have been given only the Issuer URL instead of the list of endpoint URLs.
-In that case the endpoint URLs are accessible under: <code>[Issuer URL]/.well-known/openid-configuration</code>
-The JSON result will contain the required information: <code>issuer</code>, <code>authorization_endpoint</code> and <code>token_endpoint</code>.</p>
+In that case the endpoint URLs are likely accessible under: <code>[Issuer URL]/.well-known/openid-configuration</code></p>
 </div>
 <div class="paragraph">
-<p>&#8203;<br></p>
-</div>
-<div class="paragraph">
-<p>Example: <strong>Auth0</strong></p>
+<p>Examples of OpenID Connect Discovery URL:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>OpenID Provider Configuration URL: <code>[Domain URL]/.well-known/openid-configuration</code></p>
+<p><strong>Auth0</strong>: https://<code>YOUR_AUTH0_DOMAIN</code>/.well-known/openid-configuration</p>
 </li>
 <li>
-<p>Issuer Identifier: <code>[Domain URL]/</code></p>
+<p><strong>Google</strong>: <a href="https://accounts.google.com/.well-known/openid-configuration" class="bare">https://accounts.google.com/.well-known/openid-configuration</a></p>
 </li>
 <li>
-<p>Authorization endpoint URL: <code>[Domain URL]/authorize</code></p>
+<p><strong>Azure AD</strong>: <a href="https://login.microsoftonline.com/" class="bare">https://login.microsoftonline.com/</a><code>TenantID</code>/.well-known/openid-configuration</p>
 </li>
 <li>
-<p>Token endpoint URL: <code>[Domain URL]/oauth/token</code></p>
+<p><strong>ID-porten</strong>: <a href="https://idporten.no/.well-known/openid-configuration" class="bare">https://idporten.no/.well-known/openid-configuration</a></p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
 <p>&#8203;<br></p>
 </div>
+</div>
+<div class="sect3">
+<h4 id="information_required_for_config_auto_login"><a class="link" href="#information_required_for_config_auto_login">Information required for the ID Provider Config for Auto Login</a></h4>
 <div class="paragraph">
-<p>Example: <strong>Google</strong></p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>OpenID Provider Configuration URL: <a href="https://accounts.google.com/.well-known/openid-configuration" class="bare">https://accounts.google.com/.well-known/openid-configuration</a></p>
-</li>
-<li>
-<p>Issuer Identifier: <a href="https://accounts.google.com" class="bare">https://accounts.google.com</a></p>
-</li>
-<li>
-<p>Authorization endpoint URL: <a href="https://accounts.google.com/o/oauth2/v2/auth" class="bare">https://accounts.google.com/o/oauth2/v2/auth</a></p>
-</li>
-<li>
-<p>Token endpoint URL: <a href="https://oauth2.googleapis.com/token" class="bare">https://oauth2.googleapis.com/token</a></p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>&#8203;<br>
-Example: <strong>Azure AD</strong></p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>OpenID Provider Configuration URL: <a href="https://login.microsoftonline.com/{TenantID}/.well-known/openid-configuration" class="bare">https://login.microsoftonline.com/{TenantID}/.well-known/openid-configuration</a></p>
-</li>
-<li>
-<p>Issuer Identifier: <a href="https://sts.windows.net/{TenantID}/" class="bare">https://sts.windows.net/{TenantID}/</a></p>
-</li>
-<li>
-<p>Authorization endpoint URL: <a href="https://login.microsoftonline.com/{TenantID}/oauth2/authorize" class="bare">https://login.microsoftonline.com/{TenantID}/oauth2/authorize</a></p>
-</li>
-<li>
-<p>Token endpoint URL: <a href="https://login.microsoftonline.com/{TenantID}/oauth2/token" class="bare">https://login.microsoftonline.com/{TenantID}/oauth2/token</a></p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>&#8203;<br></p>
-</div>
-<div class="paragraph">
-<p>Example: <strong>Difi/ID-porten/VER1</strong></p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>OpenID Provider Configuration URL: <a href="https://oidc-ver1.difi.no/idporten-oidc-provider/.well-known/openid-configuration" class="bare">https://oidc-ver1.difi.no/idporten-oidc-provider/.well-known/openid-configuration</a></p>
-</li>
-<li>
-<p>Issuer Identifier: <a href="https://oidc-ver1.difi.no/idporten-oidc-provider/" class="bare">https://oidc-ver1.difi.no/idporten-oidc-provider/</a></p>
-</li>
-<li>
-<p>Authorization endpoint URL: <a href="https://oidc-ver1.difi.no/idporten-oidc-provider/authorize" class="bare">https://oidc-ver1.difi.no/idporten-oidc-provider/authorize</a></p>
-</li>
-<li>
-<p>Token endpoint URL: <a href="https://oidc-ver1.difi.no/idporten-oidc-provider/token" class="bare">https://oidc-ver1.difi.no/idporten-oidc-provider/token</a></p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>&#8203;<br>
-&#8203;<br></p>
+<p>If you want to enable Auto Login, you need to specify the <code>jwksUri</code> in the ID Provider configuration or <code>oidcWellKnownEndpoint</code> that ID Provider uses to obtain the value for the <code>jwksUri</code> automatically.</p>
 </div>
 </div>
 </div>
@@ -701,7 +659,7 @@ mapping.example.idProvider.myoidcprovider = default</code></pre>
 <div class="sect2">
 <h3 id="idp_config"><a class="link" href="#idp_config">ID Provider</a></h3>
 <div class="paragraph">
-<p>As of v2.0.0, the config form in the users app (<code>idprovider.xml</code>) has been removed. The settings to configure the id provider must instead be entered in a .CFG file: com.enonic.app.oidcidprovider.cfg.</p>
+<p>As of v2.0.0, the config form in the users app (<code>idprovider.xml</code>) has been removed. The settings to configure the id provider must instead be entered in a .cfg file: com.enonic.app.oidcidprovider.cfg.</p>
 </div>
 <div class="paragraph">
 <p>This config file should contain config fields for all OpenID providers in the format <code>idprovider.[idprovidername].[configkey] = [value]</code>, where <code>idprovidername</code> should exactly match ID provider name from the Users app. For example, setting the <code>forceEmailVerification</code> rule config field with a value of <code>true</code> for an ID provider named <code>myoidcprovider</code>, will look like this: <code>idprovider.myoidcprovider.rules.forceEmailVerification=true</code></p>
@@ -724,12 +682,18 @@ mapping.example.idProvider.myoidcprovider = default</code></pre>
 idprovider.&lt;idprovidername&gt;.displayName=  (string, optional)
 idprovider.&lt;idprovidername&gt;.description=  (string, optional)
 
-idprovider.&lt;idprovidername&gt;.issuer=  (string, required)
-idprovider.&lt;idprovidername&gt;.authorizationUrl=  (string, required)
-idprovider.&lt;idprovidername&gt;.tokenUrl=  (string, required)
+idprovider.&lt;idprovidername&gt;.oidcWellKnownEndpoint= (string, optional) # if defined, then values for the 'issuer', 'authorizationUrl','tokenUrl','userinfoUrl','jwksUri' properties will be fetched from the well-known endpoint.
+idprovider.&lt;idprovidername&gt;.issuer=  (string, optional)
+idprovider.&lt;idprovidername&gt;.authorizationUrl=  (string, optional)
+idprovider.&lt;idprovidername&gt;.tokenUrl=  (string, optional)
 idprovider.&lt;idprovidername&gt;.userinfoUrl=  (string, optional)
+idprovider.&lt;idprovidername&gt;.jwksUri=  (string, optional)
+
+idprovider.&lt;idprovidername&gt;.useUserinfo= (true|false, optional, defaults to "true")
+idprovider.&lt;idprovidername&gt;.claimUsername= (string, optional, defaults to "sub")
 idprovider.&lt;idprovidername&gt;.method=  ((basic|post|jwt), optional, default to "post")
 idprovider.&lt;idprovidername&gt;.scopes=  (space separated strings, optional, default to "profile email")
+idprovider.&lt;idprovidername&gt;.usePkce= (true|false, optional, defaults to "true")
 
 # Optional 'additionalEndpoints' namespace
 # Is an array, that uses index (integer, starts from 0) to set items with 'name' and 'url' fields
@@ -746,15 +710,21 @@ idprovider.&lt;idprovidername&gt;.endSession.postLogoutRedirectUriKey=  (string,
 idprovider.&lt;idprovidername&gt;.endSession.additionalParameters.0.key=  (string, required)
 idprovider.&lt;idprovidername&gt;.endSession.additionalParameters.0.value=  (string, required)
 
-idprovider.&lt;idprovidername&gt;.clientId=  (string, required)
-idprovider.&lt;idprovidername&gt;.clientSecret=  (string, required)
+idprovider.&lt;idprovidername&gt;.clientId=  (string, optional)
+idprovider.&lt;idprovidername&gt;.clientSecret=  (string, optional)
 
-idprovider.&lt;idprovidername&gt;.mappings.displayName=  (string, required)
-idprovider.&lt;idprovidername&gt;.mappings.email=  (string, required)
+idprovider.&lt;idprovidername&gt;.mappings.displayName=  (string, required, defaults to ${userinfo.preferred_username})
+idprovider.&lt;idprovidername&gt;.mappings.email=  (string, required, defaults to ${userinfo.email})
 
 idprovider.&lt;idprovidername&gt;.defaultGroups=  (space separated group keys, optional)
 
-idprovider.&lt;idprovidername&gt;.rules.forceEmailVerification=  (true | false, required)</code></pre>
+idprovider.&lt;idprovidername&gt;.rules.forceEmailVerification=  (true | false, required)
+
+idprovider.&lt;idprovidername&gt;.autoLogin.createUser=  (true|false, optional, defaults to "true")
+idprovider.&lt;idprovidername&gt;.autoLogin.createSession=  (true|false, optional, defaults to "false")
+# Look for a token in the Sec-WebSocket-Protocol header.
+idprovider.&lt;idprovidername&gt;.autoLogin.wsHeader=  (true|false, optional, default to "false")
+idprovider.&lt;idprovidername&gt;.autoLogin.allowedAudience=  (space separated strings, optional)</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -768,6 +738,18 @@ idprovider.&lt;idprovidername&gt;.rules.forceEmailVerification=  (true | false, 
 <li>
 <p><code>autoinit</code>: Automatic initialization. If the config file contains <code>autoinit=true</code>, then during startup this app will automatically create ID providers for all settings declared in the file, if they don&#8217;t already exist. For example, <code>idprovider.myfirstidp.someKey=someValue</code> and <code>idprovider.anotheridp.anotherKey=anotherValue</code> will declare two idproviders named <code>myfirstidp</code> and <code>anotheridp</code>.</p>
 </li>
+<li>
+<p><code>displayName</code>: Display name of ID Provider in Users app.</p>
+</li>
+<li>
+<p><code>description</code>: Description of ID Provider in Users app.</p>
+</li>
+<li>
+<p><code>useUserinfo</code>: Use the Userinfo endpoint to retrieve user claims. When set to <code>false</code>, the app will not call the Userinfo endpoint to retrieve user claims.</p>
+</li>
+<li>
+<p><code>claimUsername</code>: Claim to use as username when XP User is created. The value is a string, the default value is <code>sub</code>.</p>
+</li>
 </ul>
 </div>
 <div class="paragraph">
@@ -775,6 +757,9 @@ idprovider.&lt;idprovidername&gt;.rules.forceEmailVerification=  (true | false, 
 </div>
 <div class="ulist">
 <ul>
+<li>
+<p><code>oidcWellKnownEndpoint</code>: OpenID Provider Configuration URL. If defined, then values for the <code>issuer</code>, <code>authorizationUrl</code>,<code>tokenUrl</code>,<code>userinfoUrl</code>,<code>jwksUri</code> properties will be fetched from the well-known endpoint. It is highly recommended to set this value to make sure the correct URLs are used.</p>
+</li>
 <li>
 <p><code>issuer</code>: Issuer identifier. Value of <code>issuer</code> in your OpenID Provider <a href="#information_required_for_config">configuration</a>.</p>
 </li>
@@ -785,10 +770,19 @@ idprovider.&lt;idprovidername&gt;.rules.forceEmailVerification=  (true | false, 
 <p><code>tokenUrl</code>: Token endpoint URL. Value of <code>token_endpoint</code> in your OpenID Provider <a href="#information_required_for_config">configuration</a>.</p>
 </li>
 <li>
-<p><code>method</code>: Client authentication method.  The value is a string, either <code>post</code>, <code>basic</code>, or <code>jwt</code>.</p>
+<p><code>userinfoUrl</code>: Userinfo endpoint URL. Value of <code>userinfo_endpoint</code> in your OpenID Provider configuration. If provided, the app will use this URL to retrieve the user claims and create/update the User. (When <code>useUserinfo</code> is set to <code>false</code> this value is not used)</p>
 </li>
 <li>
-<p><code>scopes</code>: Scope/Claims to retrieve in addition to the mandatory "openid" scope. We recommend setting the two standard scopes: <em>profile</em> and <em>email</em>. The value is a space-separated list of scopes, eg. <code>profile email</code>.</p>
+<p><code>jwksUri</code>: JSON Web Key Set (JWKS) endpoint URL. Value of <code>jwks_uri</code> in your OpenID Provider <a href="#information_required_for_config_auto_login">configuration</a>. If provided, the app will use this URL to retrieve the public keys used to verify the signature of the Bearer Token in the Auto Login (there this value is mandatory) and ID Token in the Authorization Code Flow.</p>
+</li>
+<li>
+<p><code>method</code>: Client authentication method. The value is a string, either <code>post</code>, <code>basic</code> or <code>jwt</code>. The values correspond to the <code>client_secret_post</code>, <code>client_secret_basic</code> and <code>private_key_jwt</code> methods, respectively.</p>
+</li>
+<li>
+<p><code>scopes</code>: Scope/Claims to retrieve in addition to the mandatory <code>openid</code> scope. We recommend setting the two standard scopes: <em>profile</em> and <em>email</em>. The value is a space-separated list of scopes, e.g. <code>profile email</code>.</p>
+</li>
+<li>
+<p><code>usePkce</code>: Use The Proof Key of Code Exchange (PKCE). If set to <code>false</code>, the app will not use PKCE for the Authorization Code Flow.</p>
 </li>
 </ul>
 </div>
@@ -851,18 +845,49 @@ idprovider.&lt;idprovidername&gt;.rules.forceEmailVerification=  (true | false, 
 <div class="paragraph">
 <p><strong>Client</strong></p>
 </div>
+<div class="paragraph">
+<p>The Client parameters are mandatory for the Authorization Code Flow, but not used for Auto Login.</p>
+</div>
 <div class="ulist">
 <ul>
 <li>
-<p><code>clientId</code>: Client identifier, received or generated during <a href="#authorization_server">creation of your Client/Application</a> (this application uses the authentication method "client_secret_post" for token retrieval).</p>
+<p><code>clientId</code>: Client identifier, received or generated during <a href="#authorization_server">creation of your Client/Application</a></p>
 </li>
 <li>
-<p><code>clientSecret</code>: Client secret, received or generated during <a href="#authorization_server">creation of your Client/Application</a> (this application uses the authentication method "client_secret_post" for token retrieval).</p>
+<p><code>clientSecret</code>: Client secret, received or generated during <a href="#authorization_server">creation of your Client/Application</a></p>
 </li>
 </ul>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+To disable Authorization Code Flow, <code>clientId</code> should be omitted.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p><strong>User creation</strong></p>
+</div>
+<div class="paragraph">
+<p>When logging in for the first time, a user will be created in Enonic XP.</p>
+</div>
+<div class="paragraph">
+<p>The claims for user creation are retrieved from the following sources:
+- ID Token (Authorization Code Flow only)
+- Userinfo endpoint (optionally)
+- Additional OAuth2 endpoints (if specified)
+- Bearer token (Auto Login only)</p>
+</div>
+<div class="paragraph">
+<p>It is possible to disable User creation for the Auto Login by setting <code>autoLogin.createUser</code> to <code>false</code>.</p>
+</div>
+<div class="paragraph">
+<p>The following settings are used to create the user:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -885,16 +910,49 @@ idprovider.&lt;idprovidername&gt;.rules.forceEmailVerification=  (true | false, 
 </ul>
 </div>
 <div class="paragraph">
+<p><strong>User update</strong></p>
+</div>
+<div class="paragraph">
+<p>User update is done only for the Authorization Code Flow on every login. The user&#8217;s <code>displayName</code> and <code>email</code> will be updated from the same sources as for user creation.
+User profile updated with the claims from the ID Token, Userinfo endpoint and Additional OAuth2 endpoints.</p>
+</div>
+<div class="paragraph">
+<p><strong>Auto Login</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>autoLogin&#8230;&#8203;</code> (<code>idprovider.&lt;idprovidername&gt;.autoLogin&#8230;&#8203;</code> namespace): Auto login configuration. To enable auto login, the <code>jwksUri</code> config must be set.</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>createUser</code>: Create a user. If set to <code>true</code>, a user will be created automatically if it doesn&#8217;t exist.</p>
+</li>
+<li>
+<p><code>createSession</code>: Create a session. If set to <code>true</code>, a session will be established upon the user&#8217;s login. By default, the user will be logged in with <code>REQUEST</code> scope.</p>
+</li>
+<li>
+<p><code>wsHeader</code>: Look for a token in the Sec-WebSocket-Protocol header. If set to <code>true</code>, the app will look for a token in the Sec-WebSocket-Protocol header.</p>
+</li>
+<li>
+<p><code>allowedAudience</code>: Allowed audience. A list of space-separated strings. If set, the app will only accept tokens with an audience that matches one of the values in this list. It is highly recommended to set this value to make sure the correct tokens are used for the auto login.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
 <p><strong>Rules</strong></p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p><code>rules&#8230;&#8203;</code> (<code>idprovider.&lt;idprovidername&gt;.rules&#8230;&#8203;</code> namespace): Additional rules enforced on login.</p>
+<p><code>rules&#8230;&#8203;</code> (<code>idprovider.&lt;idprovidername&gt;.rules&#8230;&#8203;</code> namespace): Additional rules enforced on user create.</p>
 <div class="ulist">
 <ul>
 <li>
-<p><code>forceEmailVerification</code>: Enforce email verification. Check the claim <code>email_verified</code> (returned with the scope <code>email</code>)..</p>
+<p><code>forceEmailVerification</code>: If set to <code>true</code> enforce email verification by checking the claim <code>email_verified</code> (returned with the scope <code>email</code>).</p>
 </li>
 </ul>
 </div>
@@ -909,7 +967,7 @@ idprovider.&lt;idprovidername&gt;.rules.forceEmailVerification=  (true | false, 
 <div class="sect2">
 <h3 id="end_session"><a class="link" href="#end_session">End Session</a></h3>
 <div class="paragraph">
-<p>OIDC Front-Channel Logout specifications are still in draft. This might not be supported by your authentication server.
+<p>OpenID Connect Front-Channel Logout is optional and might not be supported by your authentication server.
 You can check if the endpoint is available in the Open ID Configuration (<code>.well-known/openid-configuration</code>) under the field <code>end_session_endpoint</code>
 There might also be another custom endpoint available that achieves the same purpose.
 The ID Provider Configuration schema tries to be dynamic enough to handle all cases.</p>
@@ -923,7 +981,7 @@ The ID Provider Configuration schema tries to be dynamic enough to handle all ca
 <div class="ulist">
 <ul>
 <li>
-<p>End Session URL: [Domain URL]/v2/logout</p>
+<p>End Session URL: https://<code>YOUR_AUTH0_DOMAIN</code>/v2/logout</p>
 </li>
 <li>
 <p>Post Logout Redirect URI parameter name: <code>returnTo</code></p>
@@ -958,7 +1016,7 @@ The ID Provider Configuration schema tries to be dynamic enough to handle all ca
 <div class="ulist">
 <ul>
 <li>
-<p>End Session URL: <a href="https://login.microsoftonline.com/{TenantID}/oauth2/logout" class="bare">https://login.microsoftonline.com/{TenantID}/oauth2/logout</a></p>
+<p>End Session URL: <a href="https://login.microsoftonline.com/" class="bare">https://login.microsoftonline.com/</a><code>TenantID</code>/oauth2/logout</p>
 </li>
 <li>
 <p>Post Logout Redirect URI parameter name: <code>post_logout_redirect_uri</code></p>
@@ -969,12 +1027,12 @@ The ID Provider Configuration schema tries to be dynamic enough to handle all ca
 <p>&#8203;<br></p>
 </div>
 <div class="paragraph">
-<p>Example: <strong>Difi/ID-porten/VER1</strong></p>
+<p>Example: <strong>ID-porten</strong></p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>End Session URL: <a href="https://oidc-ver1.difi.no/idporten-oidc-provider/endsession" class="bare">https://oidc-ver1.difi.no/idporten-oidc-provider/endsession</a></p>
+<p>End Session URL: <a href="https://login.idporten.no/logout" class="bare">https://login.idporten.no/logout</a></p>
 </li>
 <li>
 <p>ID Token Hint parameter name: <code>id_token_hint</code></p>
@@ -993,6 +1051,27 @@ The ID Provider Configuration schema tries to be dynamic enough to handle all ca
 <div class="sect1">
 <h2 id="upgrade_notes"><a class="link" href="#upgrade_notes">Upgrade Notes</a></h2>
 <div class="sectionbody">
+<div class="sect2">
+<h3 id="version_3"><a class="link" href="#version_3">Version 3</a></h3>
+<div class="ulist">
+<ul>
+<li>
+<p>User <code>displayName</code> and <code>email</code> are now automatically updated when the user logs in with Authorization Code Flow.</p>
+</li>
+<li>
+<p>Authorization Code Flow with PKCE is now supported and used by default. Disable it (<code>usePkce = false</code>) if your provider does not support it.</p>
+</li>
+<li>
+<p>In Authorization Code Flow, the ID Token verification is now done with the public keys from the JWKS URI (<code>jwksUri</code>). Since this field is optional the signature verification will not be done if the field is not set. Note, that if <code>oidcWellKnownEndpoint</code> is set, the <code>jwksUri</code> will be fetched from the well-known endpoint automatically.</p>
+</li>
+<li>
+<p>The <code>clientId</code> and <code>clientSecret</code> fields are now optional in the ID Provider configuration. If you want to disable Authorization Code Flow, <code>clientId</code> should be omitted.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="version_2"><a class="link" href="#version_2">Version 2</a></h3>
 <div class="paragraph">
 <p>Version <code>2.0</code> of this app introduces a breaking change: ID Providers can only be configured via the config file (<code>com.enonic.app.oidcidprovider.cfg</code>) instead of editing the ID Provider form in the Users app UI. So, no configuration will be stored in / read from the data layer anymore.</p>
 </div>
@@ -1004,6 +1083,7 @@ The ID Provider Configuration schema tries to be dynamic enough to handle all ca
 </div>
 <div class="paragraph">
 <p>When editing an ID provider in the Users app, the ID provider name (1) is found (or edited) directly below the displayName field, and in previous versions of this app the configuration form was opened by clicking the pencil (2) icon on the ID provider application.</p>
+</div>
 </div>
 <div class="sect2">
 <h3 id="migrate_the_configuration"><a class="link" href="#migrate_the_configuration">Migrate the configuration</a></h3>
@@ -1019,7 +1099,7 @@ The ID Provider Configuration schema tries to be dynamic enough to handle all ca
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-02-01 11:28:04 UTC
+Last updated 2024-03-11 09:01:48 UTC
 </div>
 </div>
 </body>
