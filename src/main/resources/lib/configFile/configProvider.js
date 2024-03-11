@@ -5,7 +5,7 @@ const END_SESSION_ADDITIONAL_PARAMETERS_PATTERN = '^idprovider\.[a-zA-Z0-9_-]+\.
 const ADDITIONAL_ENDPOINTS = "^idprovider\.[a-zA-Z0-9_-]+\.additionalEndpoints\.(\\d+)\.(name|url)$";
 
 const parseStringArray = value => value ? value.split(' ').filter(v => !!v) : [];
-const firstAtsToDollar = value => value ? value.replace(/@@\{/, '${') : value;
+const firstAtsToDollar = value => value ? value.replace(/@@\{/g, '${') : value;
 
 const defaultBooleanTrue = value => value !== 'false';
 
