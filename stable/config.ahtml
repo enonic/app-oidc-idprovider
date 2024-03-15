@@ -442,12 +442,12 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#general">General</a></li>
-<li><a href="#initialization">Initialization</a></li>
+<li><a href="#idprovider_setup">IDprovider setup</a></li>
 <li><a href="#client">Client</a></li>
-<li><a href="#rules">Rules</a></li>
 <li><a href="#authorization_server">Authorization server</a></li>
+<li><a href="#rules">Rules</a></li>
 <li><a href="#user_mappings">User mappings</a></li>
-<li><a href="#additional_user_info">Additional user info</a></li>
+<li><a href="#additional_endpoints">Additional endpoints</a></li>
 <li><a href="#autologin">Autologin</a></li>
 <li><a href="#endsession">endSession</a>
 <ul class="sectlevel2">
@@ -492,7 +492,7 @@ For ease of reading we omit the <code>idprovider.&lt;name&gt;.</code> prefix in 
 </div>
 </div>
 <div class="sect1">
-<h2 id="initialization"><a class="link" href="#initialization">Initialization</a></h2>
+<h2 id="idprovider_setup"><a class="link" href="#idprovider_setup">IDprovider setup</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The application can automatically initialize, one or more IDproviders using the following configuration fields:</p>
@@ -500,8 +500,8 @@ For ease of reading we omit the <code>idprovider.&lt;name&gt;.</code> prefix in 
 <div class="listingblock">
 <div class="title">com.enonic.app.oidcidprovider.cfg</div>
 <div class="content">
-<pre class="highlight"><code class="language-properties" data-lang="properties">autoinit=(true | false, optional) <i class="conum" data-value="1"></i><b>(1)</b>
-
+<pre class="highlight"><code class="language-properties" data-lang="properties"># IDprovider setup
+autoinit=(true|false) <i class="conum" data-value="1"></i><b>(1)</b>
 idprovider.&lt;name&gt;.displayName=(string, optional) <i class="conum" data-value="2"></i><b>(2)</b>
 idprovider.&lt;name&gt;.description=(string, optional) <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
 </div>
@@ -533,7 +533,8 @@ idprovider.&lt;name&gt;.description=(string, optional) <i class="conum" data-val
 <div class="listingblock">
 <div class="title">com.enonic.app.oidcidprovider.cfg</div>
 <div class="content">
-<pre class="highlight"><code class="language-properties" data-lang="properties">clientId=(string) <i class="conum" data-value="1"></i><b>(1)</b>
+<pre class="highlight"><code class="language-properties" data-lang="properties"># Client
+clientId=(string) <i class="conum" data-value="1"></i><b>(1)</b>
 clientSecret=(string) <i class="conum" data-value="2"></i><b>(2)</b>
 method=(post|basic|jwt)<i class="conum" data-value="3"></i><b>(3)</b></code></pre>
 </div>
@@ -569,28 +570,6 @@ You may disabe Authorization Code Flow by omitting <code>clientId</code> in your
 </div>
 </div>
 <div class="sect1">
-<h2 id="rules"><a class="link" href="#rules">Rules</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Additional rules enforced on user creation</p>
-</div>
-<div class="listingblock">
-<div class="title">com.enonic.app.oidcidprovider.cfg</div>
-<div class="content">
-<pre class="highlight"><code class="language-properties" data-lang="properties">idprovider.&lt;name&gt;.rules.forceEmailVerification=(true|false, required) <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>When <code>forceEmailVerification</code> is <code>true</code> the claim <code>email_verified</code> (returned with the scope <code>email</code>) must exist.</td>
-</tr>
-</table>
-</div>
-</div>
-</div>
-<div class="sect1">
 <h2 id="authorization_server"><a class="link" href="#authorization_server">Authorization server</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
@@ -599,7 +578,8 @@ You may disabe Authorization Code Flow by omitting <code>clientId</code> in your
 <div class="listingblock">
 <div class="title">com.enonic.app.oidcidprovider.cfg</div>
 <div class="content">
-<pre class="highlight"><code class="language-properties" data-lang="properties">oidcWellKnownEndpoint=(string) <i class="conum" data-value="1"></i><b>(1)</b>
+<pre class="highlight"><code class="language-properties" data-lang="properties"># Authorization server
+oidcWellKnownEndpoint=(string) <i class="conum" data-value="1"></i><b>(1)</b>
 issuer=(string)
 authorizationUrl=(string)
 tokenUrl=(string)
@@ -669,6 +649,29 @@ rules.forceEmailVerification=(true|false) <i class="conum" data-value="5"></i><b
 </div>
 </div>
 <div class="sect1">
+<h2 id="rules"><a class="link" href="#rules">Rules</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Additional rules enforced on user creation</p>
+</div>
+<div class="listingblock">
+<div class="title">com.enonic.app.oidcidprovider.cfg</div>
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties"># Rules
+idprovider.&lt;name&gt;.rules.forceEmailVerification=(true|false, required) <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>When <code>forceEmailVerification</code> is <code>true</code> the claim <code>email_verified</code> (returned with the scope <code>email</code>) must exist.</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="user_mappings"><a class="link" href="#user_mappings">User mappings</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
@@ -689,7 +692,8 @@ For Authorization Code Flow, user data are synched with Enonic on every login. T
 <div class="listingblock">
 <div class="title">com.enonic.app.oidcidprovider.cfg</div>
 <div class="content">
-<pre class="highlight"><code class="language-properties" data-lang="properties">useUserinfo=(true|false) <i class="conum" data-value="1"></i><b>(1)</b>
+<pre class="highlight"><code class="language-properties" data-lang="properties"># User mappings
+useUserinfo=(true|false) <i class="conum" data-value="1"></i><b>(1)</b>
 claimUsername=(string, optional, defaults to "sub") <i class="conum" data-value="2"></i><b>(2)</b>
 scopes=(space separated strings, defaults to "profile email") <i class="conum" data-value="3"></i><b>(3)</b>
 mappings.displayName=(string, required, defaults to @@{userinfo.preferred_username}) <i class="conum" data-value="4"></i><b>(4)</b>
@@ -729,7 +733,7 @@ TODO Examples:</td>
 </div>
 </div>
 <div class="sect1">
-<h2 id="additional_user_info"><a class="link" href="#additional_user_info">Additional user info</a></h2>
+<h2 id="additional_endpoints"><a class="link" href="#additional_endpoints">Additional endpoints</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>You may optionally specify additional Endpoints to fetch and store more user data in the Enonic user profile.</p>
@@ -737,7 +741,8 @@ TODO Examples:</td>
 <div class="listingblock">
 <div class="title">com.enonic.app.oidcidprovider.cfg</div>
 <div class="content">
-<pre class="highlight"><code class="language-properties" data-lang="properties">additionalEndpoints.0.name=(string, required) <i class="conum" data-value="1"></i><b>(1)</b>
+<pre class="highlight"><code class="language-properties" data-lang="properties"># Additional Endpoints
+additionalEndpoints.0.name=(string, required) <i class="conum" data-value="1"></i><b>(1)</b>
 additionalEndpoints.0.url=(string, required)</code></pre>
 </div>
 </div>
@@ -787,7 +792,8 @@ To enable Autologin, you need to specify the <code>jwksUri</code> in the ID Prov
 <div class="listingblock">
 <div class="title">com.enonic.app.oidcidprovider.cfg</div>
 <div class="content">
-<pre class="highlight"><code class="language-properties" data-lang="properties">autoLogin.createUser=(true|false) <i class="conum" data-value="1"></i><b>(1)</b>
+<pre class="highlight"><code class="language-properties" data-lang="properties"># Autologin
+autoLogin.createUser=(true|false) <i class="conum" data-value="1"></i><b>(1)</b>
 autoLogin.createSession=(false|true) <i class="conum" data-value="2"></i><b>(2)</b>
 autoLogin.wsHeader=(false|true) <i class="conum" data-value="3"></i><b>(3)</b>
 autoLogin.allowedAudience=(space separated strings) <i class="conum" data-value="4"></i><b>(4)</b></code></pre>
@@ -826,7 +832,8 @@ The ID Provider Configuration schema tries to be dynamic enough to handle all ca
 <div class="listingblock">
 <div class="title">com.enonic.app.oidcidprovider.cfg</div>
 <div class="content">
-<pre class="highlight"><code class="language-properties" data-lang="properties">endSession.url=(string, required) <i class="conum" data-value="1"></i><b>(1)</b>
+<pre class="highlight"><code class="language-properties" data-lang="properties"># EndSession
+endSession.url=(string, required) <i class="conum" data-value="1"></i><b>(1)</b>
 endSession.idTokenHintKey=(string) <i class="conum" data-value="2"></i><b>(2)</b>
 endSession.postLogoutRedirectUriKey=(string) <i class="conum" data-value="3"></i><b>(3)</b>
 endSession.additionalParameters.0.key=(string)
@@ -917,7 +924,7 @@ endSession.additionalParameters.0.value=(string)</code></pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-03-15 12:09:42 UTC
+Last updated 2024-03-15 12:14:20 UTC
 </div>
 </div>
 </body>
