@@ -5,33 +5,32 @@ Follow these steps to start using the IDprovider
 
 == OIDC server
 
-In order to use this application, you will need access to an OIDC server. These are available form a range of different providers like Google, Azure, Auth0 and ID porten, and you may run your own based on software.
+You will need access to an OIDC server. These are available from a range of different providers like Google, Azure, Auth0 and ID porten, and you may run your own based on software.
 
-For your respective prodvider you will typically need to create a Client or application that will represent the Enonic integration. Typical values you will need later from this setup are:
+For your respective prodvider you will typically need to create a Client or application that will represent the Enonic integration. Typical values you will need later from this setup are typically:
 
 - Client ID
 - Client secret
 - Issuer Identifier (URL)
-- Authorization endpoint (URL)
-- Token endpoint (URL)
-
 
 == Installation
 
-The first step to get going on the Enonic side Start off by installing the application to your Enonic instance. It is https://market.enonic.com/vendors/enonic/oidc-id-provider[available on Enonic Market].
-
+On your Enonic server, start by installing the application to your Enonic instance. It is https://market.enonic.com/vendors/enonic/oidc-id-provider[available on Enonic Market].
 
 == Configure
 
-Secondly, the application requires detailed configuration in order to communicate with the 3rd party OIDC server. Create a and tune a configuration file called `com.enonic.app.oidcidprovider.cfg` and add it to your XP instance.
+Secondly, the application requires a detailed configuration in order to communicate with the 3rd party OIDC server. Create a and tune a configuration file called `com.enonic.app.oidcidprovider.cfg` and add it to your XP instance.
 
-Full configuration details are described in <<config#, the configuration chapter>>.
+Full details on how to configure the application is described in <<config#, the configuration chapter>>.
 
-=== Create IDprovider
+You may also find our <<examples#, configureation examples>> useful.
 
-NOTE: If your configuration contains this value: `autoinit=true`, it should automatically create one (or more) IDproviders in Enonic XP.
+NOTE: Your Enonic IDprovider should automatically be create once you add your configuration file
 
-IDproviders may also be created manually by following these steps:
+
+=== Manual setup
+
+If you disable `autoInit`, the IDproviders may manually by created by following these steps:
 
 . From Enonic admin console: `XP menu` -> `Users` -> `New` -> `ID provider` https://www.youtube.com/watch?v=QZpBdsDlkA0[admin tool "Users"]
 . Fill in the `displayName` field, which generates the *ID provider name* just below
