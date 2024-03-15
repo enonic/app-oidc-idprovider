@@ -1,0 +1,93 @@
+= Configuration examples
+:imagesdir: media/
+
+Below are some examples of how you can configure the application.
+
+== Google
+
+Example configuration using Google OIDC and standard form based authentication
+
+.com.enonic.app.oidcidprovider.cfg:
+[source,properties]
+----
+autoinit=true
+idprovider.google.oidcWellKnownEndpoint=https://accounts.google.com/.well-known/openid-configuration
+idprovider.google.clientId=********.apps.googleusercontent.com
+idprovider.google.clientSecret=********
+idprovider.google.mappings.displayName=@@{userinfo.given_name} @@{userinfo.family_name}
+idprovider.google.rules.forceEmailVerification=true
+idprovider.google.defaultGroups=group:google:employees
+----
+
+== Auth0
+
+Example configuration using Auth0 with autologin supporting websockets
+
+.com.enonic.app.oidcidprovider.cfg:
+[source,properties]
+----
+autoinit=true
+idprovider.auth0.oidcWellKnownEndpoint=https://auth.enonic-qa.com/.well-known/openid-configuration
+idprovider.auth0.rules.forceEmailVerification=true
+idprovider.auth0.autoLogin.wsHeader=true
+idprovider.auth0.autoLogin.allowedAudience=https://service.example.com/api
+idprovider.auth0.mappings.displayName=@@{userinfo.name}
+----
+
+
+== All options
+
+Example containing all available configuration options
+
+.com.enonic.app.oidcidprovider.cfg:
+[source,properties]
+----
+# IDprovider setup
+autoinit=(true | false)
+idprovider.<name>.displayName=(string)
+idprovider.<name>.description=(string)
+
+# Client
+idprovider.<name>.clientId=(string)
+idprovider.<name>.clientSecret=(string)
+idprovider.<name>.method=(post|basic|jwt)
+
+# Authorization server
+idprovider.<name>.oidcWellKnownEndpoint=(string)
+idprovider.<name>.issuer=(string)
+idprovider.<name>.authorizationUrl=(string)
+idprovider.<name>.tokenUrl=(string)
+idprovider.<name>.userinfoUrl=(string)
+idprovider.<name>.jwksUri=(string)
+idprovider.<name>.usePkce=(true|false)
+
+# Rules
+idprovider.<name>.rules.forceEmailVerification=(true|false)
+
+# User mappings
+idprovider.<name>.useUserinfo=(true|false)
+idprovider.<name>.claimUsername=(string)
+idprovider.<name>.scopes=(space separated strings, defaults to "profile email")
+idprovider.<name>.mappings.displayName=(string, required, defaults to @@{userinfo.preferred_username})
+idprovider.<name>.mappings.email=(string, required, defaults to @@{userinfo.email})
+idprovider.<name>.defaultGroups=(space separated group keys)
+
+# Additional Endpoints
+idprovider.<name>.additionalEndpoints.0.name=(string, required)
+idprovider.<name>.additionalEndpoints.0.url=(string, required)
+
+# Autologin
+idprovider.<name>.autoLogin.createUser=(true|false)
+idprovider.<name>.autoLogin.createSession=(true|false)
+idprovider.<name>.autoLogin.wsHeader=(false|true)
+idprovider.<name>.autoLogin.allowedAudience=(space separated strings)
+
+# EndSession
+idprovider.<name>.endSession.url=(string, required)
+idprovider.<name>.endSession.idTokenHintKey=(string)
+idprovider.<name>.endSession.postLogoutRedirectUriKey=(string)
+idprovider.<name>.endSession.additionalParameters.0.key=(string, required)
+idprovider.<name>.endSession.additionalParameters.0.value=(string, required)
+----
+
+

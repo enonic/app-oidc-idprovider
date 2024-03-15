@@ -1,0 +1,197 @@
+= Configuration
+:imagesdir: media/
+
+The application is configured via a file called `com.enonic.app.oidcidprovider.cfg`, using the properties format.
+
+Since the configuration is extensive, documentation has been broken down into several sections below. Visit the examples section for a <<examples#,complete configuration file>>
+
+== General
+
+Enonic uses IDproviders to provide auth for various endpoints such as Admin/websites and APIs. This application may back multiple IDproviders, meaning you may for instance support Google, Azure, and Auth0 - and even multiple IDproviders for a single OIDC service.
+
+As such, most properties are prefixed with a named IDProvider i.e. `idprovider.[idprovidername].[configkey] = [value]`, where `idprovidername` is a unique name matching the IDprovider in Enonic XP.
+
+IMPORTANT: For ease of reading we omit the `idprovider.<name>.` prefix in most of the documentation below. See the examples for a complete setup
+
+
+== Initialization
+
+The application can automatically initialize, one or more IDproviders using the following configuration fields:
+
+.com.enonic.app.oidcidprovider.cfg
+[source,properties]
+----
+autoinit=(true | false, optional) // <1>
+
+idprovider.<name>.displayName=(string, optional) // <2>
+idprovider.<name>.description=(string, optional) // <3>
+----
+
+<1> When true, each idprovider declared by <name> in this configuration file will automatically be created in Enonic XP
+<2> Optionally provide a "pretty" name for the IDprovider
+<3> Optional description for the IDprovider
+
+== Client
+
+The Client parameters are mandatory for the Authorization Code Flow, but not used for Auto Login.You can obtain these values from your 3rd party OIDC server, like Google or Auth0 when creating a client/application there.
+
+.com.enonic.app.oidcidprovider.cfg
+[source,properties]
+----
+clientId=(string) // <1>
+clientSecret=(string) // <2>
+method=(post|basic|jwt)// <3>
+
+----
+<1> Client ID you obtain from your OIDC server
+<2> Client Secret you obtain from your OIDC server
+<3> Optionally specify the `method` for how client ID and client secret will be passed to the OIDC server. The values correspond to `client_secret_basic`, `client_secret_post` and `private_key_jwt` methods, respectively.
+
+NOTE: You may disabe Authorization Code Flow by omitting `clientId` in your configuration
+
+== Rules
+
+Additional rules enforced on user creation
+
+.com.enonic.app.oidcidprovider.cfg
+[source,properties]
+----
+idprovider.<name>.rules.forceEmailVerification=(true|false, required) // <1>
+----
+
+<1> When `forceEmailVerification` is `true` the claim `email_verified` (returned with the scope `email`) must exist.
+
+== Authorization server
+
+These values can be obtained from your OIDC service when registering a new Client/application.
+
+.com.enonic.app.oidcidprovider.cfg
+[source,properties]
+----
+oidcWellKnownEndpoint=(string) // <1>
+issuer=(string)
+authorizationUrl=(string)
+tokenUrl=(string)
+userinfoUrl=(string) // <2>
+jwksUri=(string) // <3>
+usePkce=(true|false) // <4>
+rules.forceEmailVerification=(true|false) // <5>
+----
+
+<1> When `oidcWellKnownEndpoint` is set, the values for `issuer`, `authorizationUrl`, `tokenUrl`, `userinfoUrl` and `jwksUri` will automatically be fetched from the well-known endpoint - and you do not need to fill them in.
++ 
+[TIP] 
+====
+Your OIDC provider may only offer an `Issuer URL`. Then, the URLs are likely accessible under `[Issuer URL]/.well-known/openid-configuration`
+
+Examples of OpenID Connect Discovery URL:
+
+- **Auth0**: https://`YOUR_AUTH0_DOMAIN`/.well-known/openid-configuration
+- **Google**: https://accounts.google.com/.well-known/openid-configuration
+- **Azure**: https://login.microsoftonline.com/`TenantID`/.well-known/openid-configuration
+- **ID-porten**: https://idporten.no/.well-known/openid-configuration
+====
+<2> `userinfoUrl` if provided, the app will use this URL to retrieve the user claims to create/update the User in Enonic. (When `useUserinfo` is set to `false` this value is not used)
+<3> `jwksUri` - JSON Web Key Set (JWKS) - The app will use this URL to retrieve the public keys used to verify the signature of the Bearer Token during Auto Login, and ID Token in the Auth Code Flow. For Autologin flow, this property must exist.
+<4> `usePkce` - If set to `false`, the app will not use PKCE for the Authorization Code Flow.
+<5> When set to true, only users with a verified e-mail will be allowed to log in to Enonic.
+
+
+== User mappings
+
+This section describes how users are are mapped from OIDC to Enonic.
+
+NOTE: For Authorization Code Flow, user data are synched with Enonic on every login. The user's `displayName` and `email` will be updated from the same sources as for user creation.
+
+.com.enonic.app.oidcidprovider.cfg
+[source,properties]
+----
+useUserinfo=(true|false) // <1>
+claimUsername=(string, optional, defaults to "sub") // <2>
+scopes=(space separated strings, defaults to "profile email") // <3>
+mappings.displayName=(string, required, defaults to @@{userinfo.preferred_username}) // <4>
+mappings.email=(string, required, defaults to @@{userinfo.email}) // <5>
+defaultGroups=(space separated group keys) // <6>
+----
+<1> When `useUserinfo` is set to `false` the claims from `userinfoUrl` will be ignored, and you must specify your own claims below.
+<2> Set this if `useUserinfo` is false.`claimUsername` is important, as this represents the unique identifier that will keep the Enonic user and the OIDC user in sync.
+TODO Examples:
+<3> Set this if `useUserinfo` is false. Defines which scopes to fetch from the OIDC server.
+<4> Template for the `displayName` uses the format `@@{expression}`, e.g. `@@{userinfo.preferred_username}`
+<5> `email` mapping uses `@@{expression}` format, e.g. `@@{userinfo.email}`
+<6> `defaultGroups` makes all users member of the specified Enonic groups. The group name must be in the format `group:[idprovidername]:[groupname]`, e.g. `group:myidprovider:authors`
+
+== Additional user info
+
+You may optionally specify additional Endpoints to fetch and store more user data in the Enonic user profile.
+
+.com.enonic.app.oidcidprovider.cfg
+[source,properties]
+----
+additionalEndpoints.0.name=(string, required) // <1>
+additionalEndpoints.0.url=(string, required)
+----
+
+<1> `name` must be a unique string that will mapped to a scope within the Enonic user profile, where the values will be stored.
+
+TIP: For multiple endpoints, simply add more lines, and iterate the array counter.
+
+
+== Autologin
+
+Autologin is a concept in Enonic XP, where every request (without an existing session) may automatically be logged in. This is for instance useful if you want to support authentication for an API, rather than a regular website.
+
+This application supports automatically logging in users when the client passes the a special header: `Authorization: Bearer <token>` - The token must be a valid JWT for your IDprovider
+
+NOTE: To enable Autologin, you need to specify the `jwksUri` in the ID Provider configuration or `oidcWellKnownEndpoint` that ID Provider uses to obtain the value for the `jwksUri` automatically.
+
+.com.enonic.app.oidcidprovider.cfg
+[source,properties]
+----
+autoLogin.createUser=(true|false) // <1>
+autoLogin.createSession=(false|true) // <2>
+autoLogin.wsHeader=(false|true) // <3>
+autoLogin.allowedAudience=(space separated strings) // <4>
+----
+
+<1> If you disable 'createUser', the user will be logged in, but not persisted as a user within Enonic. If `true`, a user will be created automatically if it doesn't exist.
+<2> Optionally create a session in Enonic when the user is logged in. By default, the user will be logged in with `REQUEST` scope.
+<3> Idprovider will look for a token in the Sec-WebSocket-Protocol header.
+<4> `allowedAudience` is a list of space-separated strings. If set, the app will only accept tokens with an audience that matches one of the values in this list. It is highly recommended to set this value to make sure the correct tokens are used for the auto login.
+
+== endSession
+
+OpenID Connect Front-Channel Logout is optional and might not be supported by your authentication server. You can check if the endpoint is available in the Open ID Configuration (`.well-known/openid-configuration`) under the field `end_session_endpoint`
+There might also be another custom endpoint available that achieves the same purpose.
+The ID Provider Configuration schema tries to be dynamic enough to handle all cases.
+
+.com.enonic.app.oidcidprovider.cfg
+[source,properties]
+----
+endSession.url=(string, required) // <1>
+endSession.idTokenHintKey=(string) // <2>
+endSession.postLogoutRedirectUriKey=(string) // <3>
+endSession.additionalParameters.0.key=(string)
+endSession.additionalParameters.0.value=(string)
+----
+
+<1> `url`: should contain the value of `end_session_endpoint` in your OpenID Provider 
+<2> `idTokenHintKey` should optionally set the `id_token_hint` for your OpenID Provider 
+<3> `postLogoutRedirectUriKey` optionally set the `post_logout_redirect_uri` in your OpenID Provider
+
+Auth0::
+* End Session URL: https://`YOUR_AUTH0_DOMAIN`/v2/logout
+* Post Logout Redirect URI parameter name: `returnTo`
+* Additional Parameters:
+** clientId = [Client ID]
+
+Google:: Not available
+
+Azure::
+* End Session URL: https://login.microsoftonline.com/`TenantID`/oauth2/logout
+* Post Logout Redirect URI parameter name: `post_logout_redirect_uri`
+
+ID-porten::
+* End Session URL: https://login.idporten.no/logout
+* ID Token Hint parameter name: `id_token_hint`
+* Post Logout Redirect URI parameter name: `post_logout_redirect_uri`
