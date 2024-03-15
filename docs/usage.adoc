@@ -75,9 +75,10 @@ NOTE: `myoidcprovider` in the example above must match the name you used in the 
 Finally, if you want to use form-based authenticated (aka Authorization Code Flow), End-Users will be redirected back to your Enonic endpoint from the authorization server. For security reasons you will need to register this URL in the configuration of your OIDC providers Client/Application.
 
 The callback URL depends on your Enonic Vhost/Ingress and the name of the ID Provider you want to use. It typically has the following format: `[host+sourcepath]/_/idprovider/[idprovidername]`, where `idprovidername` must match the idprovider registered in Enonic XP.
-+
-**Example for a site:** `https://www.example.com/_/idprovider/myoidcprovider`
-**Example for admin:** `https://www.example.com/admin/tool/_/idprovider/myoidcprovider`
+
+Example for a site:: https://www.example.com/_/idprovider/myoidcprovider
+
+Example for admin:: https://www.example.com/admin/tool/_/idprovider/myoidcprovider
 
 
 
