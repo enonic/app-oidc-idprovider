@@ -449,7 +449,11 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#user_mappings">User mappings</a></li>
 <li><a href="#additional_user_info">Additional user info</a></li>
 <li><a href="#autologin">Autologin</a></li>
-<li><a href="#endsession">endSession</a></li>
+<li><a href="#endsession">endSession</a>
+<ul class="sectlevel2">
+<li><a href="#example_values">Example values</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -841,7 +845,12 @@ endSession.additionalParameters.0.value=(string)</code></pre>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td><code>postLogoutRedirectUriKey</code> optionally set the <code>post_logout_redirect_uri</code> in your OpenID Provider
+<td><code>postLogoutRedirectUriKey</code> optionally set the <code>post_logout_redirect_uri</code> in your OpenID Provider</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="example_values"><a class="link" href="#example_values">Example values</a></h3>
 <div class="dlist">
 <dl>
 <dt class="hdlist1">Auth0</dt>
@@ -901,16 +910,14 @@ endSession.additionalParameters.0.value=(string)</code></pre>
 </div>
 </dd>
 </dl>
-</div></td>
-</tr>
-</table>
+</div>
 </div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-03-15 12:07:10 UTC
+Last updated 2024-03-15 12:09:42 UTC
 </div>
 </div>
 </body>
