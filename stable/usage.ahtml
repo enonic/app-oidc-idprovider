@@ -608,17 +608,24 @@ mapping.example.idProvider.myoidcprovider = default</code></pre>
 <div class="paragraph">
 <p>The callback URL depends on your Enonic Vhost/Ingress and the name of the ID Provider you want to use. It typically has the following format: <code>[host+sourcepath]/_/idprovider/[idprovidername]</code>, where <code>idprovidername</code> must match the idprovider registered in Enonic XP.</p>
 </div>
-<div class="paragraph">
-<p>+
-<strong>Example for a site:</strong> <code><a href="https://www.example.com/" class="bare">https://www.example.com/</a><em>/idprovider/myoidcprovider</code>
-<strong>Example for admin:</strong> <code><a href="https://www.example.com/admin/tool/" class="bare">https://www.example.com/admin/tool/</a></em>/idprovider/myoidcprovider</code></p>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Example for a site</dt>
+<dd>
+<p><a href="https://www.example.com/_/idprovider/myoidcprovider" class="bare">https://www.example.com/_/idprovider/myoidcprovider</a></p>
+</dd>
+<dt class="hdlist1">Example for admin</dt>
+<dd>
+<p><a href="https://www.example.com/admin/tool/_/idprovider/myoidcprovider" class="bare">https://www.example.com/admin/tool/_/idprovider/myoidcprovider</a></p>
+</dd>
+</dl>
 </div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-03-15 12:05:10 UTC
+Last updated 2024-03-15 12:07:10 UTC
 </div>
 </div>
 </body>
