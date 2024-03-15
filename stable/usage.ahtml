@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.21">
-<title>Open ID Connect ID provider</title>
+<title>Usage</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -435,36 +435,188 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
-<body class="article">
+<body class="article toc2 toc-right">
 <div id="header">
-<h1>Open ID Connect ID provider</h1>
+<h1>Usage</h1>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#oidc_server">OIDC server</a></li>
+<li><a href="#installation">Installation</a></li>
+<li><a href="#configure">Configure</a>
+<ul class="sectlevel2">
+<li><a href="#create_idprovider">Create IDprovider</a></li>
+</ul>
+</li>
+<li><a href="#mapping">Mapping</a>
+<ul class="sectlevel2">
+<li><a href="#ingress">Ingress</a></li>
+<li><a href="#vhost">Vhost</a></li>
+</ul>
+</li>
+<li><a href="#redirectioncallback_uri">Redirection/Callback URI</a></li>
+</ul>
+</div>
 </div>
 <div id="content">
+<div id="preamble">
+<div class="sectionbody">
 <div class="paragraph">
-<p>Authenticate using OIDC and JWT tokens</p>
+<p>Follow these steps to start using the IDprovider</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="oidc_server"><a class="link" href="#oidc_server">OIDC server</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In order to use this application, you will need access to an OIDC server. These are available form a range of different providers like Google, Azure, Auth0 and ID porten, and you may run your own based on software.</p>
 </div>
 <div class="paragraph">
-<p>This application will act as an OIDC Relying Party for your Enonic XP instance.
-It verifies the identity of End-Users based on your OIDC Authorization Server or JWT token</p>
-</div>
-<div class="paragraph">
-<p>Browser-based visitors are are redirected to the Authentication Server, and once successfully authenticated, a user will be created in Enonic XP.</p>
-</div>
-<div class="paragraph">
-<p>The ID provider supports two different approaches</p>
+<p>For your respective prodvider you will typically need to create a Client or application that will represent the Enonic integration. Typical values you will need later from this setup are:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Authorization Code Flow using <code>client_secret_post</code>, <code>client_secret_basic</code> or <code>client_secret_jwt</code> methods.</p>
+<p>Client ID</p>
 </li>
 <li>
-<p>Auto login based on JWT Bearer Token for Stateless Authentication.</p>
+<p>Client secret</p>
+</li>
+<li>
+<p>Issuer Identifier (URL)</p>
+</li>
+<li>
+<p>Authorization endpoint (URL)</p>
+</li>
+<li>
+<p>Token endpoint (URL)</p>
 </li>
 </ul>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="installation"><a class="link" href="#installation">Installation</a></h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>It is possible to mix the two authentication methods for a single domain/vhost.</p>
+<p>The first step to get going on the Enonic side Start off by installing the application to your Enonic instance. It is <a href="https://market.enonic.com/vendors/enonic/oidc-id-provider">available on Enonic Market</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="configure"><a class="link" href="#configure">Configure</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Secondly, the application requires detailed configuration in order to communicate with the 3rd party OIDC server. Create a and tune a configuration file called <code>com.enonic.app.oidcidprovider.cfg</code> and add it to your XP instance.</p>
+</div>
+<div class="paragraph">
+<p>Full configuration details are described in <a href="config.ahtml">the configuration chapter</a>.</p>
+</div>
+<div class="sect2">
+<h3 id="create_idprovider"><a class="link" href="#create_idprovider">Create IDprovider</a></h3>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+If your configuration contains this value: <code>autoinit=true</code>, it should automatically create one (or more) IDproviders in Enonic XP.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>IDproviders may also be created manually by following these steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>From Enonic admin console: <code>XP menu</code> &#8594; <code>Users</code> &#8594; <code>New</code> &#8594; <code>ID provider</code> <a href="https://www.youtube.com/watch?v=QZpBdsDlkA0">admin tool "Users"</a></p>
+</li>
+<li>
+<p>Fill in the <code>displayName</code> field, which generates the <strong>ID provider name</strong> just below</p>
+<div class="paragraph">
+<p><span class="image"><img src="media/idprovider-name.png" alt="idprovider name" width="500px" title="ID provider name is found/set in the name field below the displayName"></span></p>
+</div>
+<div class="paragraph">
+<p>The ID provider name cannot be changed later, so choose wisely before saving.</p>
+</div>
+</li>
+<li>
+<p>For the "Application" field, select the "OIDC ID Provider" app you installed earlier.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="mapping"><a class="link" href="#mapping">Mapping</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Finally, you will need to map the IDprovider to an Enonic ingress/vhost where it will be used - i.e to enable login for the XP admin console, a website or an API.</p>
+</div>
+<div class="sect2">
+<h3 id="ingress"><a class="link" href="#ingress">Ingress</a></h3>
+<div class="paragraph">
+<p>When using the self service cloud, simply edit the Ingress, then select the idprovider you created above i.e. <code>myoidcprovider</code>.</p>
+</div>
+<div class="paragraph">
+<p>Save, and the change should take effect shortly.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="vhost"><a class="link" href="#vhost">Vhost</a></h3>
+<div class="paragraph">
+<p>To manually configure the ID provider on your XP instance, you will need a vhost definition.</p>
+</div>
+<div class="paragraph">
+<p>Edit the XP configuration file <code>com.enonic.xp.web.vhost.cfg</code>, and map the idprovider to your a vhost.</p>
+</div>
+<div class="paragraph">
+<p>(See <a href="https://developer.enonic.com/docs/xp/stable/deployment/vhosts">Virtual Host Configuration</a> for more information).</p>
+</div>
+<div class="listingblock">
+<div class="title">Example vhost mapping for Admin console</div>
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties">mapping.example.host = xp.example.com
+mapping.example.source = /
+mapping.example.target = /admin
+mapping.example.idProvider.myoidcprovider = default</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<code>myoidcprovider</code> in the example above must match the name you used in the idprovider configuration.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="redirectioncallback_uri"><a class="link" href="#redirectioncallback_uri">Redirection/Callback URI</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Finally, if you want to use form-based authenticated (aka Authorization Code Flow), End-Users will be redirected back to your Enonic endpoint from the authorization server. For security reasons you will need to register this URL in the configuration of your OIDC providers Client/Application.</p>
+</div>
+<div class="paragraph">
+<p>The callback URL depends on your Enonic Vhost/Ingress and the name of the ID Provider you want to use. It typically has the following format: <code>[host+sourcepath]/_/idprovider/[idprovidername]</code>, where <code>idprovidername</code> must match the idprovider registered in Enonic XP.</p>
+</div>
+<div class="paragraph">
+<p>+
+<strong>Example for a site:</strong> <code><a href="https://www.example.com/" class="bare">https://www.example.com/</a><em>/idprovider/myoidcprovider</code>
+<strong>Example for admin:</strong> <code><a href="https://www.example.com/admin/tool/" class="bare">https://www.example.com/admin/tool/</a></em>/idprovider/myoidcprovider</code></p>
+</div>
+</div>
 </div>
 </div>
 <div id="footer">

@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.21">
-<title>Open ID Connect ID provider</title>
+<title>Release notes</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -437,34 +437,30 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </head>
 <body class="article">
 <div id="header">
-<h1>Open ID Connect ID provider</h1>
+<h1>Release notes</h1>
 </div>
 <div id="content">
 <div class="paragraph">
-<p>Authenticate using OIDC and JWT tokens</p>
-</div>
-<div class="paragraph">
-<p>This application will act as an OIDC Relying Party for your Enonic XP instance.
-It verifies the identity of End-Users based on your OIDC Authorization Server or JWT token</p>
-</div>
-<div class="paragraph">
-<p>Browser-based visitors are are redirected to the Authentication Server, and once successfully authenticated, a user will be created in Enonic XP.</p>
-</div>
-<div class="paragraph">
-<p>The ID provider supports two different approaches</p>
+<p>What&#8217;s new in version 3</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Authorization Code Flow using <code>client_secret_post</code>, <code>client_secret_basic</code> or <code>client_secret_jwt</code> methods.</p>
+<p>Starting from version 3.0, it is possible to specify <code>oidcWellKnownEndpoint</code> (Provider&#8217;s OpenID Connect Discovery URL) to obtain the values for the <code>issuer</code>,<code>authorization_endpoint</code>, <code>token_endpoint</code>,  <code>userinfo_endpoint</code> and <code>jwks_uri</code>  properties.</p>
 </li>
 <li>
-<p>Auto login based on JWT Bearer Token for Stateless Authentication.</p>
+<p>User <code>displayName</code> and <code>email</code> are now automatically updated when the user logs in with Authorization Code Flow.</p>
+</li>
+<li>
+<p>Authorization Code Flow with PKCE is now supported and used by default. Disable it (<code>usePkce = false</code>) if your provider does not support it.</p>
+</li>
+<li>
+<p>In Authorization Code Flow, the ID Token verification is now done with the public keys from the JWKS URI (<code>jwksUri</code>).</p>
+</li>
+<li>
+<p>The <code>clientId</code> and <code>clientSecret</code> fields are now optional in the ID Provider configuration. If you want to disable Authorization Code Flow, <code>clientId</code> should be omitted.</p>
 </li>
 </ul>
-</div>
-<div class="paragraph">
-<p>It is possible to mix the two authentication methods for a single domain/vhost.</p>
 </div>
 </div>
 <div id="footer">
