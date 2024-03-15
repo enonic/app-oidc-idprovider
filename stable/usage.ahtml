@@ -445,7 +445,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#installation">Installation</a></li>
 <li><a href="#configure">Configure</a>
 <ul class="sectlevel2">
-<li><a href="#create_idprovider">Create IDprovider</a></li>
+<li><a href="#manual_setup">Manual setup</a></li>
 </ul>
 </li>
 <li><a href="#mapping">Mapping</a>
@@ -470,10 +470,10 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <h2 id="oidc_server"><a class="link" href="#oidc_server">OIDC server</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>In order to use this application, you will need access to an OIDC server. These are available form a range of different providers like Google, Azure, Auth0 and ID porten, and you may run your own based on software.</p>
+<p>You will need access to an OIDC server. These are available from a range of different providers like Google, Azure, Auth0 and ID porten, and you may run your own based on software.</p>
 </div>
 <div class="paragraph">
-<p>For your respective prodvider you will typically need to create a Client or application that will represent the Enonic integration. Typical values you will need later from this setup are:</p>
+<p>For your respective prodvider you will typically need to create a Client or application that will represent the Enonic integration. Typical values you will need later from this setup are typically:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -486,12 +486,6 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li>
 <p>Issuer Identifier (URL)</p>
 </li>
-<li>
-<p>Authorization endpoint (URL)</p>
-</li>
-<li>
-<p>Token endpoint (URL)</p>
-</li>
 </ul>
 </div>
 </div>
@@ -500,7 +494,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <h2 id="installation"><a class="link" href="#installation">Installation</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The first step to get going on the Enonic side Start off by installing the application to your Enonic instance. It is <a href="https://market.enonic.com/vendors/enonic/oidc-id-provider">available on Enonic Market</a>.</p>
+<p>On your Enonic server, start by installing the application to your Enonic instance. It is <a href="https://market.enonic.com/vendors/enonic/oidc-id-provider">available on Enonic Market</a>.</p>
 </div>
 </div>
 </div>
@@ -508,13 +502,14 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <h2 id="configure"><a class="link" href="#configure">Configure</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Secondly, the application requires detailed configuration in order to communicate with the 3rd party OIDC server. Create a and tune a configuration file called <code>com.enonic.app.oidcidprovider.cfg</code> and add it to your XP instance.</p>
+<p>Secondly, the application requires a detailed configuration in order to communicate with the 3rd party OIDC server. Create a and tune a configuration file called <code>com.enonic.app.oidcidprovider.cfg</code> and add it to your XP instance.</p>
 </div>
 <div class="paragraph">
-<p>Full configuration details are described in <a href="config.ahtml">the configuration chapter</a>.</p>
+<p>Full details on how to configure the application is described in <a href="config.ahtml">the configuration chapter</a>.</p>
 </div>
-<div class="sect2">
-<h3 id="create_idprovider"><a class="link" href="#create_idprovider">Create IDprovider</a></h3>
+<div class="paragraph">
+<p>You may also find our <a href="examples.ahtml">configureation examples</a> useful.</p>
+</div>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -522,13 +517,15 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-If your configuration contains this value: <code>autoinit=true</code>, it should automatically create one (or more) IDproviders in Enonic XP.
+Your Enonic IDprovider should automatically be create once you add your configuration file
 </td>
 </tr>
 </table>
 </div>
+<div class="sect2">
+<h3 id="manual_setup"><a class="link" href="#manual_setup">Manual setup</a></h3>
 <div class="paragraph">
-<p>IDproviders may also be created manually by following these steps:</p>
+<p>If you disable <code>autoInit</code>, the IDproviders may manually by created by following these steps:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -621,7 +618,7 @@ mapping.example.idProvider.myoidcprovider = default</code></pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-03-15 11:58:25 UTC
+Last updated 2024-03-15 12:05:10 UTC
 </div>
 </div>
 </body>
