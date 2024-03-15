@@ -14,15 +14,15 @@ As such, most properties are prefixed with a named IDProvider i.e. `idprovider.[
 IMPORTANT: For ease of reading we omit the `idprovider.<name>.` prefix in most of the documentation below. See the examples for a complete setup
 
 
-== Initialization
+== IDprovider setup
 
 The application can automatically initialize, one or more IDproviders using the following configuration fields:
 
 .com.enonic.app.oidcidprovider.cfg
 [source,properties]
 ----
-autoinit=(true | false, optional) // <1>
-
+# IDprovider setup
+autoinit=(true|false) // <1>
 idprovider.<name>.displayName=(string, optional) // <2>
 idprovider.<name>.description=(string, optional) // <3>
 ----
@@ -38,6 +38,7 @@ The Client parameters are mandatory for the Authorization Code Flow, but not use
 .com.enonic.app.oidcidprovider.cfg
 [source,properties]
 ----
+# Client
 clientId=(string) // <1>
 clientSecret=(string) // <2>
 method=(post|basic|jwt)// <3>
@@ -49,18 +50,6 @@ method=(post|basic|jwt)// <3>
 
 NOTE: You may disabe Authorization Code Flow by omitting `clientId` in your configuration
 
-== Rules
-
-Additional rules enforced on user creation
-
-.com.enonic.app.oidcidprovider.cfg
-[source,properties]
-----
-idprovider.<name>.rules.forceEmailVerification=(true|false, required) // <1>
-----
-
-<1> When `forceEmailVerification` is `true` the claim `email_verified` (returned with the scope `email`) must exist.
-
 == Authorization server
 
 These values can be obtained from your OIDC service when registering a new Client/application.
@@ -68,6 +57,7 @@ These values can be obtained from your OIDC service when registering a new Clien
 .com.enonic.app.oidcidprovider.cfg
 [source,properties]
 ----
+# Authorization server
 oidcWellKnownEndpoint=(string) // <1>
 issuer=(string)
 authorizationUrl=(string)
@@ -97,6 +87,21 @@ Examples of OpenID Connect Discovery URL:
 <5> When set to true, only users with a verified e-mail will be allowed to log in to Enonic.
 
 
+== Rules
+
+Additional rules enforced on user creation
+
+.com.enonic.app.oidcidprovider.cfg
+[source,properties]
+----
+# Rules
+idprovider.<name>.rules.forceEmailVerification=(true|false, required) // <1>
+----
+
+<1> When `forceEmailVerification` is `true` the claim `email_verified` (returned with the scope `email`) must exist.
+
+
+
 == User mappings
 
 This section describes how users are are mapped from OIDC to Enonic.
@@ -106,6 +111,7 @@ NOTE: For Authorization Code Flow, user data are synched with Enonic on every lo
 .com.enonic.app.oidcidprovider.cfg
 [source,properties]
 ----
+# User mappings
 useUserinfo=(true|false) // <1>
 claimUsername=(string, optional, defaults to "sub") // <2>
 scopes=(space separated strings, defaults to "profile email") // <3>
@@ -121,13 +127,14 @@ TODO Examples:
 <5> `email` mapping uses `@@{expression}` format, e.g. `@@{userinfo.email}`
 <6> `defaultGroups` makes all users member of the specified Enonic groups. The group name must be in the format `group:[idprovidername]:[groupname]`, e.g. `group:myidprovider:authors`
 
-== Additional user info
+== Additional endpoints
 
 You may optionally specify additional Endpoints to fetch and store more user data in the Enonic user profile.
 
 .com.enonic.app.oidcidprovider.cfg
 [source,properties]
 ----
+# Additional Endpoints
 additionalEndpoints.0.name=(string, required) // <1>
 additionalEndpoints.0.url=(string, required)
 ----
@@ -148,6 +155,7 @@ NOTE: To enable Autologin, you need to specify the `jwksUri` in the ID Provider 
 .com.enonic.app.oidcidprovider.cfg
 [source,properties]
 ----
+# Autologin
 autoLogin.createUser=(true|false) // <1>
 autoLogin.createSession=(false|true) // <2>
 autoLogin.wsHeader=(false|true) // <3>
@@ -168,6 +176,7 @@ The ID Provider Configuration schema tries to be dynamic enough to handle all ca
 .com.enonic.app.oidcidprovider.cfg
 [source,properties]
 ----
+# EndSession
 endSession.url=(string, required) // <1>
 endSession.idTokenHintKey=(string) // <2>
 endSession.postLogoutRedirectUriKey=(string) // <3>
