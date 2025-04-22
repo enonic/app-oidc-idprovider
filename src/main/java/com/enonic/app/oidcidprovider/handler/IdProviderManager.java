@@ -1,5 +1,8 @@
 package com.enonic.app.oidcidprovider.handler;
 
+import java.io.UncheckedIOException;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.Map;
 import java.util.Objects;
@@ -35,26 +38,26 @@ public class IdProviderManager
 
     private RSAAlgorithmProvider resolveAlgorithmProvider()
     {
-        try
-        {
             final JwkProvider jwkProvider = getJwkProvider();
             return jwkProvider != null ? new RSAAlgorithmProvider( jwkProvider ) : null;
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
     }
 
     private JwkProvider getJwkProvider()
-        throws Exception
     {
         final String jwksUri = Objects.toString( idProviderConfig.get( "jwksUri" ), null );
         if ( jwksUri == null )
         {
             return null;
         }
-
-        return new JwkProviderBuilder( new URL( jwksUri ) ).cached( true ).timeouts( TIMEOUT_MS, TIMEOUT_MS ).build();
+        final URL url;
+        try
+        {
+            url = URI.create( jwksUri ).toURL();
+        }
+        catch ( MalformedURLException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+        return new JwkProviderBuilder( url ).cached( true ).timeouts( TIMEOUT_MS, TIMEOUT_MS ).build();
     }
 }

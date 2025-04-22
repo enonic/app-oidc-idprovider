@@ -12,7 +12,7 @@ public final class GetIdProvidersHandler
     {
         final IdProviders idProviders = securityService.get().getIdProviders();
         return idProviders.stream().
-                map( idProvider -> new IdProviderMapper( idProvider ) ).
+                map( IdProviderMapper::new ).
                 collect( Collectors.toList() );
     }
 }
