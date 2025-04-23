@@ -1,39 +1,13 @@
 package com.enonic.app.oidcidprovider.lib.configFile;
 
-import org.junit.jupiter.api.Test;
-
-import com.enonic.xp.testing.ScriptTestSupport;
+import com.enonic.xp.testing.ScriptRunnerSupport;
 
 public class ConfigFileTest
-    extends ScriptTestSupport
+    extends ScriptRunnerSupport
 {
-    @Test
-    public void testConfigFile()
+    @Override
+    public String getScriptTestFile()
     {
-        runFunction( "/lib/configFile/configIdProvider-test.js", "testValidConfig" );
-    }
-
-    @Test
-    public void testConfigFileDefault()
-    {
-        runFunction( "/lib/configFile/configIdProvider-test.js", "testDefaultConfigWithRequiredOptions" );
-    }
-
-    @Test
-    public void testValidateRequiredOptions()
-    {
-        runFunction( "/lib/configFile/configIdProvider-test.js", "testValidateRequiredOptions" );
-    }
-
-    @Test
-    public void testValidationOfAdditionalEndpoints()
-    {
-        runFunction( "/lib/configFile/configIdProvider-test.js", "testValidationOfAdditionalEndpoints" );
-    }
-
-    @Test
-    public void testValidationOfEndSessionAdditionalParameters()
-    {
-        runFunction( "/lib/configFile/configIdProvider-test.js", "testValidationOfEndSessionAdditionalParameters" );
+        return "/lib/configFile/configIdProvider-test.js";
     }
 }
