@@ -27,7 +27,7 @@ dependencies {
     include 'com.auth0:jwks-rsa:0.22.1'
 
     testImplementation "com.enonic.xp:testing:${xpVersion}"
-    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.12.2'
 }
 
 repositories {
