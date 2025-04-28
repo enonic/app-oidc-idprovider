@@ -1,4 +1,5 @@
 plugins {
+    id 'jacoco'
     id 'maven-publish'
     id 'com.enonic.defaults' version '2.1.5'
     id 'com.enonic.xp.app' version '3.6.1'
@@ -26,6 +27,7 @@ dependencies {
     include 'com.auth0:jwks-rsa:0.22.1'
 
     testImplementation "com.enonic.xp:testing:${xpVersion}"
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
 }
 
 repositories {
@@ -38,3 +40,18 @@ java {
         languageVersion = JavaLanguageVersion.of(21)
     }
 }
+
+test {
+    useJUnitPlatform()
+    systemProperty 'java.awt.headless', 'true'
+    jvmArgs '-XX:TieredStopAtLevel=1'
+}
+
+jacocoTestReport {
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+check.dependsOn jacocoTestReport

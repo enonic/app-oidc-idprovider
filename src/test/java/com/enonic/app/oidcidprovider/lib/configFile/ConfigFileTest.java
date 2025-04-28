@@ -1,6 +1,6 @@
 package com.enonic.app.oidcidprovider.lib.configFile;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.enonic.xp.testing.ScriptTestSupport;
 
