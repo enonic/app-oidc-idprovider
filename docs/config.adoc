@@ -104,7 +104,7 @@ idprovider.<name>.rules.forceEmailVerification=(true|false, required) // <1>
 
 == User mappings
 
-This section describes how users are are mapped from OIDC to Enonic.
+This section describes how users are mapped from OIDC to Enonic.
 
 NOTE: For Authorization Code Flow, user data are synched with Enonic on every login. The user's `displayName` and `email` will be updated from the same sources as for user creation.
 
@@ -139,7 +139,7 @@ additionalEndpoints.0.name=(string, required) // <1>
 additionalEndpoints.0.url=(string, required)
 ----
 
-<1> `name` must be a unique string that will mapped to a scope within the Enonic user profile, where the values will be stored.
+<1> `name` must be a unique string that will be mapped to a scope within the Enonic user profile, where the values will be stored.
 
 TIP: For multiple endpoints, simply add more lines, and iterate the array counter.
 
