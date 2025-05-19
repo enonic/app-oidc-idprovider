@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Asciidoctor 2.0.21">
+<meta name="generator" content="Asciidoctor 2.0.23">
 <title>Configuration</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
@@ -675,7 +675,7 @@ idprovider.&lt;name&gt;.rules.forceEmailVerification=(true|false, required) <i c
 <h2 id="user_mappings"><a class="link" href="#user_mappings">User mappings</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This section describes how users are are mapped from OIDC to Enonic.</p>
+<p>This section describes how users are mapped from OIDC to Enonic.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -750,7 +750,7 @@ additionalEndpoints.0.url=(string, required)</code></pre>
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td><code>name</code> must be a unique string that will mapped to a scope within the Enonic user profile, where the values will be stored.</td>
+<td><code>name</code> must be a unique string that will be mapped to a scope within the Enonic user profile, where the values will be stored.</td>
 </tr>
 </table>
 </div>
@@ -924,7 +924,7 @@ endSession.additionalParameters.0.value=(string)</code></pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-03-15 12:14:20 UTC
+Last updated 2025-05-19 09:55:04 UTC
 </div>
 </div>
 </body>
