@@ -4,7 +4,6 @@ package com.enonic.app.oidcidprovider.lib.configFile;
 import com.enonic.xp.script.ScriptValue;
 import com.enonic.xp.security.CreateIdProviderParams;
 import com.enonic.xp.security.IdProvider;
-import com.enonic.xp.security.IdProviderConfig;
 import com.enonic.xp.security.IdProviderKey;
 import com.enonic.xp.security.acl.IdProviderAccessControlList;
 
@@ -16,8 +15,6 @@ public final class CreateIdProviderHandler
     private String displayName;
 
     private String description;
-
-    private IdProviderConfig idProviderConfig;
 
     private IdProviderAccessControlList permissions;
 
@@ -36,11 +33,6 @@ public final class CreateIdProviderHandler
         this.description = description;
     }
 
-    public void setIdProviderConfig( final ScriptValue idProviderConfig )
-    {
-        this.idProviderConfig = idProviderConfig == null ? null : ScriptValueToIdProviderConfigTranslator.translate( idProviderConfig );
-    }
-
     public void setPermissions( final ScriptValue permissions )
     {
         this.permissions = permissions == null
@@ -54,7 +46,6 @@ public final class CreateIdProviderHandler
                 key( IdProviderKey.from( name ) ).
                 displayName( displayName ).
                 description( description ).
-                idProviderConfig( idProviderConfig ).
                 permissions( permissions ).
                 build();
         final IdProvider idProvider = securityService.get().createIdProvider( params );

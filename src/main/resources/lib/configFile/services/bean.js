@@ -26,11 +26,10 @@ function nullOrValue(value) {
 exports.createIdProvider = (params) => {
     var bean = __.newBean('com.enonic.app.oidcidprovider.lib.configFile.CreateIdProviderHandler');
 
-    bean.name = required(params, 'name');
-    bean.displayName = nullOrValue(params.displayName);
-    bean.description = nullOrValue(params.description);
-    bean.idProviderConfig = __.toScriptValue(params.idProviderConfig);
-    bean.permissions = __.toScriptValue(params.permissions);
+    bean.setName(required(params, 'name'));
+    bean.setDisplayName(nullOrValue(params.displayName));
+    bean.setDescription(nullOrValue(params.description));
+    bean.setPermissions(__.toScriptValue(params.permissions));
 
     return __.toNativeObject(bean.createIdProvider());
 };
