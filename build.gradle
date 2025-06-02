@@ -27,7 +27,7 @@ dependencies {
     include 'com.auth0:jwks-rsa:0.22.1'
 
     testImplementation "com.enonic.xp:testing:${xpVersion}"
-    testImplementation(platform('org.junit:junit-bom:5.12.2'))
+    testImplementation(platform('org.junit:junit-bom:5.13.0'))
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
