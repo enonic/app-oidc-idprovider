@@ -37,7 +37,7 @@ function login(token, tokenClaims, isAutoLogin) {
         updateUserData(claims, idProviderConfig, user);
     }
 
-    doLogin(idProviderConfig, userName, isAutoLogin);
+    return doLogin(idProviderConfig, userName, isAutoLogin);
 }
 
 function getClaim(claims, claimKey) {
@@ -110,6 +110,7 @@ function doLogin(idProviderConfig, userName, isAutoLogin) {
         }
         throw `Error while logging user [${principalKey}]`;
     }
+    return loginResult;
 }
 
 function doCreateUser(idProviderConfig, claims, userName, isAutoLogin) {
