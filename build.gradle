@@ -21,6 +21,7 @@ dependencies {
     include "com.enonic.xp:lib-context:${xpVersion}"
     include "com.enonic.xp:lib-portal:${xpVersion}"
     include "com.enonic.xp:lib-cluster:${xpVersion}"
+    include "com.enonic.xp:lib-event:${xpVersion}"
     include "com.enonic.lib:lib-http-client:3.2.2"
 
     include 'com.auth0:java-jwt:4.5.0'

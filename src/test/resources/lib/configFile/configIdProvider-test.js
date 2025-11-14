@@ -65,6 +65,9 @@ exports.testValidConfig = () => {
                 'idprovider.myidp.autoLogin.createSession': 'true',
                 'idprovider.myidp.autoLogin.wsHeader': 'false',
                 'idprovider.myidp.autoLogin.allowedAudience': 'audience1 audience2   audience3      audience4',
+
+                'idprovider.myidp.userEventPrefix': 'azure',
+                'idprovider.myidp.userEventMode': 'distributed',
             }
         }
     });
@@ -105,6 +108,9 @@ exports.testValidConfig = () => {
     test.assertTrue(config.autoLogin.createSession);
     test.assertFalse(config.autoLogin.wsHeader);
     test.assertJsonEquals(['audience1', 'audience2', 'audience3', 'audience4'], config.autoLogin.allowedAudience);
+
+    test.assertEquals('azure', config.userEventPrefix);
+    test.assertEquals('distributed', config.userEventMode);
 };
 
 exports.testDefaultConfigWithRequiredOptions = () => {
