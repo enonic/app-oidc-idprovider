@@ -68,6 +68,8 @@ exports.testValidConfig = () => {
 
                 'idprovider.myidp.userEventPrefix': 'azure',
                 'idprovider.myidp.userEventMode': 'distributed',
+
+                'idprovider.myidp.acceptLeeway': '2',
             }
         }
     });
@@ -111,6 +113,8 @@ exports.testValidConfig = () => {
 
     test.assertEquals('azure', config.userEventPrefix);
     test.assertEquals('distributed', config.userEventMode);
+
+    test.assertEquals(2, config.acceptLeeway);
 };
 
 exports.testDefaultConfigWithRequiredOptions = () => {
@@ -161,6 +165,8 @@ exports.testDefaultConfigWithRequiredOptions = () => {
     test.assertFalse(config.autoLogin.createSession);
     test.assertFalse(config.autoLogin.wsHeader);
     test.assertJsonEquals([], config.autoLogin.allowedAudience);
+
+    test.assertEquals(1, config.acceptLeeway);
 };
 
 exports.testValidateRequiredOptions = () => {

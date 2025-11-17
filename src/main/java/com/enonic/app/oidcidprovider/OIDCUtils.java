@@ -63,7 +63,7 @@ public class OIDCUtils
     }
 
     public ClaimSetMapper parseClaims( final String idToken, final String issuer, final String clientID, final String nonce,
-                                       final String idProviderName )
+                                       final String idProviderName, final Long acceptLeeway )
         throws Exception
     {
         final DecodedJWT decodedJWT = JWT.decode( idToken );
@@ -89,7 +89,7 @@ public class OIDCUtils
         final JWTVerifier verifier = verification.withIssuer( issuer )
             .withAudience( clientID )
             .withClaim( "nonce", nonce )
-            .acceptLeeway( 1 ) // 1 sec for nbf and iat
+            .acceptLeeway( acceptLeeway )
             .build();
 
         final String decodedPayload = new String( Base64.getDecoder().decode( decodedJWT.getPayload() ), StandardCharsets.UTF_8 );
