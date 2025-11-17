@@ -6,8 +6,8 @@ const ADDITIONAL_ENDPOINTS = "^idprovider\.[a-zA-Z0-9_-]+\.additionalEndpoints\.
 
 const parseStringArray = value => value ? value.split(' ').filter(v => !!v) : [];
 const firstAtsToDollar = value => value ? value.replace(/@@\{/g, '${') : value;
-
 const defaultBooleanTrue = value => value !== 'false';
+const parseLong = (value, defaultValue) => /^-?\d+$/.test(value) ? +value : defaultValue;
 
 exports.getIdProviderConfig = function (idProviderName) {
     const cachedConfig = wellKnownService.getIdProviderConfig(idProviderName);
@@ -57,6 +57,7 @@ exports.getIdProviderConfig = function (idProviderName) {
         },
         userEventPrefix: rawIdProviderConfig[`${idProviderKeyBase}.userEventPrefix`] || app.name,
         userEventMode: rawIdProviderConfig[`${idProviderKeyBase}.userEventMode`] || 'local',
+        acceptLeeway: parseLong(rawIdProviderConfig[`${idProviderKeyBase}.acceptLeeway`], 1),
     };
 
     if (hasProperty(rawIdProviderConfig, idProviderKeyBase, 'endSession')) {
