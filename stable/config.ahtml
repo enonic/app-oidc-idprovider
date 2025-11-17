@@ -449,7 +449,8 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#user_mappings">User mappings</a></li>
 <li><a href="#additional_endpoints">Additional endpoints</a></li>
 <li><a href="#autologin">Autologin</a></li>
-<li><a href="#endsession">endSession</a>
+<li><a href="#endsession">endSession</a></li>
+<li><a href="#user_events">User Events</a>
 <ul class="sectlevel2">
 <li><a href="#example_values">Example values</a></li>
 </ul>
@@ -856,6 +857,31 @@ endSession.additionalParameters.0.value=(string)</code></pre>
 </tr>
 </table>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="user_events"><a class="link" href="#user_events">User Events</a></h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="title">com.enonic.app.oidcidprovider.cfg</div>
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties">userEventPrefix=(string, optional, defaults to "app.name")  <i class="conum" data-value="1"></i><b>(1)</b>
+userEventMode=(off|local|distributed, optional, defaults to "local")  <i class="conum" data-value="2"></i><b>(2)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td><code>userEventPrefix</code> is used to customize the type of user events such as <code>login</code>, <code>create</code>, and <code>modify</code>.
+By default, the application name is used as the prefix. For instance, the login event will look like <code>&lt;userEventPrefix&gt;.user.login</code>. To listen for this event, use <code>custom.&lt;userEventPrefix&gt;.user.login</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td><code>userEventMode</code> allows you to disable user events or specify whether they should be distributed in the cluster or locally.</td>
+</tr>
+</table>
+</div>
 <div class="sect2">
 <h3 id="example_values"><a class="link" href="#example_values">Example values</a></h3>
 <div class="dlist">
@@ -924,7 +950,7 @@ endSession.additionalParameters.0.value=(string)</code></pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2025-11-14 13:07:03 UTC
+Last updated 2025-11-17 11:18:14 UTC
 </div>
 </div>
 </body>
