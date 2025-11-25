@@ -97,7 +97,7 @@ function requestTokenWithFallback(idProviderConfig, context, code) {
 
         try {
             //https://tools.ietf.org/html/rfc6749#section-2.3.1
-            const idTokenResponse = oidcLib.requestIDToken({
+            const response = oidcLib.requestIDToken({
                 idProviderName: idProviderName,
                 issuer: idProviderConfig.issuer,
                 tokenUrl: idProviderConfig.tokenUrl,
@@ -111,17 +111,19 @@ function requestTokenWithFallback(idProviderConfig, context, code) {
                 acceptLeeway: idProviderConfig.acceptLeeway,
             });
 
-            if (!idTokenResponse.retry) {
-                return idTokenResponse;
+            if (!response.retry) {
+                return response;
             }
 
-            log.warning(`Token request returned retry=true (status ${idTokenResponse.status}) for ID Provider '${idProviderName}'. Trying next clientSecret...`);
+            if (secrets.length > 1) {
+                log.warning(
+                    `Token request returned status '${response.status}' for ID Provider '${idProviderName}'. Trying next clientSecret...`);
+            }
 
-            lastError = new Error(`Token retry requested; status=${idTokenResponse.status} for ID Provider '${idProviderName}'.`);
+            lastError = new Error(`Token request returned status '${response.status}' for ID Provider '${idProviderName}'`);
         } catch (err) {
             lastError = err;
-
-            log.warning(`Token request failed for ID Provider '${idProviderName}'. Trying next clientSecret...`);
+            log.error(`Token request failed for ID Provider '${idProviderName}': ${lastError}`);
         }
     }
 
