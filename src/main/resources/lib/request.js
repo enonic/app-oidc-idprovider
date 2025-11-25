@@ -35,7 +35,7 @@ function isAutoLoginFailed() {
 
 function getRedirectUri() {
     const bean = __.newBean('com.enonic.app.oidcidprovider.PortalRequestBean');
-    return bean.getRedirectUrl();
+    return bean.getRedirectUri();
 }
 
 exports.getRequestUrl = getRequestUrl;
