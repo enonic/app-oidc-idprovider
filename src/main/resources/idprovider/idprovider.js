@@ -57,11 +57,7 @@ function redirectToAuthorizationEndpoint() {
 }
 
 function generateRedirectUri() {
-    var idProviderKey = portalLib.getIdProviderKey();
-    return portalLib.idProviderUrl({
-        idProviderKey: idProviderKey,
-        type: 'absolute'
-    });
+    return requestLib.getRedirectUri();
 }
 
 function handleAuthenticationResponse(req) {
