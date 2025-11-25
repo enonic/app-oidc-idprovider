@@ -117,7 +117,7 @@ function requestTokenWithFallback(idProviderConfig, context, code) {
 
             if (secrets.length > 1) {
                 log.warning(
-                    `Token request returned status '${response.status}' for ID Provider '${idProviderName}'. Trying next clientSecret...`);
+                    `Token request returned status '${response.status}' for ID Provider '${idProviderName}'. Trying fallback clientSecret...`);
             }
 
             lastError = new Error(`Token request returned status '${response.status}' for ID Provider '${idProviderName}'`);
