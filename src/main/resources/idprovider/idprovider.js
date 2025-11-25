@@ -22,7 +22,7 @@ function redirectToAuthorizationEndpoint() {
     log.debug('Handling 401 error...');
 
     const usePkce = idProviderConfig.usePkce;
-    const redirectUri = generateRedirectUri();
+    const redirectUri = requestLib.getRedirectUri();
 
     const state = oidcLib.generateToken();
     const nonce = oidcLib.generateToken();
@@ -56,10 +56,6 @@ function redirectToAuthorizationEndpoint() {
     };
 }
 
-function generateRedirectUri() {
-    return requestLib.getRedirectUri();
-}
-
 function handleAuthenticationResponse(req) {
     const params = getRequestParams(req);
 
@@ -76,32 +72,60 @@ function handleAuthenticationResponse(req) {
 
     const code = params.code;
 
-    //https://tools.ietf.org/html/rfc6749#section-2.3.1
-    const idToken = oidcLib.requestIDToken({
-        idProviderName: idProviderConfig._idProviderName,
-        issuer: idProviderConfig.issuer,
-        tokenUrl: idProviderConfig.tokenUrl,
-        method: idProviderConfig.method,
-        clientId: idProviderConfig.clientId,
-        clientSecret: idProviderConfig.clientSecret,
-        redirectUri: context.redirectUri,
-        nonce: context.nonce,
-        codeVerifier: context.codeVerifier,
-        code: code,
-        acceptLeeway: idProviderConfig.acceptLeeway,
-    });
+    const tokenResponse = requestTokenWithFallback(idProviderConfig, context, code);
 
-    checkClaimUsername(idToken.claims, idProviderConfig.claimUsername);
+    checkClaimUsername(tokenResponse.claims, idProviderConfig.claimUsername);
 
-    loginLib.login(idToken.accessToken, idToken.claims, false);
+    loginLib.login(tokenResponse.accessToken, tokenResponse.claims, false);
 
     if (idProviderConfig.endSession && idProviderConfig.endSession.idTokenHintKey) {
-        requestLib.storeIdToken(idToken.idToken);
+        requestLib.storeIdToken(tokenResponse.idToken);
     }
 
     return {
         redirect: context.originalUrl
     };
+}
+
+function requestTokenWithFallback(idProviderConfig, context, code) {
+    const secrets = idProviderConfig.clientSecret;
+
+    let lastError;
+
+    for (const secret of secrets) {
+        const idProviderName = idProviderConfig._idProviderName;
+
+        try {
+            //https://tools.ietf.org/html/rfc6749#section-2.3.1
+            const idTokenResponse = oidcLib.requestIDToken({
+                idProviderName: idProviderName,
+                issuer: idProviderConfig.issuer,
+                tokenUrl: idProviderConfig.tokenUrl,
+                method: idProviderConfig.method,
+                clientId: idProviderConfig.clientId,
+                clientSecret: secret,
+                redirectUri: context.redirectUri,
+                nonce: context.nonce,
+                codeVerifier: context.codeVerifier,
+                code: code,
+                acceptLeeway: idProviderConfig.acceptLeeway,
+            });
+
+            if (!idTokenResponse.retry) {
+                return idTokenResponse;
+            }
+
+            log.warning(`Token request returned retry=true (status ${idTokenResponse.status}) for ID Provider '${idProviderName}'. Trying next clientSecret...`);
+
+            lastError = new Error(`Token retry requested; status=${idTokenResponse.status} for ID Provider '${idProviderName}'.`);
+        } catch (err) {
+            lastError = err;
+
+            log.warning(`Token request failed for ID Provider '${idProviderName}'. Trying next clientSecret...`);
+        }
+    }
+
+    throw lastError;
 }
 
 function getRequestParams(req) {
