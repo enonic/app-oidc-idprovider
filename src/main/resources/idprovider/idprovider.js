@@ -92,9 +92,9 @@ function requestTokenWithFallback(idProviderConfig, context, code) {
 
     let lastError;
 
-    for (const secret of secrets) {
-        const idProviderName = idProviderConfig._idProviderName;
+    const idProviderName = idProviderConfig._idProviderName;
 
+    for (const secret of secrets) {
         try {
             //https://tools.ietf.org/html/rfc6749#section-2.3.1
             const response = oidcLib.requestIDToken({
