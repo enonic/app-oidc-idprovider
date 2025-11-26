@@ -445,6 +445,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <ul class="sectlevel2">
 <li><a href="#redirecturi">redirectUri</a></li>
 <li><a href="#user_events">User events</a></li>
+<li><a href="#clientsecret">clientSecret</a></li>
 </ul>
 </li>
 <li><a href="#version_3_x">Version 3.x</a></li>
@@ -506,6 +507,12 @@ mapping.myoidc.idProvider.myoidc = default</code></pre>
 <p>Starting from version 4.0, you can specify the <code>userEventPrefix</code> and <code>userEventMode</code> properties to manage user events. More details can be found <a href="config.ahtml">here</a>.</p>
 </div>
 </div>
+<div class="sect2">
+<h3 id="clientsecret"><a class="link" href="#clientsecret">clientSecret</a></h3>
+<div class="paragraph">
+<p>Added support for multiple space-separated <code>clientSecret</code> values to follow Auth0 rotation best practices and avoid downtime from propagation delays.</p>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -538,7 +545,7 @@ mapping.myoidc.idProvider.myoidc = default</code></pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2025-11-25 12:27:03 UTC
+Last updated 2025-11-26 11:22:16 UTC
 </div>
 </div>
 </body>
