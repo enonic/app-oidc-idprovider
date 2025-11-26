@@ -37,6 +37,10 @@ http://example.com:8080/myadmin/_/idprovider/myoidc
 
 Starting from version 4.0, you can specify the `userEventPrefix` and `userEventMode` properties to manage user events. More details can be found <<config#, here>>.
 
+=== clientSecret
+
+Added support for multiple space-separated `clientSecret` values to follow Auth0 rotation best practices and avoid downtime from propagation delays.
+
 == Version 3.x
 
 What's new in version 3 

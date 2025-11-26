@@ -40,15 +40,15 @@ The Client parameters are mandatory for the Authorization Code Flow, but not use
 ----
 # Client
 clientId=(string) // <1>
-clientSecret=(string) // <2>
+clientSecret=(space separated strings) // <2>
 method=(post|basic|jwt)// <3>
 
 ----
 <1> Client ID you obtain from your OIDC server
-<2> Client Secret you obtain from your OIDC server
+<2> Client Secret you obtain from your OIDC server. A space-separated list of secrets used for rotation. The new secret can be added as a fallback to the old one.
 <3> Optionally specify the `method` for how client ID and client secret will be passed to the OIDC server. The values correspond to `client_secret_basic`, `client_secret_post` and `private_key_jwt` methods, respectively.
 
-NOTE: You may disabe Authorization Code Flow by omitting `clientId` in your configuration
+NOTE: You may disable Authorization Code Flow by omitting `clientId` in your configuration
 
 == Authorization server
 
