@@ -4,7 +4,7 @@
 
 The application is configured via a file called `com.enonic.app.oidcidprovider.cfg`, using the properties format.
 
-Since the configuration is extensive, documentation has been broken down into several sections below. Visit the examples section for a <<examples#all-options,complete configuration file>>.
+Since the configuration is extensive, documentation has been broken down into several sections below. All available configuration options <<#all-options,listed here>>.
 
 == General
 
@@ -213,3 +213,63 @@ userEventMode=(off|local|distributed, optional, defaults to "local")  // <2>
 <1> `userEventPrefix` is used to customize the type of user events such as `login`, `create`, and `modify`.
 By default, the application name is used as the prefix. For instance, the login event will look like `<userEventPrefix>.user.login`. To listen for this event, use `custom.<userEventPrefix>.user.login`.
 <2> `userEventMode` allows you to disable user events or specify whether they should be distributed in the cluster or locally.
+
+[#all-options]
+== All options
+
+All available configuration options
+
+.com.enonic.app.oidcidprovider.cfg:
+[source,properties]
+----
+# IDprovider setup
+autoinit=(true | false)
+idprovider.<name>.displayName=(string)
+idprovider.<name>.description=(string)
+
+# Client
+idprovider.<name>.clientId=(string)
+idprovider.<name>.clientSecret=(string)
+idprovider.<name>.method=(post|basic|jwt)
+
+# Authorization server
+idprovider.<name>.oidcWellKnownEndpoint=(string)
+idprovider.<name>.issuer=(string)
+idprovider.<name>.authorizationUrl=(string)
+idprovider.<name>.tokenUrl=(string)
+idprovider.<name>.userinfoUrl=(string)
+idprovider.<name>.jwksUri=(string)
+idprovider.<name>.usePkce=(true|false)
+
+# Rules
+idprovider.<name>.rules.forceEmailVerification=(true|false)
+
+# User mappings
+idprovider.<name>.useUserinfo=(true|false)
+idprovider.<name>.claimUsername=(string)
+idprovider.<name>.scopes=(space separated strings, defaults to "profile email")
+idprovider.<name>.mappings.displayName=(string, required, defaults to @@{userinfo.preferred_username})
+idprovider.<name>.mappings.email=(string, required, defaults to @@{userinfo.email})
+idprovider.<name>.defaultGroups=(space separated group keys)
+
+# Additional Endpoints
+idprovider.<name>.additionalEndpoints.0.name=(string, required)
+idprovider.<name>.additionalEndpoints.0.url=(string, required)
+
+# Autologin
+idprovider.<name>.autoLogin.createUser=(true|false)
+idprovider.<name>.autoLogin.createSession=(true|false)
+idprovider.<name>.autoLogin.wsHeader=(false|true)
+idprovider.<name>.autoLogin.allowedAudience=(space separated strings)
+
+# User Events
+idprovider.<name>.userEventPrefix=(string, defaults to the current application name)
+idprovider.<name>.userEventMode=(off|local|distributed, defaults to 'local')
+
+# EndSession
+idprovider.<name>.endSession.url=(string, required)
+idprovider.<name>.endSession.idTokenHintKey=(string)
+idprovider.<name>.endSession.postLogoutRedirectUriKey=(string)
+idprovider.<name>.endSession.additionalParameters.0.key=(string, required)
+idprovider.<name>.endSession.additionalParameters.0.value=(string, required)
+----
