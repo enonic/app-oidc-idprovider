@@ -455,6 +455,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </ul>
 </li>
 <li><a href="#user_events">User Events</a></li>
+<li><a href="#all-options">All options</a></li>
 </ul>
 </div>
 </div>
@@ -465,7 +466,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>The application is configured via a file called <code>com.enonic.app.oidcidprovider.cfg</code>, using the properties format.</p>
 </div>
 <div class="paragraph">
-<p>Since the configuration is extensive, documentation has been broken down into several sections below. Visit the examples section for a <a href="examples.ahtml#all-options">complete configuration file</a>.</p>
+<p>Since the configuration is extensive, documentation has been broken down into several sections below. All available configuration options <a href="#all-options">listed here</a>.</p>
 </div>
 </div>
 </div>
@@ -941,10 +942,73 @@ By default, the application name is used as the prefix. For instance, the login 
 </div>
 </div>
 </div>
+<div class="sect1">
+<h2 id="all-options"><a class="link" href="#all-options">All options</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>All available configuration options</p>
+</div>
+<div class="listingblock">
+<div class="title">com.enonic.app.oidcidprovider.cfg:</div>
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties"># IDprovider setup
+autoinit=(true | false)
+idprovider.&lt;name&gt;.displayName=(string)
+idprovider.&lt;name&gt;.description=(string)
+
+# Client
+idprovider.&lt;name&gt;.clientId=(string)
+idprovider.&lt;name&gt;.clientSecret=(string)
+idprovider.&lt;name&gt;.method=(post|basic|jwt)
+
+# Authorization server
+idprovider.&lt;name&gt;.oidcWellKnownEndpoint=(string)
+idprovider.&lt;name&gt;.issuer=(string)
+idprovider.&lt;name&gt;.authorizationUrl=(string)
+idprovider.&lt;name&gt;.tokenUrl=(string)
+idprovider.&lt;name&gt;.userinfoUrl=(string)
+idprovider.&lt;name&gt;.jwksUri=(string)
+idprovider.&lt;name&gt;.usePkce=(true|false)
+
+# Rules
+idprovider.&lt;name&gt;.rules.forceEmailVerification=(true|false)
+
+# User mappings
+idprovider.&lt;name&gt;.useUserinfo=(true|false)
+idprovider.&lt;name&gt;.claimUsername=(string)
+idprovider.&lt;name&gt;.scopes=(space separated strings, defaults to "profile email")
+idprovider.&lt;name&gt;.mappings.displayName=(string, required, defaults to @@{userinfo.preferred_username})
+idprovider.&lt;name&gt;.mappings.email=(string, required, defaults to @@{userinfo.email})
+idprovider.&lt;name&gt;.defaultGroups=(space separated group keys)
+
+# Additional Endpoints
+idprovider.&lt;name&gt;.additionalEndpoints.0.name=(string, required)
+idprovider.&lt;name&gt;.additionalEndpoints.0.url=(string, required)
+
+# Autologin
+idprovider.&lt;name&gt;.autoLogin.createUser=(true|false)
+idprovider.&lt;name&gt;.autoLogin.createSession=(true|false)
+idprovider.&lt;name&gt;.autoLogin.wsHeader=(false|true)
+idprovider.&lt;name&gt;.autoLogin.allowedAudience=(space separated strings)
+
+# User Events
+idprovider.&lt;name&gt;.userEventPrefix=(string, defaults to the current application name)
+idprovider.&lt;name&gt;.userEventMode=(off|local|distributed, defaults to 'local')
+
+# EndSession
+idprovider.&lt;name&gt;.endSession.url=(string, required)
+idprovider.&lt;name&gt;.endSession.idTokenHintKey=(string)
+idprovider.&lt;name&gt;.endSession.postLogoutRedirectUriKey=(string)
+idprovider.&lt;name&gt;.endSession.additionalParameters.0.key=(string, required)
+idprovider.&lt;name&gt;.endSession.additionalParameters.0.value=(string, required)</code></pre>
+</div>
+</div>
+</div>
+</div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2025-11-27 08:33:52 UTC
+Last updated 2025-11-27 08:40:12 UTC
 </div>
 </div>
 </body>
