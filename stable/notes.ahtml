@@ -441,20 +441,20 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#version_4_x">Version 4.x</a>
+<li><a href="#version_4_0">Version 4.0</a>
 <ul class="sectlevel2">
 <li><a href="#new_redirect_uri">new Redirect URI</a></li>
 <li><a href="#user_events">User events</a></li>
 <li><a href="#clientsecret">clientSecret</a></li>
 </ul>
 </li>
-<li><a href="#version_3_x">Version 3.x</a></li>
+<li><a href="#version_3_0">Version 3.0</a></li>
 </ul>
 </div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="version_4_x"><a class="link" href="#version_4_x">Version 4.x</a></h2>
+<h2 id="version_4_0"><a class="link" href="#version_4_0">Version 4.0</a></h2>
 <div class="sectionbody">
 <div class="sect2">
 <h3 id="new_redirect_uri"><a class="link" href="#new_redirect_uri">new Redirect URI</a></h3>
@@ -504,7 +504,7 @@ mapping.myoidc.idProvider.myoidc = default</code></pre>
 <div class="sect2">
 <h3 id="user_events"><a class="link" href="#user_events">User events</a></h3>
 <div class="paragraph">
-<p>Starting from version 4.0, you can specify the <code>userEventPrefix</code> and <code>userEventMode</code> properties to manage user events. More details can be found <a href="config.ahtml">here</a>.</p>
+<p>Starting from version 4.0, you can specify the <code>userEventPrefix</code> and <code>userEventMode</code> properties to manage user events. More details can be found <a href="configuration.ahtml#configuration">here</a>.</p>
 </div>
 </div>
 <div class="sect2">
@@ -516,7 +516,7 @@ mapping.myoidc.idProvider.myoidc = default</code></pre>
 </div>
 </div>
 <div class="sect1">
-<h2 id="version_3_x"><a class="link" href="#version_3_x">Version 3.x</a></h2>
+<h2 id="version_3_0"><a class="link" href="#version_3_0">Version 3.0</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>What&#8217;s new in version 3</p>
@@ -545,7 +545,7 @@ mapping.myoidc.idProvider.myoidc = default</code></pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2025-11-26 14:23:40 UTC
+Last updated 2025-11-27 08:33:52 UTC
 </div>
 </div>
 </body>

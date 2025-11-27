@@ -435,7 +435,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
-<body class="article toc2 toc-right">
+<body id="examples" class="article toc2 toc-right">
 <div id="header">
 <h1>Configuration examples</h1>
 <div id="toc" class="toc2">
@@ -443,7 +443,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <ul class="sectlevel1">
 <li><a href="#google">Google</a></li>
 <li><a href="#auth0">Auth0</a></li>
-<li><a href="#all_options">All options</a></li>
+<li><a href="#all-options">All options</a></li>
 </ul>
 </div>
 </div>
@@ -495,7 +495,7 @@ idprovider.auth0.mappings.displayName=@@{userinfo.name}</code></pre>
 </div>
 </div>
 <div class="sect1">
-<h2 id="all_options"><a class="link" href="#all_options">All options</a></h2>
+<h2 id="all-options"><a class="link" href="#all-options">All options</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Example containing all available configuration options</p>
@@ -560,7 +560,7 @@ idprovider.&lt;name&gt;.endSession.additionalParameters.0.value=(string, require
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2025-11-26 14:23:40 UTC
+Last updated 2025-11-27 08:33:52 UTC
 </div>
 </div>
 </body>
