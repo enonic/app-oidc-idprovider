@@ -1,7 +1,7 @@
 = Release notes
 :imagesdir: media/
 
-== Version 4.x
+== Version 4.0
 
 === new Redirect URI
 
@@ -35,13 +35,13 @@ https://xp.example.com/my-admin/_/idprovider/myoidc
 
 === User events
 
-Starting from version 4.0, you can specify the `userEventPrefix` and `userEventMode` properties to manage user events. More details can be found <<config#, here>>.
+Starting from version 4.0, you can specify the `userEventPrefix` and `userEventMode` properties to manage user events. More details can be found <<configuration#configuration, here>>.
 
 === clientSecret
 
 Added support for multiple space-separated `clientSecret` values to follow Auth0 rotation best practices and avoid downtime from propagation delays.
 
-== Version 3.x
+== Version 3.0
 
 What's new in version 3 
 

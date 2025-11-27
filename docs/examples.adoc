@@ -1,3 +1,4 @@
+[#examples]
 = Configuration examples
 :imagesdir: media/
 
@@ -34,7 +35,7 @@ idprovider.auth0.autoLogin.allowedAudience=https://service.example.com/api
 idprovider.auth0.mappings.displayName=@@{userinfo.name}
 ----
 
-
+[#all-options]
 == All options
 
 Example containing all available configuration options
