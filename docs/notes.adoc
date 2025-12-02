@@ -35,7 +35,7 @@ https://xp.example.com/my-admin/_/idprovider/myoidc
 
 === User events
 
-Starting from version 4.0, you can specify the `userEventPrefix` and `userEventMode` properties to manage user events. More details can be found <<configuration#configuration, here>>.
+Starting from version 4.0, you can specify the `userEventPrefix` and `userEventMode` properties to manage user events. More details can be found <<config#configuration, here>>.
 
 === clientSecret
 
