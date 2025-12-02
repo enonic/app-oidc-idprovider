@@ -504,7 +504,7 @@ mapping.myoidc.idProvider.myoidc = default</code></pre>
 <div class="sect2">
 <h3 id="user_events"><a class="link" href="#user_events">User events</a></h3>
 <div class="paragraph">
-<p>Starting from version 4.0, you can specify the <code>userEventPrefix</code> and <code>userEventMode</code> properties to manage user events. More details can be found <a href="configuration.ahtml#configuration">here</a>.</p>
+<p>Starting from version 4.0, you can specify the <code>userEventPrefix</code> and <code>userEventMode</code> properties to manage user events. More details can be found <a href="config.ahtml#configuration">here</a>.</p>
 </div>
 </div>
 <div class="sect2">
@@ -545,7 +545,7 @@ mapping.myoidc.idProvider.myoidc = default</code></pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2025-11-28 11:46:48 UTC
+Last updated 2025-12-02 12:48:37 UTC
 </div>
 </div>
 </body>
