@@ -1,0 +1,5 @@
+kind: "Application"
+title: "OIDC ID Provider"
+description: "OpenID Connect ID Provider"
+vendorName: "Enonic AS"
+vendorUrl: "https://enonic.com"
