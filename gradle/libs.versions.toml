@@ -1,0 +1,11 @@
+[versions]
+lib-http-client = "3.2.2"
+java-jwt = "4.5.0"
+jwks-rsa = "0.23.0"
+junit-bom = "6.0.3"
+
+[libraries]
+lib-httpclient = { module = "com.enonic.lib:lib-http-client", version.ref = "lib-http-client" }
+java-jwt = { module = "com.auth0:java-jwt", version.ref = "java-jwt" }
+jwks-rsa = { module = "com.auth0:jwks-rsa", version.ref = "jwks-rsa" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit-bom" }

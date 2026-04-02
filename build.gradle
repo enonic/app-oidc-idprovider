@@ -1,6 +1,7 @@
 plugins {
     id 'jacoco'
     id 'maven-publish'
+    id 'com.enonic.defaults' version '2.1.6'
     id 'com.enonic.xp.app'
 }
 
@@ -14,13 +15,13 @@ dependencies {
     include xplibs.portal
     include xplibs.cluster
     include xplibs.event
-    include "com.enonic.lib:lib-http-client:3.2.2"
 
-    include 'com.auth0:java-jwt:4.5.0'
-    include 'com.auth0:jwks-rsa:0.23.0'
+    include libs.lib.httpclient
+    include libs.java.jwt
+    include libs.jwks.rsa
 
     testImplementation "com.enonic.xp:testing:${xpVersion}"
-    testImplementation(platform('org.junit:junit-bom:6.0.3'))
+    testImplementation(platform(libs.junit.bom))
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
@@ -30,16 +31,8 @@ repositories {
     xp.enonicRepo('dev')
 }
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(25)
-    }
-}
-
 test {
     useJUnitPlatform()
-    systemProperty 'java.awt.headless', 'true'
-    jvmArgs '-XX:TieredStopAtLevel=1'
 }
 
 jacocoTestReport {
