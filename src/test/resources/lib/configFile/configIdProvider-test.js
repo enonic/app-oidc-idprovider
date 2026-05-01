@@ -20,6 +20,27 @@ function mockWellKnownService() {
     });
 }
 
+function mockWellKnownServiceWithEndSession() {
+    test.mock('/lib/configFile/wellKnownService', {
+        cacheIdProviderConfig: function (idProviderName, configAsString) {
+            // to do nothing
+        },
+        getIdProviderConfig: function (idProviderName) {
+            return null;
+        },
+        getWellKnownConfiguration: function (endpoint) {
+            return {
+                'issuer': 'issuer',
+                'authorization_endpoint': 'authorizationUrl',
+                'token_endpoint': 'tokenUrl',
+                'userinfo_endpoint': 'userinfoUrl',
+                'jwks_uri': 'jwksUri',
+                'end_session_endpoint': 'wellKnownEndSessionUrl',
+            }
+        }
+    });
+}
+
 exports.testValidConfig = () => {
     mockWellKnownService();
 
@@ -245,5 +266,90 @@ exports.testValidationOfEndSessionAdditionalParameters = () => {
         configProvider.getIdProviderConfig(idProviderName);
     } catch (e) {
         test.assertEquals(`Invalid configuration of 'endSession.additionalParameters' for ID Provider '${idProviderName}'.`, e);
+    }
+};
+
+exports.testEndSessionEndpointFromWellKnown = () => {
+    mockWellKnownServiceWithEndSession();
+
+    test.mock('/lib/configFile/services/getConfig', {
+        getConfigOrEmpty: function () {
+            return {
+                'idprovider.myidp.oidcWellKnownEndpoint': 'wellKnownEndpoint',
+            }
+        }
+    });
+
+    const configProvider = require('./configProvider');
+
+    const config = configProvider.getIdProviderConfig('myidp');
+
+    test.assertNotNull(config.endSession);
+    test.assertEquals('wellKnownEndSessionUrl', config.endSession.url);
+    test.assertNull(config.endSession.idTokenHintKey);
+    test.assertNull(config.endSession.postLogoutRedirectUriKey);
+    test.assertJsonEquals([], config.endSession.additionalParameters);
+};
+
+exports.testExplicitEndSessionUrlTakesPrecedenceOverWellKnown = () => {
+    mockWellKnownServiceWithEndSession();
+
+    test.mock('/lib/configFile/services/getConfig', {
+        getConfigOrEmpty: function () {
+            return {
+                'idprovider.myidp.oidcWellKnownEndpoint': 'wellKnownEndpoint',
+                'idprovider.myidp.endSession.url': 'explicitEndSessionUrl',
+                'idprovider.myidp.endSession.idTokenHintKey': 'id_token_hint',
+            }
+        }
+    });
+
+    const configProvider = require('./configProvider');
+
+    const config = configProvider.getIdProviderConfig('myidp');
+
+    test.assertEquals('explicitEndSessionUrl', config.endSession.url);
+    test.assertEquals('id_token_hint', config.endSession.idTokenHintKey);
+};
+
+exports.testWellKnownEndSessionUrlFillsMissingEndSessionUrl = () => {
+    mockWellKnownServiceWithEndSession();
+
+    test.mock('/lib/configFile/services/getConfig', {
+        getConfigOrEmpty: function () {
+            return {
+                'idprovider.myidp.oidcWellKnownEndpoint': 'wellKnownEndpoint',
+                'idprovider.myidp.endSession.idTokenHintKey': 'id_token_hint',
+            }
+        }
+    });
+
+    const configProvider = require('./configProvider');
+
+    const config = configProvider.getIdProviderConfig('myidp');
+
+    test.assertEquals('wellKnownEndSessionUrl', config.endSession.url);
+    test.assertEquals('id_token_hint', config.endSession.idTokenHintKey);
+};
+
+exports.testMissingEndSessionUrlWithoutWellKnown = () => {
+    mockWellKnownService();
+
+    test.mock('/lib/configFile/services/getConfig', {
+        getConfigOrEmpty: function () {
+            return {
+                'idprovider.myidp.oidcWellKnownEndpoint': 'wellKnownEndpoint',
+                'idprovider.myidp.endSession.idTokenHintKey': 'id_token_hint',
+            }
+        }
+    });
+
+    const configProvider = require('./configProvider');
+
+    try {
+        configProvider.getIdProviderConfig('myidp');
+        test.assertTrue(false); // should not reach here
+    } catch (e) {
+        test.assertEquals(`Missing config 'url' for ID Provider 'myidp'.`, e);
     }
 };
