@@ -350,6 +350,6 @@ exports.testMissingEndSessionUrlWithoutWellKnown = () => {
         configProvider.getIdProviderConfig('myidp');
         test.assertTrue(false); // should not reach here
     } catch (e) {
-        test.assertEquals(`Missing config 'url' for ID Provider 'myidp'.`, e);
+        test.assertEquals(`Missing config 'endSession.url' for ID Provider 'myidp'.`, e);
     }
 };
