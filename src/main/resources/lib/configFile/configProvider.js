@@ -134,7 +134,7 @@ function validate(config, idProviderName) {
 
     checkArrayConfig(config.additionalEndpoints, 'additionalEndpoints', idProviderName);
     if (config.endSession) {
-        checkConfig(config.endSession, 'url', idProviderName);
+        required(config.endSession.url, 'endSession.url', idProviderName);
         checkArrayConfig(config.endSession.additionalParameters, 'endSession.additionalParameters', idProviderName);
     }
 }
