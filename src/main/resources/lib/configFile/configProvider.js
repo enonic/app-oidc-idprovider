@@ -64,7 +64,7 @@ exports.getIdProviderConfig = function (idProviderName) {
 
     if (hasProperty(rawIdProviderConfig, idProviderKeyBase, 'endSession')) {
         config.endSession = {
-            url: required(rawIdProviderConfig[`${idProviderKeyBase}.endSession.url`], 'endSession.url', idProviderName),
+            url: rawIdProviderConfig[`${idProviderKeyBase}.endSession.url`] || null,
             idTokenHintKey: rawIdProviderConfig[`${idProviderKeyBase}.endSession.idTokenHintKey`] || null,
             postLogoutRedirectUriKey: rawIdProviderConfig[`${idProviderKeyBase}.endSession.postLogoutRedirectUriKey`] || null,
             additionalParameters: extractPropertiesToArray(rawIdProviderConfig, `${idProviderKeyBase}.endSession.additionalParameters.`,
@@ -105,6 +105,19 @@ function takeConfigurationFromWellKnownEndpoint(config) {
     config.tokenUrl = wellKnownConfiguration.token_endpoint;
     config.userinfoUrl = wellKnownConfiguration.userinfo_endpoint;
     config.jwksUri = wellKnownConfiguration.jwks_uri;
+
+    if (wellKnownConfiguration.end_session_endpoint) {
+        if (!config.endSession) {
+            config.endSession = {
+                url: wellKnownConfiguration.end_session_endpoint,
+                idTokenHintKey: null,
+                postLogoutRedirectUriKey: null,
+                additionalParameters: [],
+            };
+        } else if (!config.endSession.url) {
+            config.endSession.url = wellKnownConfiguration.end_session_endpoint;
+        }
+    }
 }
 
 function validate(config, idProviderName) {
@@ -121,6 +134,7 @@ function validate(config, idProviderName) {
 
     checkArrayConfig(config.additionalEndpoints, 'additionalEndpoints', idProviderName);
     if (config.endSession) {
+        required(config.endSession.url, 'endSession.url', idProviderName);
         checkArrayConfig(config.endSession.additionalParameters, 'endSession.additionalParameters', idProviderName);
     }
 }

@@ -166,18 +166,20 @@ OpenID Connect Front-Channel Logout is optional and might not be supported by yo
 There might also be another custom endpoint available that achieves the same purpose.
 The ID Provider Configuration schema tries to be dynamic enough to handle all cases.
 
+When `oidcWellKnownEndpoint` is configured and the well-known configuration contains an `end_session_endpoint`, the application will automatically use it — no explicit `endSession.url` configuration is needed.
+
 .com.enonic.app.oidcidprovider.cfg
 [source,properties]
 ----
 # EndSession
-endSession.url=(string, required) // <1>
+endSession.url=(string) // <1>
 endSession.idTokenHintKey=(string) // <2>
 endSession.postLogoutRedirectUriKey=(string) // <3>
 endSession.additionalParameters.0.key=(string)
 endSession.additionalParameters.0.value=(string)
 ----
 
-<1> `url`: should contain the value of `end_session_endpoint` in your OpenID Provider 
+<1> `url`: should contain the value of `end_session_endpoint` in your OpenID Provider. Required unless `oidcWellKnownEndpoint` is set and the well-known configuration includes `end_session_endpoint`.
 <2> `idTokenHintKey` should optionally set the `id_token_hint` for your OpenID Provider 
 <3> `postLogoutRedirectUriKey` optionally set the `post_logout_redirect_uri` in your OpenID Provider
 
@@ -267,7 +269,7 @@ idprovider.<name>.userEventPrefix=(string, defaults to the current application n
 idprovider.<name>.userEventMode=(off|local|distributed, defaults to 'local')
 
 # EndSession
-idprovider.<name>.endSession.url=(string, required)
+idprovider.<name>.endSession.url=(string)
 idprovider.<name>.endSession.idTokenHintKey=(string)
 idprovider.<name>.endSession.postLogoutRedirectUriKey=(string)
 idprovider.<name>.endSession.additionalParameters.0.key=(string, required)
