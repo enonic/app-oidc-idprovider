@@ -1,7 +1,7 @@
 [versions]
 lib-http-client = "3.2.2"
 java-jwt = "4.5.0"
-jwks-rsa = "0.23.1"
+jwks-rsa = "0.24.0"
 junit-bom = "6.0.3"
 
 [libraries]
