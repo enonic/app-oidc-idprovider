@@ -1,6 +1,6 @@
 [versions]
 lib-http-client = "4.0.0-SNAPSHOT"
-java-jwt = "4.5.0"
+java-jwt = "4.5.2"
 jwks-rsa = "0.24.0"
 junit-bom = "6.0.3"
 
