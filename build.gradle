@@ -19,6 +19,7 @@ dependencies {
     include libs.lib.httpclient
     include libs.java.jwt
     include libs.jwks.rsa
+    include libs.jackson.databind
 
     testImplementation "com.enonic.xp:testing:${xpVersion}"
     testImplementation(platform(libs.junit.bom))

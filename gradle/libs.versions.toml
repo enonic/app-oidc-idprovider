@@ -2,10 +2,12 @@
 lib-http-client = "4.0.0-SNAPSHOT"
 java-jwt = "4.5.2"
 jwks-rsa = "0.24.0"
+jackson-databind = "2.21.3"
 junit-bom = "6.0.3"
 
 [libraries]
 lib-httpclient = { module = "com.enonic.lib:lib-http-client", version.ref = "lib-http-client" }
 java-jwt = { module = "com.auth0:java-jwt", version.ref = "java-jwt" }
 jwks-rsa = { module = "com.auth0:jwks-rsa", version.ref = "jwks-rsa" }
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson-databind" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit-bom" }
