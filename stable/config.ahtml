@@ -825,14 +825,11 @@ autoLogin.allowedAudience=(space separated strings) <i class="conum" data-value=
 There might also be another custom endpoint available that achieves the same purpose.
 The ID Provider Configuration schema tries to be dynamic enough to handle all cases.</p>
 </div>
-<div class="paragraph">
-<p>When <code>oidcWellKnownEndpoint</code> is configured and the well-known configuration contains an <code>end_session_endpoint</code>, the application will automatically use it — no explicit <code>endSession.url</code> configuration is needed.</p>
-</div>
 <div class="listingblock">
 <div class="title">com.enonic.app.oidcidprovider.cfg</div>
 <div class="content">
 <pre class="highlight"><code class="language-properties" data-lang="properties"># EndSession
-endSession.url=(string) <i class="conum" data-value="1"></i><b>(1)</b>
+endSession.url=(string, required) <i class="conum" data-value="1"></i><b>(1)</b>
 endSession.idTokenHintKey=(string) <i class="conum" data-value="2"></i><b>(2)</b>
 endSession.postLogoutRedirectUriKey=(string) <i class="conum" data-value="3"></i><b>(3)</b>
 endSession.additionalParameters.0.key=(string)
@@ -843,7 +840,7 @@ endSession.additionalParameters.0.value=(string)</code></pre>
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td><code>url</code>: should contain the value of <code>end_session_endpoint</code> in your OpenID Provider. Required unless <code>oidcWellKnownEndpoint</code> is set and the well-known configuration includes <code>end_session_endpoint</code>.</td>
+<td><code>url</code>: should contain the value of <code>end_session_endpoint</code> in your OpenID Provider</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
@@ -999,7 +996,7 @@ idprovider.&lt;name&gt;.userEventPrefix=(string, defaults to the current applica
 idprovider.&lt;name&gt;.userEventMode=(off|local|distributed, defaults to 'local')
 
 # EndSession
-idprovider.&lt;name&gt;.endSession.url=(string)
+idprovider.&lt;name&gt;.endSession.url=(string, required)
 idprovider.&lt;name&gt;.endSession.idTokenHintKey=(string)
 idprovider.&lt;name&gt;.endSession.postLogoutRedirectUriKey=(string)
 idprovider.&lt;name&gt;.endSession.additionalParameters.0.key=(string, required)
@@ -1011,7 +1008,7 @@ idprovider.&lt;name&gt;.endSession.additionalParameters.0.value=(string, require
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-05-04 07:35:20 UTC
+Last updated 2026-05-21 09:23:04 UTC
 </div>
 </div>
 </body>

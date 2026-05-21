@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.26">
-<title>OpenID Connect ID provider</title>
+<title>Configuration examples</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -435,14 +435,14 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
-<body class="article toc2 toc-right">
+<body id="examples" class="article toc2 toc-right">
 <div id="header">
-<h1>OpenID Connect ID provider</h1>
+<h1>Configuration examples</h1>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#intro">Intro</a></li>
-<li><a href="#how_it_works">How it works</a></li>
+<li><a href="#google">Google</a></li>
+<li><a href="#auth0">Auth0</a></li>
 </ul>
 </div>
 </div>
@@ -450,49 +450,53 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>Authenticate using OIDC and JWT tokens</p>
+<p>Below are some examples of how you can configure the application.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="intro"><a class="link" href="#intro">Intro</a></h2>
+<h2 id="google"><a class="link" href="#google">Google</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This application will act as an OIDC Relying Party for your Enonic XP instance. It verifies the identity of End-Users based on your OIDC Authorization Server or JWT token.</p>
+<p>Example configuration using Google OIDC and standard form based authentication</p>
 </div>
-<div class="paragraph">
-<p>Browser-based visitors are redirected to the Authentication Server, and once successfully authenticated, a user will be created in Enonic XP.</p>
+<div class="listingblock">
+<div class="title">com.enonic.app.oidcidprovider.cfg:</div>
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties">autoinit=true
+idprovider.google.oidcWellKnownEndpoint=https://accounts.google.com/.well-known/openid-configuration
+idprovider.google.clientId=********.apps.googleusercontent.com
+idprovider.google.clientSecret=********
+idprovider.google.mappings.displayName=@@{userinfo.given_name} @@{userinfo.family_name}
+idprovider.google.rules.forceEmailVerification=true
+idprovider.google.defaultGroups=group:google:employees</code></pre>
 </div>
-<div class="paragraph">
-<p>API or machine-based clients can authenticate using OIDC JWT tokens.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="how_it_works"><a class="link" href="#how_it_works">How it works</a></h2>
+<h2 id="auth0"><a class="link" href="#auth0">Auth0</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The ID provider supports two different approaches:</p>
+<p>Example configuration using Auth0 with autologin supporting websockets</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>Authorization Code Flow using <code>client_secret_post</code>, <code>client_secret_basic</code> or <code>client_secret_jwt</code> methods.</p>
-</li>
-<li>
-<p>Auto login based on Authorization header with a JWT Bearer Token for Stateless Authentication.</p>
-</li>
-</ul>
+<div class="listingblock">
+<div class="title">com.enonic.app.oidcidprovider.cfg:</div>
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties">autoinit=true
+idprovider.auth0.oidcWellKnownEndpoint=https://auth.enonic-qa.com/.well-known/openid-configuration
+idprovider.auth0.rules.forceEmailVerification=true
+idprovider.auth0.autoLogin.wsHeader=true
+idprovider.auth0.autoLogin.allowedAudience=https://service.example.com/api
+idprovider.auth0.mappings.displayName=@@{userinfo.name}</code></pre>
 </div>
-<div class="paragraph">
-<p>It is possible to mix the two authentication methods for a single domain/vhost.</p>
 </div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-05-21 09:23:04 UTC
+Last updated 2026-05-21 09:23:30 UTC
 </div>
 </div>
 </body>
