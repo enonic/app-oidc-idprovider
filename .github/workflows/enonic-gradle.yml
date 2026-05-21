@@ -14,6 +14,8 @@ jobs:
           repoUser: ci
           repoPassword: ${{ secrets.ARTIFACTORY_PASSWORD }}
           codecovToken: ${{ secrets.CODECOV_TOKEN }}
+          releaseBranch: |
+            4.x
 
   release:
     runs-on: ubuntu-latest
