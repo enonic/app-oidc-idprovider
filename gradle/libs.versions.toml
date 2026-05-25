@@ -3,7 +3,7 @@ lib-http-client = "4.0.0-B1"
 java-jwt = "4.5.2"
 jwks-rsa = "0.24.1"
 jackson-databind = "2.21.3"
-junit-bom = "6.0.3"
+junit-bom = "6.1.0"
 
 [libraries]
 lib-httpclient = { module = "com.enonic.lib:lib-http-client", version.ref = "lib-http-client" }
