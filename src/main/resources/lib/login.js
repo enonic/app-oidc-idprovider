@@ -5,6 +5,7 @@ const commonLib = require('/lib/xp/common');
 const portalLib = require('/lib/xp/portal');
 const preconditions = require('/lib/preconditions');
 const oidcLib = require('./oidc');
+const groupSync = require('./groupSync');
 const eventLib = require('/lib/xp/event');
 
 const regExp = /\$\{([^\}]+)\}/g;
@@ -37,6 +38,8 @@ function login(token, tokenClaims, isAutoLogin) {
     if (!wasUserCreated && !isAutoLogin) {
         updateUserData(claims, idProviderConfig, user);
     }
+
+    syncGroups(idProviderConfig, principalKey, claims, tokenClaims, isAutoLogin);
 
     return doLogin(idProviderConfig, userName, isAutoLogin);
 }
@@ -167,6 +170,26 @@ function doCreateUser(idProviderConfig, claims, userName, isAutoLogin) {
             });
         });
     }
+}
+
+function syncGroups(idProviderConfig, principalKey, claims, tokenClaims, isAutoLogin) {
+    if (!idProviderConfig.groups) {
+        return;
+    }
+
+    let groupClaims;
+    if (isAutoLogin) {
+        if (!idProviderConfig.autoLogin.applyGroups) {
+            return;
+        }
+        // During autoLogin the raw JWT payload is the only source; no userinfo fetch.
+        groupClaims = { userinfo: tokenClaims };
+    } else {
+        groupClaims = claims;
+    }
+
+    const desired = groupSync.resolveGroupKeysFromClaims(idProviderConfig, groupClaims);
+    contextLib.runAsSu(() => groupSync.applyGroups(idProviderConfig, principalKey, desired));
 }
 
 function resolveClaims(idProviderConfig, accessToken, tokenClaims) {

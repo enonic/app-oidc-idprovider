@@ -86,6 +86,15 @@ exports.testValidConfig = () => {
                 'idprovider.myidp.autoLogin.createSession': 'true',
                 'idprovider.myidp.autoLogin.wsHeader': 'false',
                 'idprovider.myidp.autoLogin.allowedAudience': 'audience1 audience2   audience3      audience4',
+                'idprovider.myidp.autoLogin.applyGroups': 'true',
+
+                'idprovider.myidp.groups.claim': 'realm_access.roles',
+                'idprovider.myidp.groups.syncMode': 'sync',
+                'idprovider.myidp.groups.createGroups': 'false',
+                'idprovider.myidp.groups.mapping.0.value': 'admin',
+                'idprovider.myidp.groups.mapping.0.group': 'group:myidp:admins',
+                'idprovider.myidp.groups.mapping.1.value': 'dev',
+                'idprovider.myidp.groups.mapping.1.group': 'group:myidp:devs',
 
                 'idprovider.myidp.userEventPrefix': 'azure',
                 'idprovider.myidp.userEventMode': 'distributed',
@@ -131,6 +140,15 @@ exports.testValidConfig = () => {
     test.assertTrue(config.autoLogin.createSession);
     test.assertFalse(config.autoLogin.wsHeader);
     test.assertJsonEquals(['audience1', 'audience2', 'audience3', 'audience4'], config.autoLogin.allowedAudience);
+    test.assertTrue(config.autoLogin.applyGroups);
+
+    test.assertEquals('realm_access.roles', config.groups.claim);
+    test.assertEquals('sync', config.groups.syncMode);
+    test.assertFalse(config.groups.createGroups);
+    test.assertJsonEquals([
+        {value: 'admin', group: 'group:myidp:admins'},
+        {value: 'dev', group: 'group:myidp:devs'}
+    ], config.groups.mapping);
 
     test.assertEquals('azure', config.userEventPrefix);
     test.assertEquals('distributed', config.userEventMode);
@@ -186,8 +204,83 @@ exports.testDefaultConfigWithRequiredOptions = () => {
     test.assertFalse(config.autoLogin.createSession);
     test.assertFalse(config.autoLogin.wsHeader);
     test.assertJsonEquals([], config.autoLogin.allowedAudience);
+    test.assertFalse(config.autoLogin.applyGroups);
+
+    test.assertNull(config.groups);
 
     test.assertEquals(1, config.acceptLeeway);
+};
+
+exports.testGroupsClaimWithoutMappings = () => {
+    mockWellKnownService();
+
+    test.mock('/lib/configFile/services/getConfig', {
+        getConfigOrEmpty: function () {
+            return {
+                'idprovider.myidp.oidcWellKnownEndpoint': 'wellKnownEndpoint',
+                'idprovider.myidp.groups.claim': 'groups',
+            }
+        }
+    });
+
+    const configProvider = require('./configProvider');
+
+    const config = configProvider.getIdProviderConfig('myidp');
+
+    test.assertNotNull(config.groups);
+    test.assertEquals('groups', config.groups.claim);
+    test.assertEquals('add', config.groups.syncMode); // default
+    test.assertTrue(config.groups.createGroups); // default
+    test.assertJsonEquals([], config.groups.mapping);
+};
+
+exports.testGroupsDropsInvalidMappingEntries = () => {
+    mockWellKnownService();
+
+    test.mock('/lib/configFile/services/getConfig', {
+        getConfigOrEmpty: function () {
+            return {
+                'idprovider.myidp.oidcWellKnownEndpoint': 'wellKnownEndpoint',
+                'idprovider.myidp.groups.claim': 'groups',
+                // valid entry
+                'idprovider.myidp.groups.mapping.0.value': 'Admins',
+                'idprovider.myidp.groups.mapping.0.group': 'group:myidp:admins',
+                // missing group -> dropped
+                'idprovider.myidp.groups.mapping.1.value': 'QA',
+                // cross-IDP group -> dropped
+                'idprovider.myidp.groups.mapping.2.value': 'Devs',
+                'idprovider.myidp.groups.mapping.2.group': 'group:other:devs',
+            }
+        }
+    });
+
+    const configProvider = require('./configProvider');
+
+    const config = configProvider.getIdProviderConfig('myidp');
+
+    test.assertJsonEquals([{value: 'Admins', group: 'group:myidp:admins'}], config.groups.mapping);
+};
+
+exports.testGroupsUnknownSyncModeFallsBackToAdd = () => {
+    mockWellKnownService();
+
+    test.mock('/lib/configFile/services/getConfig', {
+        getConfigOrEmpty: function () {
+            return {
+                'idprovider.myidp.oidcWellKnownEndpoint': 'wellKnownEndpoint',
+                'idprovider.myidp.groups.claim': 'groups',
+                'idprovider.myidp.groups.syncMode': 'bogus',
+                'idprovider.myidp.groups.mapping.0.value': 'Admins',
+                'idprovider.myidp.groups.mapping.0.group': 'group:myidp:admins',
+            }
+        }
+    });
+
+    const configProvider = require('./configProvider');
+
+    const config = configProvider.getIdProviderConfig('myidp');
+
+    test.assertEquals('add', config.groups.syncMode);
 };
 
 exports.testValidateRequiredOptions = () => {
