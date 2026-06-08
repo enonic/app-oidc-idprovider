@@ -135,16 +135,16 @@ groups.claim=(string, optional) // <1>
 groups.mapping.0.value=(string, required) // <2>
 groups.mapping.0.group=(string, required) // <3>
 groups.syncMode=(add|sync, optional, defaults to "add") // <4>
-groups.createGroups=(true|false, optional, defaults to true) // <5>
 ----
 
 <1> `groups.claim` is the path to the groups claim in the merged claims object. If the value contains `:` (a URI scheme or URN, e.g. `https://app.example.com/groups`) it is treated as a single literal key. Otherwise it is split on `.` as a dotted path, e.g. `groups` or `realm_access.roles`. The feature is disabled when this property is absent or empty.
 <2> `value` is the literal value as it appears in the OIDC claim array. It is compared with strict, case-sensitive equality.
 <3> `group` is the Enonic group key the value maps to. It must be in the format `group:[idprovidername]:[groupname]` and must reference *this* ID provider. Cross-IDP keys are rejected. Values not listed in the mapping are ignored.
 <4> `syncMode` controls revocation. `add` only adds the user to mapped groups present in the claim. `sync` additionally removes the user from mapped groups *not* present in the claim. Only groups that appear in this mapping are ever touched — manual memberships, `defaultGroups`, and groups managed elsewhere are preserved.
-<5> `createGroups`, when `true`, auto-creates any group referenced in the mapping that does not yet exist. When `false`, missing groups are skipped with a warning.
 
 TIP: For multiple groups, add more lines and iterate the array counter (`groups.mapping.1.value`, `groups.mapping.1.group`, ...).
+
+NOTE: Groups referenced by the mapping are created automatically when the application starts and whenever its configuration file changes (which restarts the app) — not lazily on first login. So a mapped group is available in the admin Users app for permission setup right away, before anyone logs in. Eager creation requires `autoinit=true` (the same flag that auto-creates the ID providers themselves); if a mapped group is still missing at login it is skipped with a warning.
 
 === Choosing the claim for your provider
 
@@ -308,7 +308,6 @@ idprovider.<name>.groups.claim=(string)
 idprovider.<name>.groups.mapping.0.value=(string, required)
 idprovider.<name>.groups.mapping.0.group=(string, required)
 idprovider.<name>.groups.syncMode=(add|sync, defaults to "add")
-idprovider.<name>.groups.createGroups=(true|false, defaults to true)
 
 # Additional Endpoints
 idprovider.<name>.additionalEndpoints.0.name=(string, required)

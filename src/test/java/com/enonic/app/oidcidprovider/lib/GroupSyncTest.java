@@ -97,15 +97,9 @@ public class GroupSyncTest
     }
 
     @Test
-    public void testApply_createGroups_true_createsMissingGroup()
+    public void testApply_missingGroup_skipsWithWarning()
     {
-        run( "testApply_createGroups_true_createsMissingGroup" );
-    }
-
-    @Test
-    public void testApply_createGroups_false_skipsWithWarning()
-    {
-        run( "testApply_createGroups_false_skipsWithWarning" );
+        run( "testApply_missingGroup_skipsWithWarning" );
     }
 
     @Test
@@ -115,8 +109,32 @@ public class GroupSyncTest
     }
 
     @Test
-    public void testApply_createGroupThrows_continuesOtherGroups()
+    public void testEnsure_createsMissingMappedGroups()
     {
-        run( "testApply_createGroupThrows_continuesOtherGroups" );
+        run( "testEnsure_createsMissingMappedGroups" );
+    }
+
+    @Test
+    public void testEnsure_idempotent_skipsExisting()
+    {
+        run( "testEnsure_idempotent_skipsExisting" );
+    }
+
+    @Test
+    public void testEnsure_deduplicatesMappedGroups()
+    {
+        run( "testEnsure_deduplicatesMappedGroups" );
+    }
+
+    @Test
+    public void testEnsure_nullGroups_noop()
+    {
+        run( "testEnsure_nullGroups_noop" );
+    }
+
+    @Test
+    public void testEnsure_createThrows_continuesOtherGroups()
+    {
+        run( "testEnsure_createThrows_continuesOtherGroups" );
     }
 }

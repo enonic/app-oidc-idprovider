@@ -179,7 +179,6 @@ function parseGroups(rawConfig, idProviderKeyBase, idProviderName) {
     return {
         claim: claim,
         syncMode: syncMode,
-        createGroups: defaultBooleanTrue(rawConfig[`${idProviderKeyBase}.groups.createGroups`]),
         mapping: mapping,
     };
 }

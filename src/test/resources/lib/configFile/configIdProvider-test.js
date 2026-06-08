@@ -90,7 +90,6 @@ exports.testValidConfig = () => {
 
                 'idprovider.myidp.groups.claim': 'realm_access.roles',
                 'idprovider.myidp.groups.syncMode': 'sync',
-                'idprovider.myidp.groups.createGroups': 'false',
                 'idprovider.myidp.groups.mapping.0.value': 'admin',
                 'idprovider.myidp.groups.mapping.0.group': 'group:myidp:admins',
                 'idprovider.myidp.groups.mapping.1.value': 'dev',
@@ -144,7 +143,6 @@ exports.testValidConfig = () => {
 
     test.assertEquals('realm_access.roles', config.groups.claim);
     test.assertEquals('sync', config.groups.syncMode);
-    test.assertFalse(config.groups.createGroups);
     test.assertJsonEquals([
         {value: 'admin', group: 'group:myidp:admins'},
         {value: 'dev', group: 'group:myidp:devs'}
@@ -230,7 +228,6 @@ exports.testGroupsClaimWithoutMappings = () => {
     test.assertNotNull(config.groups);
     test.assertEquals('groups', config.groups.claim);
     test.assertEquals('add', config.groups.syncMode); // default
-    test.assertTrue(config.groups.createGroups); // default
     test.assertJsonEquals([], config.groups.mapping);
 };
 

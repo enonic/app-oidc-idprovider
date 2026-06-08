@@ -53,7 +53,6 @@ function oktaConfig(extra) {
     const groups = {
         claim: 'groups',
         syncMode: 'add',
-        createGroups: true,
         mapping: [
             { value: 'Admins', group: 'group:okta:admins' },
             { value: 'QA-Team', group: 'group:okta:qa' },
@@ -93,7 +92,6 @@ exports.testResolve_nestedDottedPath = () => {
         groups: {
             claim: 'realm_access.roles',
             syncMode: 'add',
-            createGroups: true,
             mapping: [{ value: 'admin', group: 'group:keycloak:admins' }],
         },
     };
@@ -107,7 +105,6 @@ exports.testResolve_uriClaim_usedAsLiteralKey = () => {
         groups: {
             claim: 'https://app.example.com/groups',
             syncMode: 'add',
-            createGroups: true,
             mapping: [{ value: 'admins', group: 'group:auth0:admins' }],
         },
     };
@@ -121,7 +118,6 @@ exports.testResolve_urnClaim_usedAsLiteralKey = () => {
         groups: {
             claim: 'urn:example:groups',
             syncMode: 'add',
-            createGroups: true,
             mapping: [{ value: 'admins', group: 'group:auth0:admins' }],
         },
     };
@@ -193,20 +189,10 @@ exports.testApply_syncMode_leavesNonMappedUntouched = () => {
     test.assertEquals(0, calls.removed.length);
 };
 
-exports.testApply_createGroups_true_createsMissingGroup = () => {
+exports.testApply_missingGroup_skipsWithWarning = () => {
     resetAuth({ existing: [] });
+    // Groups are provisioned eagerly elsewhere; applyGroups never creates them.
     groupSync.applyGroups(oktaConfig(), 'user:okta:bob', ['group:okta:admins']);
-
-    test.assertEquals(1, calls.created.length);
-    test.assertEquals('okta', calls.created[0].idProvider);
-    test.assertEquals('admins', calls.created[0].name);
-    test.assertEquals('admins', calls.created[0].displayName);
-    test.assertEquals(1, calls.added.length);
-};
-
-exports.testApply_createGroups_false_skipsWithWarning = () => {
-    resetAuth({ existing: [] });
-    groupSync.applyGroups(oktaConfig({ createGroups: false }), 'user:okta:bob', ['group:okta:admins']);
 
     test.assertEquals(0, calls.created.length);
     test.assertEquals(0, calls.added.length);
@@ -230,9 +216,59 @@ exports.testApply_addMembersThrows_continuesOtherGroups = () => {
     test.assertEquals('group:okta:devs', calls.added[0].group);
 };
 
-exports.testApply_createGroupThrows_continuesOtherGroups = () => {
+//-------------------------------------------------------
+// ensureGroupsExist
+//-------------------------------------------------------
+
+exports.testEnsure_createsMissingMappedGroups = () => {
+    resetAuth({ existing: [] });
+    groupSync.ensureGroupsExist(oktaConfig());
+
+    // One create per unique mapped group (admins, qa, devs).
+    test.assertEquals(3, calls.created.length);
+    test.assertEquals('okta', calls.created[0].idProvider);
+    test.assertEquals('admins', calls.created[0].name);
+    test.assertEquals('admins', calls.created[0].displayName);
+    test.assertEquals('qa', calls.created[1].name);
+    test.assertEquals('devs', calls.created[2].name);
+};
+
+exports.testEnsure_idempotent_skipsExisting = () => {
+    resetAuth({ existing: ['group:okta:admins', 'group:okta:qa', 'group:okta:devs'] });
+    groupSync.ensureGroupsExist(oktaConfig());
+
+    test.assertEquals(0, calls.created.length);
+};
+
+exports.testEnsure_deduplicatesMappedGroups = () => {
+    resetAuth({ existing: [] });
+    const config = {
+        _idProviderName: 'okta',
+        groups: {
+            claim: 'groups',
+            syncMode: 'add',
+            mapping: [
+                { value: 'Admins', group: 'group:okta:admins' },
+                { value: 'Administrators', group: 'group:okta:admins' },
+            ],
+        },
+    };
+    groupSync.ensureGroupsExist(config);
+
+    test.assertEquals(1, calls.created.length);
+    test.assertEquals('admins', calls.created[0].name);
+};
+
+exports.testEnsure_nullGroups_noop = () => {
+    resetAuth({ existing: [] });
+    groupSync.ensureGroupsExist({ _idProviderName: 'okta', groups: null });
+
+    test.assertEquals(0, calls.created.length);
+};
+
+exports.testEnsure_createThrows_continuesOtherGroups = () => {
     resetAuth({
-        existing: ['group:okta:devs'],
+        existing: [],
         createGroup: (params) => {
             if (params.name === 'admins') {
                 throw 'cannot create';
@@ -241,9 +277,10 @@ exports.testApply_createGroupThrows_continuesOtherGroups = () => {
             return { key: `group:${params.idProvider}:${params.name}` };
         },
     });
-    groupSync.applyGroups(oktaConfig(), 'user:okta:bob', ['group:okta:admins', 'group:okta:devs']);
+    groupSync.ensureGroupsExist(oktaConfig());
 
-    // admins create threw; devs already existed and was added.
-    test.assertEquals(1, calls.added.length);
-    test.assertEquals('group:okta:devs', calls.added[0].group);
+    // admins create threw; qa and devs still created.
+    test.assertEquals(2, calls.created.length);
+    test.assertEquals('qa', calls.created[0].name);
+    test.assertEquals('devs', calls.created[1].name);
 };

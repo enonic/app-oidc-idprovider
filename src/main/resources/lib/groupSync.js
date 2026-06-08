@@ -67,10 +67,48 @@ exports.resolveGroupKeysFromClaims = function (idProviderConfig, claims) {
     return result;
 };
 
+// Ensure every group referenced by the ID Provider's groups.mapping exists,
+// creating any that are missing. Groups are provisioned eagerly (at app start /
+// config change) rather than lazily at login. Must be called under SU, after the
+// ID Provider's userstore exists. Idempotent: existing groups are skipped. On
+// per-group failures, logs a warning and continues. Never throws.
+exports.ensureGroupsExist = function (idProviderConfig) {
+    const groups = idProviderConfig.groups;
+    if (!groups) {
+        return;
+    }
+
+    const idProviderName = idProviderConfig._idProviderName;
+    const mappedKeys = [];
+    (groups.mapping || []).forEach(m => {
+        if (mappedKeys.indexOf(m.group) === -1) {
+            mappedKeys.push(m.group);
+        }
+    });
+
+    mappedKeys.forEach(groupKey => {
+        try {
+            if (authLib.getPrincipal(groupKey)) {
+                return;
+            }
+            const name = localPart(groupKey);
+            authLib.createGroup({
+                idProvider: idProviderName,
+                name: name,
+                displayName: name,
+            });
+            log.debug(`Group [${groupKey}] created in ID Provider [${idProviderName}]`);
+        } catch (e) {
+            log.warning(`Could not create group [${groupKey}] in ID Provider [${idProviderName}]: ${e}`);
+        }
+    });
+};
+
 // Reconcile the user's memberships in MAPPED groups according to syncMode.
 // - 'add': add the user to each desired group not yet a member of.
 // - 'sync': same, plus remove the user from mapped groups not in desired.
-// Auto-creates missing groups when groups.createGroups is true.
+// Groups are provisioned eagerly elsewhere (see ensureGroupsExist); a desired
+// group that is still missing is skipped with a warning, never created here.
 // On per-group failures, logs a warning and continues. Never throws.
 exports.applyGroups = function (idProviderConfig, userKey, desiredGroupKeys) {
     const groups = idProviderConfig.groups;
@@ -84,18 +122,8 @@ exports.applyGroups = function (idProviderConfig, userKey, desiredGroupKeys) {
     desired.forEach(groupKey => {
         try {
             if (!authLib.getPrincipal(groupKey)) {
-                if (groups.createGroups) {
-                    const name = localPart(groupKey);
-                    authLib.createGroup({
-                        idProvider: idProviderConfig._idProviderName,
-                        name: name,
-                        displayName: name,
-                    });
-                    log.info(`Group [${groupKey}] created in ID Provider [${idProviderConfig._idProviderName}]`);
-                } else {
-                    log.warning(`Group [${groupKey}] does not exist; set groups.createGroups=true to auto-create`);
-                    return;
-                }
+                log.warning(`Group [${groupKey}] does not exist; skipping membership for user [${userKey}]`);
+                return;
             }
             authLib.addMembers(groupKey, [userKey]);
             log.debug(`User [${userKey}] added to group [${groupKey}]`);
