@@ -34,7 +34,7 @@ Implications for the design:
 
 1. Allow admins to configure a claim path to read group membership from.
 2. Allow admins to map each OIDC claim value to a specific Enonic group key.
-3. Add the user to all mapped Enonic groups on every login. Auto-create groups that don't exist yet.
+3. Add the user to all mapped Enonic groups on every login. Groups referenced by the mapping are provisioned once at application startup (not created during login).
 4. Default: feature disabled. Existing `.cfg` files behave identically to today.
 5. Provide an opt-in "sync" mode that also revokes memberships in mapped groups not present in the claim, so customers have a path for handling group rot without external tooling.
 6. Provide an opt-in path for groups sync during JWT Bearer autoLogin (API flows).
@@ -45,6 +45,7 @@ Implications for the design:
 - Regex include/exclude filters or prefix-strip — the per-value mapping covers the use cases identified during design. May be revisited if a real customer asks.
 - Cross-IDP group keys in a mapping (e.g. `mapping.0.group=group:other-idp:foo`) — rejected at config load.
 - Changes to `defaultGroups` semantics — stays creation-only, unchanged.
+- Creating groups on-the-fly during login — mapped groups are provisioned once at application startup; login only adjusts memberships.
 - A separate config switch to enable/disable the feature. Presence of `groups.claim` IS the switch.
 
 ## 4. Configuration schema
@@ -72,10 +73,6 @@ groups.syncMode=(add|sync, optional, default "add")
     # add: only add the user to mapped groups present in the claim.
     # sync: also remove the user from mapped groups NOT present in the claim
     #       (only groups that appear in this mapping are touched; other memberships are preserved).
-
-groups.createGroups=(true|false, optional, default true)
-    # When true, auto-create any group referenced in a mapping that does not yet exist.
-    # When false, missing groups are skipped with a warning.
 
 # --- autoLogin section, with one new key ---
 autoLogin.applyGroups=(true|false, optional, default false)
@@ -172,9 +169,17 @@ exports.resolveGroupKeysFromClaims = function (idProviderConfig, claims) { ... }
 // Reconcile the user's memberships in MAPPED groups according to syncMode.
 // - 'add' mode: add user to each desired group not yet a member of.
 // - 'sync' mode: same, plus remove user from mapped groups not in desired.
-// Auto-creates missing groups when groups.createGroups is true.
+// Assumes mapped groups already exist (provisioned at startup). A mapped group
+// that is missing at login time is skipped with a warning — it is never created here.
 // On per-group failures, logs a warning and continues. Never throws.
 exports.applyGroups = function (idProviderConfig, userKey, desiredGroupKeys) { ... };
+
+// Provision the groups referenced by the mapping. Called once at application
+// startup (per configured ID provider, as superuser on the master node).
+// Creates any mapped group that does not yet exist; existing groups are left
+// untouched. Requires the ID provider's userstore to already exist. Logs a
+// warning and continues on per-group failure. Never throws.
+exports.ensureGroupsExist = function (idProviderConfig) { ... };
 ```
 
 ### Why a separate module
@@ -185,7 +190,26 @@ exports.applyGroups = function (idProviderConfig, userKey, desiredGroupKeys) { .
 
 ## 6. Algorithm
 
-### 6.1 On interactive login (`login.js:login()` with `isAutoLogin=false`)
+### 6.1 On application startup (`initIDProvider.js`, master node only, runAsSu)
+
+`main.js` runs `initIDProvider.initUserStores` under `runAsSu` on the master node.
+A sibling step, `initIDProvider.initGroups`, is added and invoked the same way
+(master node, `runAsSu`), after userstores are ensured:
+
+```
+for each configured idProviderName:
+  config = getConfigForIdProvider(idProviderName)
+  if config.groups is null            → skip (feature disabled)
+  if the idProvider's userstore does not exist
+      → log.warning(`Cannot provision groups for [${idProviderName}]; userstore missing`)
+        and skip
+  groupSync.ensureGroupsExist(config)
+```
+
+This is the ONLY place groups are created. Adding a new `groups.mapping` entry
+takes effect on the next application restart (or userstore re-init).
+
+### 6.2 On interactive login (`login.js:login()` with `isAutoLogin=false`)
 
 Hook is placed AFTER profile save / user update, BEFORE the existing `doLogin` call:
 
@@ -198,7 +222,7 @@ Hook is placed AFTER profile save / user update, BEFORE the existing `doLogin` c
 
 `claims` here is the same merged claims object already passed to `saveClaims`/`updateUserData` (ID token + userinfo merged into `claims.userinfo`).
 
-### 6.2 On JWT Bearer autoLogin (`isAutoLogin=true`)
+### 6.3 On JWT Bearer autoLogin (`isAutoLogin=true`)
 
 ```
 1. If idProviderConfig.groups is null  → skip.
@@ -211,7 +235,7 @@ Hook is placed AFTER profile save / user update, BEFORE the existing `doLogin` c
 
 No userinfo endpoint is called during autoLogin; the JWT payload is the only source.
 
-### 6.3 `resolveGroupKeysFromClaims`
+### 6.4 `resolveGroupKeysFromClaims`
 
 ```
 1. path = idProviderConfig.groups.claim
@@ -236,7 +260,7 @@ No userinfo endpoint is called during autoLogin; the JWT payload is the only sou
 
 Strict-equality match is intentional: it's predictable, easy to validate, and avoids the operational surprises of regex/wildcard matching. Filtering and pattern matching can be added later if a real customer needs them.
 
-### 6.4 `applyGroups`
+### 6.5 `applyGroups`
 
 ```
 1. desired = Set of group keys passed in
@@ -244,26 +268,44 @@ Strict-equality match is intentional: it's predictable, easy to validate, and av
    (i.e. the universe of groups this feature manages; used to scope revocation in sync mode)
 3. For each key in desired:
       if group does not exist:
-          if createGroups: authLib.createGroup({ idProvider, name: localPart(key),
-                                                 displayName: localPart(key) })
-          else: log.warning(`Group [${key}] does not exist; set groups.createGroups=true to auto-create`)
-                continue
+          log.debug(`Group [${key}] does not exist; it is provisioned at startup,
+                     so this is logged at debug level only.`)
+          continue                          // never create groups here
       authLib.addMembers(key, [userKey])    // idempotent in XP; safe to call unconditionally
 4. If syncMode === 'sync':
       currentKeys = keys of authLib.getMemberships(userKey)
       toRevoke   = currentKeys ∩ mapped, minus desired
       For each key in toRevoke: authLib.removeMembers(key, [userKey])
-5. Any per-group failure (createGroup / addMembers / removeMembers throws)
+5. Any per-group failure (addMembers / removeMembers throws)
    → log.warning and continue with the next group.
    Never re-throw — group sync errors must not block login.
 ```
 
 Notes:
 - "Mapped groups" is the revocation scope in sync mode. A user's manually-assigned groups, `defaultGroups`, and groups managed outside this mapping are never touched. This is the contract that makes sync mode safe to enable.
-- `localPart(key)` parses `group:<idp>:<name>` and returns `<name>`. Used as both the group's name (passed to `authLib.createGroup` as `name`) and as the initial displayName. Admins can rename the displayName afterwards through the XP admin UI.
+- `applyGroups` never creates groups. Provisioning happens once at startup (§6.6); a missing group at login is an unexpected, log-only condition.
 - `authLib.getMemberships` returns Principal objects; the algorithm only needs their `.key` strings.
 
-### 6.5 Configuration parsing (`configFile/configProvider.js`)
+### 6.6 `ensureGroupsExist`
+
+```
+1. If idProviderConfig.groups is null → return (feature disabled).
+2. For each mapping entry m in idProviderConfig.groups.mapping:
+      key = m.group
+      if authLib.getPrincipal(key) exists → continue
+      authLib.createGroup({ idProvider: idProviderConfig._idProviderName,
+                            name: localPart(key),
+                            displayName: localPart(key) })
+3. Any per-group failure (getPrincipal / createGroup throws)
+   → log.warning and continue with the next entry. Never re-throw.
+```
+
+Notes:
+- `localPart(key)` parses `group:<idp>:<name>` and returns `<name>`. Used as both the created group's `name` and its initial `displayName`. Admins can rename the displayName afterwards through the XP admin UI.
+- Runs as superuser on the master node only (called from `initIDProvider.js`), so it is safe in a clustered setup.
+- Existing groups are never modified — only missing ones are created.
+
+### 6.7 Configuration parsing (`configFile/configProvider.js`)
 
 A new helper `extractIndexedSubkeyValue(rawConfig, basePropertyPath, subkeyPattern)` already exists conceptually as `extractPropertiesToArray` — reuse it with regex `^idprovider\.[a-zA-Z0-9_-]+\.groups\.mapping\.(\d+)\.(value|group)$`. Output is `[{ value: '...', group: '...' }]` for each index.
 
@@ -275,7 +317,6 @@ if (claimPath) {
     config.groups = {
         claim: claimPath,
         syncMode: rawIdProviderConfig[`${base}.groups.syncMode`] === 'sync' ? 'sync' : 'add',
-        createGroups: defaultBooleanTrue(rawIdProviderConfig[`${base}.groups.createGroups`]),
         mapping: extractPropertiesToArray(rawIdProviderConfig, `${base}.groups.mapping.`, MAPPING_PATTERN)
             .filter(m => m && m.value != null && m.group != null),
     };
@@ -301,8 +342,10 @@ The fail-soft philosophy matches the rest of this app: misconfigurations are sur
 | Claim path resolves to nothing | Log debug; treat as empty array. No memberships changed. |
 | Claim path resolves to a non-array, non-string value | Log debug only; treat as empty. No memberships changed. |
 | Entra "overage" structure (`_claim_names` or `hasgroups`) appears | Falls through the non-array branch → silent no-op (debug log only). Handled in app-entra-idprovider#26. |
-| Mapping references a group that does not exist | `createGroups=true` → auto-create. `createGroups=false` → log warning and skip. |
-| `authLib.addMembers` / `removeMembers` / `createGroup` throws | Log warning; continue with next group. Login is NOT blocked. |
+| Mapping references a group that does not exist (startup) | Group is created at application startup (`ensureGroupsExist`). |
+| Mapping references a group that does not exist (login) | Should not happen after a normal startup. Logged at debug level (one per group would be too noisy as a warning) and skipped; membership is not changed. Never created during login. |
+| Group creation fails at startup (userstore missing, `createGroup` throws) | Log warning; continue with the next group. App startup is NOT blocked. |
+| `authLib.addMembers` / `removeMembers` throws during login | Log warning; continue with next group. Login is NOT blocked. |
 | Mapping `group` key targets a different IDP | Rejected at config load (warning, entry dropped). |
 | `applyGroups` is called from autoLogin but `autoLogin.applyGroups=false` | Never reached (gated earlier in `login.js`). |
 
@@ -331,14 +374,18 @@ Unit tests against a mocked `authLib`:
 - `add` mode: never revokes.
 - `sync` mode: revokes memberships in MAPPED groups not in desired.
 - `sync` mode: leaves memberships in non-mapped groups untouched.
-- `createGroups=true`: missing group is created with the expected name and displayName.
-- `createGroups=false`: missing group is skipped with warning; no other side effects.
+- A mapped group missing at login is skipped (debug log only); no group is created and other groups are still processed.
 - A throw inside `addMembers` for one group does not prevent processing other groups.
-- A throw inside `createGroup` does not prevent processing other groups.
+
+**`ensureGroupsExist`:**
+- Missing group is created with the expected name and displayName (derived from the group key's local part).
+- Existing group is left untouched (no `createGroup` call).
+- A throw inside `createGroup` for one entry does not prevent processing other entries.
+- No-ops cleanly when `idProviderConfig.groups` is null.
 
 ### Extension to `src/test/resources/lib/configFile/configIdProvider-test.js`
 
-- Parses `groups.claim`, `groups.mapping.0.value`/`group`, `groups.syncMode`, `groups.createGroups` correctly.
+- Parses `groups.claim`, `groups.mapping.0.value`/`group`, `groups.syncMode` correctly.
 - Parses `autoLogin.applyGroups`.
 - `groups.claim` absent → `config.groups === null`.
 - `groups.claim` present but no mappings → `config.groups.mapping === []` + warning logged.
@@ -346,7 +393,7 @@ Unit tests against a mocked `authLib`:
 - Mapping entry with cross-IDP `group` → dropped + warning.
 - Unknown `syncMode` value → falls back to `add` + warning.
 
-No new integration tests required; the existing login-flow tests will be extended (where they cover `login.js`) to assert that `groupSync` is called with the expected arguments — using the existing mocking approach in `testUtils.js`.
+No new integration tests required; the existing login-flow tests will be extended (where they cover `login.js`) to assert that `groupSync.applyGroups` is called with the expected arguments — using the existing mocking approach in `testUtils.js`. The startup path is covered by the `ensureGroupsExist` unit tests above; the `initIDProvider.initGroups` wiring is a thin loop over configured ID providers and is exercised through the same mocked `authLib`.
 
 ## 9. Documentation
 
@@ -354,8 +401,8 @@ No new integration tests required; the existing login-flow tests will be extende
 
 Add a new section `== Groups from claim`, placed between `== User mappings` and `== Additional endpoints`. The section covers:
 
-- What the feature does and when it runs (every interactive login).
-- The four new properties (`groups.claim`, `groups.mapping.<i>.value` / `.group`, `groups.syncMode`, `groups.createGroups`) with the same callout-numbered style used elsewhere in the file.
+- What the feature does and when it runs (every interactive login), and that mapped groups are created automatically at application startup (master node) — adding a mapping entry requires an app restart/reconfigure to provision the new group.
+- The new properties (`groups.claim`, `groups.mapping.<i>.value` / `.group`, `groups.syncMode`) with the same callout-numbered style used elsewhere in the file.
 - A short subsection on choosing `claim` for the major providers (Okta, Entra, Auth0, Keycloak) — abbreviated versions of the examples in this spec.
 - A subsection "Handling group rot" explaining the two options: `syncMode=add` plus periodic out-of-band cleanup, or `syncMode=sync` for OIDC-authoritative memberships. Calls out that sync mode only touches groups that appear in the mapping.
 
@@ -401,7 +448,7 @@ None at this time. All decisions above were settled during brainstorming.
 | AutoLogin support | Configurable via new `autoLogin.applyGroups` key. Default off. |
 | `defaultGroups` interaction | Unchanged. Stays creation-only. |
 | Claim path syntax | Dotted path normally; URI/URN (claim contains `:`) treated as literal key. |
-| Auto-create groups | Default on (`groups.createGroups=true`). |
+| Group provisioning | Mapped groups are created once at application startup (master node, as superuser). Not created during login; no `createGroups` toggle. |
 | Failure mode | Fail-soft. Group sync errors log a warning; login never blocked. |
 | Module name | `lib/groupSync.js` (avoids confusion with app-entra-idprovider's `lib/group.js`). |
 | Entra overage | Out of scope. Tracked in app-entra-idprovider#26. |
