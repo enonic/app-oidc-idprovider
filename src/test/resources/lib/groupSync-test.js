@@ -135,6 +135,22 @@ exports.testResolve_deduplicates = () => {
     test.assertJsonEquals(['group:okta:admins'], result);
 };
 
+exports.testResolve_sameValueMappedToMultipleGroups_appliesAll = () => {
+    const config = {
+        _idProviderName: 'okta',
+        groups: {
+            claim: 'groups',
+            syncMode: 'add',
+            mapping: [
+                { value: 'Admins', group: 'group:okta:admins' },
+                { value: 'Admins', group: 'group:okta:superusers' },
+            ],
+        },
+    };
+    const result = groupSync.resolveGroupKeysFromClaims(config, { userinfo: { groups: ['Admins'] } });
+    test.assertJsonEquals(['group:okta:admins', 'group:okta:superusers'], result);
+};
+
 exports.testResolve_nonArrayObject_returnsEmpty = () => {
     // Entra overage indirection shape; should be silently ignored.
     const result = groupSync.resolveGroupKeysFromClaims(oktaConfig(), {

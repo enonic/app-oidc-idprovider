@@ -165,7 +165,12 @@ function parseGroups(rawConfig, idProviderKeyBase, idProviderName) {
                 }
                 return false;
             }
-            if (entry.group.indexOf(groupKeyPrefix) !== 0) {
+            const parts = entry.group.split(':');
+            if (parts.length !== 3 || parts[0] !== 'group' || parts[2] === '') {
+                log.warning(`Ignoring groups.mapping entry with malformed group key '${entry.group}' for ID Provider '${idProviderName}'; must be in the format 'group:${idProviderName}:<name>'.`);
+                return false;
+            }
+            if (parts[1] !== idProviderName) {
                 log.warning(`Ignoring groups.mapping entry with cross-IDP group key '${entry.group}' for ID Provider '${idProviderName}'; must start with '${groupKeyPrefix}'.`);
                 return false;
             }

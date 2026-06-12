@@ -58,10 +58,9 @@ exports.resolveGroupKeysFromClaims = function (idProviderConfig, claims) {
 
     const mapping = groups.mapping || [];
     const result = [];
-    values.forEach(value => {
-        const matches = mapping.filter(m => m.value === value);
-        if (matches.length > 0 && result.indexOf(matches[0].group) === -1) {
-            result.push(matches[0].group);
+    mapping.forEach(m => {
+        if (values.indexOf(m.value) !== -1 && result.indexOf(m.group) === -1) {
+            result.push(m.group);
         }
     });
     return result;

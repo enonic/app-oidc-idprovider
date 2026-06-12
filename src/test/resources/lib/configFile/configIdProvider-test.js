@@ -247,6 +247,12 @@ exports.testGroupsDropsInvalidMappingEntries = () => {
                 // cross-IDP group -> dropped
                 'idprovider.myidp.groups.mapping.2.value': 'Devs',
                 'idprovider.myidp.groups.mapping.2.group': 'group:other:devs',
+                // empty local part -> dropped
+                'idprovider.myidp.groups.mapping.3.value': 'QA2',
+                'idprovider.myidp.groups.mapping.3.group': 'group:myidp:',
+                // extra segment -> dropped
+                'idprovider.myidp.groups.mapping.4.value': 'Ops',
+                'idprovider.myidp.groups.mapping.4.group': 'group:myidp:ops:extra',
             }
         }
     });
