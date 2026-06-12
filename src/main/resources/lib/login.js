@@ -154,7 +154,11 @@ function doCreateUser(idProviderConfig, claims, userName, isAutoLogin) {
 
         sendUserEvent(idProviderConfig, 'create', user);
     } catch (e) {
-        if (`${e}`.startsWith('com.enonic.xp.security.PrincipalAlreadyExistsException')) {
+        const errorMsg = `${e}`;
+        const alreadyExists =
+            errorMsg.startsWith('com.enonic.xp.security.PrincipalAlreadyExistsException') ||
+            errorMsg.indexOf('already exists in id provider') !== -1;
+        if (alreadyExists) {
             const principalKey = `user:${idProviderConfig._idProviderName}:${userName}`
             user = contextLib.runAsSu(() => authLib.getPrincipal(principalKey));
         } else {
