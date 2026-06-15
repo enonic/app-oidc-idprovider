@@ -120,6 +120,53 @@ defaultGroups=(space separated group keys) // <6>
 <5> `email` mapping uses `+@@{expression}+` format, e.g. `@@{userinfo.email}`
 <6> `defaultGroups` makes all users member of the specified Enonic groups. The group name must be in the format `group:[idprovidername]:[groupname]`, e.g. `group:myidprovider:authors`
 
+[#groups-from-claim]
+== Groups from claim
+
+While `defaultGroups` only applies at user-creation time, this feature keeps a user's Enonic group memberships in sync with a claim in the OIDC token on *every* login. The IdP supplies a list of groups/roles in a claim, and a mapping table translates each claim value into an Enonic group key.
+
+NOTE: The feature is disabled by default. Presence of `groups.claim` is what enables it. Existing configurations are unaffected.
+
+.com.enonic.app.oidcidprovider.cfg
+[source,properties]
+----
+# Groups from claim
+groups.claim=(string, optional) // <1>
+groups.mapping.0.value=(string, required) // <2>
+groups.mapping.0.group=(string, required) // <3>
+groups.syncMode=(add|sync, optional, defaults to "add") // <4>
+----
+
+<1> `groups.claim` is the path to the groups claim in the merged claims object. If the value contains `:` (a URI scheme or URN, e.g. `https://app.example.com/groups`) it is treated as a single literal key. Otherwise it is split on `.` as a dotted path, e.g. `groups` or `realm_access.roles`. The feature is disabled when this property is absent or empty.
+<2> `value` is the literal value as it appears in the OIDC claim array. It is compared with strict, case-sensitive equality.
+<3> `group` is the Enonic group key the value maps to. It must be in the format `group:[idprovidername]:[groupname]` and must reference *this* ID provider. Cross-IDP keys are rejected. Values not listed in the mapping are ignored.
+<4> `syncMode` controls revocation. `add` only adds the user to mapped groups present in the claim. `sync` additionally removes the user from mapped groups *not* present in the claim. Only groups that appear in this mapping are ever touched — manual memberships, `defaultGroups`, and groups managed elsewhere are preserved.
+
+TIP: For multiple groups, add more lines and iterate the array counter (`groups.mapping.1.value`, `groups.mapping.1.group`, ...).
+
+NOTE: Groups referenced by the mapping are created automatically when the application starts and whenever its configuration file changes (which restarts the app) — not lazily on first login. So a mapped group is available in the admin Users app for permission setup right away, before anyone logs in. Eager creation requires `autoinit=true` (the same flag that auto-creates the ID providers themselves); if a mapped group is still missing at login it is skipped with a warning.
+
+=== Choosing the claim for your provider
+
+[cols="1,2"]
+|===
+|Provider |Typical `groups.claim`
+
+|Okta |`groups` (add the `groups` scope and a claim with a filter in a custom Authorization Server)
+|Microsoft Entra ID |`groups` (configured via `groupMembershipClaims` in the app manifest; values are GUIDs by default, so map each GUID to a group key)
+|Auth0 |a namespaced URI set by a post-login Action, e.g. `https://app.example.com/groups`
+|Keycloak |`realm_access.roles` (built-in), or `groups` with a Group Membership mapper
+|===
+
+NOTE: Microsoft Entra emits a "groups overage" indirection instead of the group list for users in more than 200 groups. Resolving it requires a Graph API call and is not handled by this app; such tokens result in no group changes.
+
+=== Handling group rot
+
+Over time, groups referenced by old mappings or memberships granted from claims that no longer apply can accumulate ("group rot"). There are two strategies:
+
+* `syncMode=add` (default) plus periodic out-of-band cleanup — safest; the app never revokes memberships.
+* `syncMode=sync` — OIDC becomes authoritative for the mapped groups, and stale memberships are removed automatically on the next login. Sync mode only ever touches groups that appear in the mapping, so it is safe to enable without affecting manually-assigned or default groups.
+
 == Additional endpoints
 
 You may optionally specify additional Endpoints to fetch and store more user data in the Enonic user profile.
@@ -153,12 +200,14 @@ autoLogin.createUser=(true|false) // <1>
 autoLogin.createSession=(false|true) // <2>
 autoLogin.wsHeader=(false|true) // <3>
 autoLogin.allowedAudience=(space separated strings) // <4>
+autoLogin.applyGroups=(true|false, defaults to false) // <5>
 ----
 
 <1> If you disable 'createUser', the user will be logged in, but not persisted as a user within Enonic. If `true`, a user will be created automatically if it doesn't exist.
 <2> Optionally create a session in Enonic when the user is logged in. By default, the user will be logged in with `REQUEST` scope.
 <3> ID provider will look for a token in the Sec-WebSocket-Protocol header.
 <4> `allowedAudience` is a list of space-separated strings. If set, the app will only accept tokens with an audience that matches one of the values in this list. It is highly recommended to set this value to make sure the correct tokens are used for the auto login.
+<5> When `true`, also apply <<#groups-from-claim,groups from claim>> sync during Bearer autoLogin. The claim is resolved against the raw JWT payload (no userinfo endpoint is called).
 
 == endSession
 
@@ -254,6 +303,12 @@ idprovider.<name>.mappings.displayName=(string, required, defaults to @@{userinf
 idprovider.<name>.mappings.email=(string, required, defaults to @@{userinfo.email})
 idprovider.<name>.defaultGroups=(space separated group keys)
 
+# Groups from claim
+idprovider.<name>.groups.claim=(string)
+idprovider.<name>.groups.mapping.0.value=(string, required)
+idprovider.<name>.groups.mapping.0.group=(string, required)
+idprovider.<name>.groups.syncMode=(add|sync, defaults to "add")
+
 # Additional Endpoints
 idprovider.<name>.additionalEndpoints.0.name=(string, required)
 idprovider.<name>.additionalEndpoints.0.url=(string, required)
@@ -263,6 +318,7 @@ idprovider.<name>.autoLogin.createUser=(true|false)
 idprovider.<name>.autoLogin.createSession=(true|false)
 idprovider.<name>.autoLogin.wsHeader=(false|true)
 idprovider.<name>.autoLogin.allowedAudience=(space separated strings)
+idprovider.<name>.autoLogin.applyGroups=(true|false, defaults to false)
 
 # User Events
 idprovider.<name>.userEventPrefix=(string, defaults to the current application name)
