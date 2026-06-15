@@ -447,6 +447,12 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#authorization_server">Authorization server</a></li>
 <li><a href="#rules">Rules</a></li>
 <li><a href="#user_mappings">User mappings</a></li>
+<li><a href="#groups-from-claim">Groups from claim</a>
+<ul class="sectlevel2">
+<li><a href="#choosing_the_claim_for_your_provider">Choosing the claim for your provider</a></li>
+<li><a href="#handling_group_rot">Handling group rot</a></li>
+</ul>
+</li>
 <li><a href="#additional_endpoints">Additional endpoints</a></li>
 <li><a href="#autologin">Autologin</a></li>
 <li><a href="#endsession">endSession</a>
@@ -729,6 +735,141 @@ defaultGroups=(space separated group keys) <i class="conum" data-value="6"></i><
 </div>
 </div>
 <div class="sect1">
+<h2 id="groups-from-claim"><a class="link" href="#groups-from-claim">Groups from claim</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>While <code>defaultGroups</code> only applies at user-creation time, this feature keeps a user&#8217;s Enonic group memberships in sync with a claim in the OIDC token on <strong>every</strong> login. The IdP supplies a list of groups/roles in a claim, and a mapping table translates each claim value into an Enonic group key.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The feature is disabled by default. Presence of <code>groups.claim</code> is what enables it. Existing configurations are unaffected.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">com.enonic.app.oidcidprovider.cfg</div>
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties"># Groups from claim
+groups.claim=(string, optional) <i class="conum" data-value="1"></i><b>(1)</b>
+groups.mapping.0.value=(string, required) <i class="conum" data-value="2"></i><b>(2)</b>
+groups.mapping.0.group=(string, required) <i class="conum" data-value="3"></i><b>(3)</b>
+groups.syncMode=(add|sync, optional, defaults to "add") <i class="conum" data-value="4"></i><b>(4)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td><code>groups.claim</code> is the path to the groups claim in the merged claims object. If the value contains <code>:</code> (a URI scheme or URN, e.g. <code><a href="https://app.example.com/groups" class="bare">https://app.example.com/groups</a></code>) it is treated as a single literal key. Otherwise it is split on <code>.</code> as a dotted path, e.g. <code>groups</code> or <code>realm_access.roles</code>. The feature is disabled when this property is absent or empty.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td><code>value</code> is the literal value as it appears in the OIDC claim array. It is compared with strict, case-sensitive equality.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td><code>group</code> is the Enonic group key the value maps to. It must be in the format <code>group:[idprovidername]:[groupname]</code> and must reference <strong>this</strong> ID provider. Cross-IDP keys are rejected. Values not listed in the mapping are ignored.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td><code>syncMode</code> controls revocation. <code>add</code> only adds the user to mapped groups present in the claim. <code>sync</code> additionally removes the user from mapped groups <strong>not</strong> present in the claim. Only groups that appear in this mapping are ever touched — manual memberships, <code>defaultGroups</code>, and groups managed elsewhere are preserved.</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+For multiple groups, add more lines and iterate the array counter (<code>groups.mapping.1.value</code>, <code>groups.mapping.1.group</code>, &#8230;&#8203;).
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Groups referenced by the mapping are created automatically when the application starts and whenever its configuration file changes (which restarts the app) — not lazily on first login. So a mapped group is available in the admin Users app for permission setup right away, before anyone logs in. Eager creation requires <code>autoinit=true</code> (the same flag that auto-creates the ID providers themselves); if a mapped group is still missing at login it is skipped with a warning.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="choosing_the_claim_for_your_provider"><a class="link" href="#choosing_the_claim_for_your_provider">Choosing the claim for your provider</a></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Provider</th>
+<th class="tableblock halign-left valign-top">Typical <code>groups.claim</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Okta</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>groups</code> (add the <code>groups</code> scope and a claim with a filter in a custom Authorization Server)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Microsoft Entra ID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>groups</code> (configured via <code>groupMembershipClaims</code> in the app manifest; values are GUIDs by default, so map each GUID to a group key)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Auth0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">a namespaced URI set by a post-login Action, e.g. <code><a href="https://app.example.com/groups" class="bare">https://app.example.com/groups</a></code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Keycloak</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>realm_access.roles</code> (built-in), or <code>groups</code> with a Group Membership mapper</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Microsoft Entra emits a "groups overage" indirection instead of the group list for users in more than 200 groups. Resolving it requires a Graph API call and is not handled by this app; such tokens result in no group changes.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="handling_group_rot"><a class="link" href="#handling_group_rot">Handling group rot</a></h3>
+<div class="paragraph">
+<p>Over time, groups referenced by old mappings or memberships granted from claims that no longer apply can accumulate ("group rot"). There are two strategies:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>syncMode=add</code> (default) plus periodic out-of-band cleanup — safest; the app never revokes memberships.</p>
+</li>
+<li>
+<p><code>syncMode=sync</code> — OIDC becomes authoritative for the mapped groups, and stale memberships are removed automatically on the next login. Sync mode only ever touches groups that appear in the mapping, so it is safe to enable without affecting manually-assigned or default groups.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="additional_endpoints"><a class="link" href="#additional_endpoints">Additional endpoints</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
@@ -792,7 +933,8 @@ To enable Autologin, you need to specify the <code>jwksUri</code> in the ID Prov
 autoLogin.createUser=(true|false) <i class="conum" data-value="1"></i><b>(1)</b>
 autoLogin.createSession=(false|true) <i class="conum" data-value="2"></i><b>(2)</b>
 autoLogin.wsHeader=(false|true) <i class="conum" data-value="3"></i><b>(3)</b>
-autoLogin.allowedAudience=(space separated strings) <i class="conum" data-value="4"></i><b>(4)</b></code></pre>
+autoLogin.allowedAudience=(space separated strings) <i class="conum" data-value="4"></i><b>(4)</b>
+autoLogin.applyGroups=(true|false, defaults to false) <i class="conum" data-value="5"></i><b>(5)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -812,6 +954,10 @@ autoLogin.allowedAudience=(space separated strings) <i class="conum" data-value=
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
 <td><code>allowedAudience</code> is a list of space-separated strings. If set, the app will only accept tokens with an audience that matches one of the values in this list. It is highly recommended to set this value to make sure the correct tokens are used for the auto login.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>When <code>true</code>, also apply <a href="#groups-from-claim">groups from claim</a> sync during Bearer autoLogin. The claim is resolved against the raw JWT payload (no userinfo endpoint is called).</td>
 </tr>
 </table>
 </div>
@@ -984,6 +1130,12 @@ idprovider.&lt;name&gt;.mappings.displayName=(string, required, defaults to @@{u
 idprovider.&lt;name&gt;.mappings.email=(string, required, defaults to @@{userinfo.email})
 idprovider.&lt;name&gt;.defaultGroups=(space separated group keys)
 
+# Groups from claim
+idprovider.&lt;name&gt;.groups.claim=(string)
+idprovider.&lt;name&gt;.groups.mapping.0.value=(string, required)
+idprovider.&lt;name&gt;.groups.mapping.0.group=(string, required)
+idprovider.&lt;name&gt;.groups.syncMode=(add|sync, defaults to "add")
+
 # Additional Endpoints
 idprovider.&lt;name&gt;.additionalEndpoints.0.name=(string, required)
 idprovider.&lt;name&gt;.additionalEndpoints.0.url=(string, required)
@@ -993,6 +1145,7 @@ idprovider.&lt;name&gt;.autoLogin.createUser=(true|false)
 idprovider.&lt;name&gt;.autoLogin.createSession=(true|false)
 idprovider.&lt;name&gt;.autoLogin.wsHeader=(false|true)
 idprovider.&lt;name&gt;.autoLogin.allowedAudience=(space separated strings)
+idprovider.&lt;name&gt;.autoLogin.applyGroups=(true|false, defaults to false)
 
 # User Events
 idprovider.&lt;name&gt;.userEventPrefix=(string, defaults to the current application name)
@@ -1011,7 +1164,7 @@ idprovider.&lt;name&gt;.endSession.additionalParameters.0.value=(string, require
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-05-21 09:23:30 UTC
+Last updated 2026-06-15 08:28:26 UTC
 </div>
 </div>
 </body>

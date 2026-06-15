@@ -443,6 +443,8 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <ul class="sectlevel1">
 <li><a href="#google">Google</a></li>
 <li><a href="#auth0">Auth0</a></li>
+<li><a href="#okta_with_groups_from_claim">Okta with groups from claim</a></li>
+<li><a href="#microsoft_entra_id_with_full_group_sync">Microsoft Entra ID with full group sync</a></li>
 </ul>
 </div>
 </div>
@@ -493,10 +495,57 @@ idprovider.auth0.mappings.displayName=@@{userinfo.name}</code></pre>
 </div>
 </div>
 </div>
+<div class="sect1">
+<h2 id="okta_with_groups_from_claim"><a class="link" href="#okta_with_groups_from_claim">Okta with groups from claim</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Example mapping Okta group names from the <code>groups</code> claim to Enonic groups on every login.</p>
+</div>
+<div class="listingblock">
+<div class="title">com.enonic.app.oidcidprovider.cfg:</div>
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties">autoinit=true
+idprovider.okta.oidcWellKnownEndpoint=https://example.okta.com/.well-known/openid-configuration
+idprovider.okta.clientId=********
+idprovider.okta.clientSecret=********
+idprovider.okta.scopes=profile email groups
+idprovider.okta.groups.claim=groups
+idprovider.okta.groups.mapping.0.value=Admins
+idprovider.okta.groups.mapping.0.group=group:okta:admins
+idprovider.okta.groups.mapping.1.value=Developers
+idprovider.okta.groups.mapping.1.group=group:okta:devs</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="microsoft_entra_id_with_full_group_sync"><a class="link" href="#microsoft_entra_id_with_full_group_sync">Microsoft Entra ID with full group sync</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Example mapping Entra group GUIDs to Enonic groups, with <code>syncMode=sync</code> so memberships
+in the mapped groups always reflect the token (stale memberships are revoked on login).</p>
+</div>
+<div class="listingblock">
+<div class="title">com.enonic.app.oidcidprovider.cfg:</div>
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties">autoinit=true
+idprovider.entra.oidcWellKnownEndpoint=https://login.microsoftonline.com/&lt;tenant&gt;/v2.0/.well-known/openid-configuration
+idprovider.entra.clientId=********
+idprovider.entra.clientSecret=********
+idprovider.entra.groups.claim=groups
+idprovider.entra.groups.mapping.0.value=e89a3118-2e11-4f8c-9b3a-aaaaaaaaaaaa
+idprovider.entra.groups.mapping.0.group=group:entra:admins
+idprovider.entra.groups.mapping.1.value=b4c2a912-1234-5678-90ab-bbbbbbbbbbbb
+idprovider.entra.groups.mapping.1.group=group:entra:developers
+idprovider.entra.groups.syncMode=sync</code></pre>
+</div>
+</div>
+</div>
+</div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-05-21 09:23:30 UTC
+Last updated 2026-06-15 08:28:26 UTC
 </div>
 </div>
 </body>
