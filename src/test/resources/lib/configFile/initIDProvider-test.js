@@ -18,6 +18,12 @@ const setBeanMocks = testUtils.mockAndGetUpdaterFunc(
         createIdProvider: null
     }
 );
+const setGroupSyncMocks = testUtils.mockAndGetUpdaterFunc(
+    "/lib/groupSync",
+    {
+        ensureGroupsExist: null
+    }
+);
 
 // Require configFile AFTER mocking the getConfig service it uses:
 const lib = require('./initIDProvider');
@@ -29,14 +35,21 @@ const lib = require('./initIDProvider');
 exports.test_initIDProvider_initUserStores_addOnlyNewIDPs_ifShouldAutoInit = () => {
     const CREATED_IDPS = {};
     let addedProviders = 0;
+    const ENSURED_GROUPS = [];
 
     setConfigFileMocks({
         getAllIdProviderNames: () => ["myidp1", "myidp2", "myidp3", "myidp4"],
         shouldAutoInit: () => true,
         getConfigForIdProvider: (idProviderName) => ({
+            _idProviderName: idProviderName,
             displayName: "Mock " + idProviderName,
             description: "Mock description",
+            groups: { claim: 'groups', syncMode: 'add', mapping: [] },
         })
+    });
+
+    setGroupSyncMocks({
+        ensureGroupsExist: (config) => { ENSURED_GROUPS.push(config._idProviderName); }
     });
 
     setBeanMocks({
@@ -84,11 +97,16 @@ exports.test_initIDProvider_initUserStores_addOnlyNewIDPs_ifShouldAutoInit = () 
     test.assertEquals(app.name, CREATED_IDPS['myidp4'].idProviderConfig.applicationKey);
     test.assertTrue(Array.isArray(CREATED_IDPS['myidp4'].permissions));
     test.assertEquals(0, CREATED_IDPS['myidp4'].permissions.length);
+
+    // Group provisioning runs for ALL configured ID Providers (including the two
+    // that already existed), not just the newly-created ones.
+    test.assertJsonEquals(["myidp1", "myidp2", "myidp3", "myidp4"], ENSURED_GROUPS);
 };
 
 exports.test_initIDProvider_initUserStores_addNoNewIDPs_ifNoAutoInit = () => {
     const CREATED_IDPS = {};
     let addedProviders = 0;
+    const ENSURED_GROUPS = [];
 
     setConfigFileMocks({
 
@@ -97,9 +115,15 @@ exports.test_initIDProvider_initUserStores_addNoNewIDPs_ifNoAutoInit = () => {
 
         getAllIdProviderNames: () => ["myidp1", "myidp2", "myidp3", "myidp4"],
         getConfigForIdProvider: (idProviderName) => ({
+            _idProviderName: idProviderName,
             displayName: "Mock " + idProviderName,
             description: "Mock description",
+            groups: { claim: 'groups', syncMode: 'add', mapping: [] },
         })
+    });
+
+    setGroupSyncMocks({
+        ensureGroupsExist: (config) => { ENSURED_GROUPS.push(config._idProviderName); }
     });
 
     setBeanMocks({
@@ -139,6 +163,9 @@ exports.test_initIDProvider_initUserStores_addNoNewIDPs_ifNoAutoInit = () => {
     test.assertEquals(undefined, CREATED_IDPS['myidp2']);
     test.assertEquals(undefined, CREATED_IDPS['myidp3']);
     test.assertEquals(undefined, CREATED_IDPS['myidp4']);
+
+    // Group provisioning is gated on shouldAutoInit() too, so nothing runs.
+    test.assertEquals(0, ENSURED_GROUPS.length);
 };
 
 
