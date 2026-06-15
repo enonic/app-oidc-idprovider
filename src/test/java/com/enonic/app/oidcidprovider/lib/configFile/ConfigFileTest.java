@@ -36,4 +36,22 @@ public class ConfigFileTest
     {
         runFunction( "/lib/configFile/configIdProvider-test.js", "testValidationOfEndSessionAdditionalParameters" );
     }
+
+    @Test
+    public void testGroupsClaimWithoutMappings()
+    {
+        runFunction( "/lib/configFile/configIdProvider-test.js", "testGroupsClaimWithoutMappings" );
+    }
+
+    @Test
+    public void testGroupsDropsInvalidMappingEntries()
+    {
+        runFunction( "/lib/configFile/configIdProvider-test.js", "testGroupsDropsInvalidMappingEntries" );
+    }
+
+    @Test
+    public void testGroupsUnknownSyncModeFallsBackToAdd()
+    {
+        runFunction( "/lib/configFile/configIdProvider-test.js", "testGroupsUnknownSyncModeFallsBackToAdd" );
+    }
 }

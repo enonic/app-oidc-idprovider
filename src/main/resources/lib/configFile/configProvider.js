@@ -3,6 +3,7 @@ const wellKnownService = require('/lib/configFile/wellKnownService');
 
 const END_SESSION_ADDITIONAL_PARAMETERS_PATTERN = '^idprovider\.[a-zA-Z0-9_-]+\.endSession\.additionalParameters\.(\\d+)\.(key|value)$';
 const ADDITIONAL_ENDPOINTS = "^idprovider\.[a-zA-Z0-9_-]+\.additionalEndpoints\.(\\d+)\.(name|url)$";
+const GROUPS_MAPPING_PATTERN = '^idprovider\.[a-zA-Z0-9_-]+\.groups\.mapping\.(\\d+)\.(value|group)$';
 
 const parseStringArray = value => value ? value.split(' ').filter(v => !!v) : [];
 const firstAtsToDollar = value => value ? value.replace(/@@\{/g, '${') : value;
@@ -56,7 +57,9 @@ exports.getIdProviderConfig = function (idProviderName) {
             createSession: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.createSession`] === 'true' || false,
             wsHeader: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.wsHeader`] === 'true' || false,
             allowedAudience: parseStringArray(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.allowedAudience`]),
+            applyGroups: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.applyGroups`] === 'true' || false,
         },
+        groups: parseGroups(rawIdProviderConfig, idProviderKeyBase, idProviderName),
         userEventPrefix: rawIdProviderConfig[`${idProviderKeyBase}.userEventPrefix`] || app.name,
         userEventMode: rawIdProviderConfig[`${idProviderKeyBase}.userEventMode`] || 'local',
         acceptLeeway: parseLong(rawIdProviderConfig[`${idProviderKeyBase}.acceptLeeway`], 1),
@@ -123,6 +126,52 @@ function validate(config, idProviderName) {
     if (config.endSession) {
         checkArrayConfig(config.endSession.additionalParameters, 'endSession.additionalParameters', idProviderName);
     }
+}
+
+function parseGroups(rawConfig, idProviderKeyBase, idProviderName) {
+    const claim = rawConfig[`${idProviderKeyBase}.groups.claim`] || null;
+    if (!claim) {
+        return null;
+    }
+
+    const rawSyncMode = rawConfig[`${idProviderKeyBase}.groups.syncMode`];
+    let syncMode = 'add';
+    if (rawSyncMode === 'sync') {
+        syncMode = 'sync';
+    } else if (rawSyncMode && rawSyncMode !== 'add') {
+        log.warning(`Unknown groups.syncMode '${rawSyncMode}' for ID Provider '${idProviderName}'; falling back to 'add'.`);
+    }
+
+    const groupKeyPrefix = `group:${idProviderName}:`;
+    const mapping = extractPropertiesToArray(rawConfig, `${idProviderKeyBase}.groups.mapping.`, GROUPS_MAPPING_PATTERN)
+        .filter(entry => {
+            if (!entry || !entry.value || !entry.group) {
+                if (entry) {
+                    log.warning(`Ignoring incomplete groups.mapping entry for ID Provider '${idProviderName}'; both 'value' and 'group' are required.`);
+                }
+                return false;
+            }
+            const parts = entry.group.split(':');
+            if (parts.length !== 3 || parts[0] !== 'group' || parts[2] === '') {
+                log.warning(`Ignoring groups.mapping entry with malformed group key '${entry.group}' for ID Provider '${idProviderName}'; must be in the format 'group:${idProviderName}:<name>'.`);
+                return false;
+            }
+            if (parts[1] !== idProviderName) {
+                log.warning(`Ignoring groups.mapping entry with cross-IDP group key '${entry.group}' for ID Provider '${idProviderName}'; must start with '${groupKeyPrefix}'.`);
+                return false;
+            }
+            return true;
+        });
+
+    if (mapping.length === 0) {
+        log.warning(`groups.claim is configured but no valid mapping entries for ID Provider '${idProviderName}'; feature has no effect.`);
+    }
+
+    return {
+        claim: claim,
+        syncMode: syncMode,
+        mapping: mapping,
+    };
 }
 
 function extractPropertiesToArray(rawConfig, basePropertyPath, propertyPattern) {
