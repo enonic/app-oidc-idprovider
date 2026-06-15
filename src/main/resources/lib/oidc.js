@@ -1,6 +1,22 @@
 const preconditions = require('/lib/preconditions');
 const httpClient = require('/lib/http-client');
 
+const SENSITIVE_KEYS = ['client_secret', 'client_assertion', 'Authorization', 'access_token', 'id_token', 'refresh_token'];
+
+function redactSecrets(key, value) {
+    if (SENSITIVE_KEYS.indexOf(key) !== -1) {
+        return '***';
+    }
+    if (key === 'body' && typeof value === 'string') {
+        try {
+            return JSON.parse(value);
+        } catch (e) {
+            return value;
+        }
+    }
+    return value;
+}
+
 function generateToken() {
     const bean = __.newBean('com.enonic.app.oidcidprovider.OIDCUtils');
     return bean.generateToken();
@@ -97,10 +113,10 @@ function requestIDToken(params) {
         params: requestParams,
         contentType: 'application/x-www-form-urlencoded'
     };
-    log.debug('Sending token request: ' + JSON.stringify(request));
+    log.debug('Sending token request: ' + JSON.stringify(request, redactSecrets));
 
     const response = httpClient.request(request);
-    log.debug('Received token response: ' + JSON.stringify(response));
+    log.debug('Received token response: ' + JSON.stringify(response, redactSecrets));
 
     if (response.status !== 200) {
         return {
@@ -135,7 +151,7 @@ function requestOAuth2(params) {
         },
         contentType: 'application/json'
     };
-    log.debug('Sending user info request: ' + JSON.stringify(request));
+    log.debug('Sending user info request: ' + JSON.stringify(request, redactSecrets));
 
     const response = httpClient.request(request);
     log.debug('Received user info response: ' + JSON.stringify(response));
