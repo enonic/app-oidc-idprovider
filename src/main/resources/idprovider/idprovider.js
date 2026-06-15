@@ -210,7 +210,6 @@ exports.autoLogin = function (req) {
     }
 
     const jwtToken = extractJwtToken(req, idProviderConfig);
-    log.debug(`AutoLogin: JWT Token: ${jwtToken}`);
 
     if (!jwtToken) {
         requestLib.autoLoginFailed();
