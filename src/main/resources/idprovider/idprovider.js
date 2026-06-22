@@ -6,6 +6,7 @@ const preconditions = require('/lib/preconditions');
 const authLib = require('/lib/xp/auth');
 const portalLib = require('/lib/xp/portal');
 const jwtLib = require('/lib/jwt');
+const deviceLogin = require('/lib/deviceLogin');
 
 function redirectToAuthorizationEndpoint() {
     const idProviderConfig = configLib.getIdProviderConfig();
@@ -200,18 +201,49 @@ function generateRedirectUrl() {
 
 
 exports.handle401 = redirectToAuthorizationEndpoint;
-exports.get = handleAuthenticationResponse;
+
+exports.get = function (req) {
+    // Device-login GET endpoints (verification page) are served from a dedicated
+    // module; the base path remains the OAuth authentication-response callback.
+    const deviceResponse = deviceLogin.handleGet(req);
+    if (deviceResponse) {
+        return deviceResponse;
+    }
+    return handleAuthenticationResponse(req);
+};
+
+exports.post = function (req) {
+    // Device-login POST endpoints (RFC 8628 device authorization, token, approval).
+    return deviceLogin.handlePost(req) || {status: 404};
+};
+
 exports.logout = logout;
 
 exports.autoLogin = function (req) {
     const idProviderConfig = configLib.getIdProviderConfig();
-    if (!idProviderConfig.jwksUri) {
+
+    const deviceConfigured = !!(idProviderConfig.deviceLogin && idProviderConfig.deviceLogin.secret);
+    if (!idProviderConfig.jwksUri && !deviceConfigured) {
         return;
     }
 
     const jwtToken = extractJwtToken(req, idProviderConfig);
 
     if (!jwtToken) {
+        requestLib.autoLoginFailed();
+        return;
+    }
+
+    // Self-issued device-login token: verified and accepted by this id provider,
+    // independently of the external JWKS path.
+    if (deviceLogin.isSelfIssued(idProviderConfig, jwtToken)) {
+        if (!deviceLogin.accept(jwtToken, idProviderConfig)) {
+            requestLib.autoLoginFailed();
+        }
+        return;
+    }
+
+    if (!idProviderConfig.jwksUri) {
         requestLib.autoLoginFailed();
         return;
     }

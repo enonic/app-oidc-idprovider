@@ -59,6 +59,7 @@ exports.getIdProviderConfig = function (idProviderName) {
             allowedAudience: parseStringArray(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.allowedAudience`]),
             applyGroups: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.applyGroups`] === 'true' || false,
         },
+        deviceLogin: parseDeviceLogin(rawIdProviderConfig, idProviderKeyBase, idProviderName),
         groups: parseGroups(rawIdProviderConfig, idProviderKeyBase, idProviderName),
         userEventPrefix: rawIdProviderConfig[`${idProviderKeyBase}.userEventPrefix`] || app.name,
         userEventMode: rawIdProviderConfig[`${idProviderKeyBase}.userEventMode`] || 'local',
@@ -123,10 +124,32 @@ function takeConfigurationFromWellKnownEndpoint(config) {
     }
 }
 
+function parseDeviceLogin(rawConfig, idProviderKeyBase, idProviderName) {
+    const secret = rawConfig[`${idProviderKeyBase}.deviceLogin.secret`] || null;
+
+    // The presence of the signing secret enables device login for this id provider.
+    // 'kid' and 'issuer' are stable, self-describing identifiers; they form the
+    // resolveKey()/issuer seam that maps onto the XP-core managed keyring later.
+    return {
+        secret: secret,
+        kid: rawConfig[`${idProviderKeyBase}.deviceLogin.kid`] || `${idProviderName}-hs512`,
+        issuer: rawConfig[`${idProviderKeyBase}.deviceLogin.issuer`] || `${app.name}:${idProviderName}`,
+        allowedAudience: parseStringArray(rawConfig[`${idProviderKeyBase}.deviceLogin.allowedAudience`]),
+        codeExpiresIn: parseLong(rawConfig[`${idProviderKeyBase}.deviceLogin.codeExpiresIn`], 600),
+        pollInterval: parseLong(rawConfig[`${idProviderKeyBase}.deviceLogin.pollInterval`], 5),
+        tokenExpiresIn: parseLong(rawConfig[`${idProviderKeyBase}.deviceLogin.tokenExpiresIn`], 3600),
+        createSession: rawConfig[`${idProviderKeyBase}.deviceLogin.createSession`] === 'true' || false,
+    };
+}
+
 function validate(config, idProviderName) {
     checkConfig(config, 'issuer', idProviderName);
     checkConfig(config, 'authorizationUrl', idProviderName);
     checkConfig(config, 'tokenUrl', idProviderName);
+
+    if (config.deviceLogin.secret != null && config.deviceLogin.secret.length < 32) {
+        throw `Device login signing secret for '${idProviderName}' ID Provider must be at least 32 characters`;
+    }
 
     if (config.clientId != null) {
         checkConfig(config, 'clientSecret', idProviderName);
