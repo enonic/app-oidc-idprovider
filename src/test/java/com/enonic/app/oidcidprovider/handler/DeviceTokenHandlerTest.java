@@ -24,49 +24,48 @@ class DeviceTokenHandlerTest
     void sign_and_verify_roundtrip()
     {
         final String token =
-            handler.sign( SECRET, "myidp-hs512", "app:myidp", "john", "myidp", "https://api.example.com", "cli", "openid", 3600 );
+            handler.sign( SECRET, "myidp-hs512", "app:myidp", "user:myidp:john", "https://api.example.com", "cli", "openid", 3600 );
 
         final Map<String, Object> payload = serialize( handler.verify( token, SECRET, "app:myidp", List.of( "https://api.example.com" ) ) );
 
         assertNotNull( payload );
-        assertEquals( "john", payload.get( "sub" ) );
+        assertEquals( "user:myidp:john", payload.get( "sub" ) );
         assertEquals( "app:myidp", payload.get( "iss" ) );
-        assertEquals( "myidp", payload.get( "idp" ) );
         assertEquals( "cli", payload.get( "client_id" ) );
     }
 
     @Test
     void verify_fails_with_wrong_secret()
     {
-        final String token = handler.sign( SECRET, "k", "app:myidp", "john", "myidp", "aud", "cli", "openid", 3600 );
+        final String token = handler.sign( SECRET, "k", "app:myidp", "john", "aud", "cli", "openid", 3600 );
         assertNull( handler.verify( token, "another-secret-another-secret-32", "app:myidp", List.of() ) );
     }
 
     @Test
     void verify_fails_with_wrong_issuer()
     {
-        final String token = handler.sign( SECRET, "k", "app:myidp", "john", "myidp", "aud", "cli", "openid", 3600 );
+        final String token = handler.sign( SECRET, "k", "app:myidp", "john", "aud", "cli", "openid", 3600 );
         assertNull( handler.verify( token, SECRET, "app:other", List.of() ) );
     }
 
     @Test
     void verify_fails_when_audience_not_allowed()
     {
-        final String token = handler.sign( SECRET, "k", "app:myidp", "john", "myidp", "aud-a", "cli", "openid", 3600 );
+        final String token = handler.sign( SECRET, "k", "app:myidp", "john", "aud-a", "cli", "openid", 3600 );
         assertNull( handler.verify( token, SECRET, "app:myidp", List.of( "aud-b" ) ) );
     }
 
     @Test
     void verify_fails_when_expired()
     {
-        final String token = handler.sign( SECRET, "k", "app:myidp", "john", "myidp", "aud", "cli", "openid", -10 );
+        final String token = handler.sign( SECRET, "k", "app:myidp", "john", "aud", "cli", "openid", -10 );
         assertNull( handler.verify( token, SECRET, "app:myidp", List.of() ) );
     }
 
     @Test
     void peek_issuer_does_not_require_verification()
     {
-        final String token = handler.sign( SECRET, "k", "app:myidp", "john", "myidp", "aud", "cli", "openid", 3600 );
+        final String token = handler.sign( SECRET, "k", "app:myidp", "john", "aud", "cli", "openid", 3600 );
         assertEquals( "app:myidp", handler.peekIssuer( token ) );
         assertNull( handler.peekIssuer( "not-a-jwt" ) );
     }

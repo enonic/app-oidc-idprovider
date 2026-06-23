@@ -59,7 +59,6 @@ function resolve(idProviderName, deviceCode, approved, principal, ttlSeconds) {
             if (approved) {
                 record.status = 'approved';
                 record.sub = principal.sub;
-                record.idProvider = principal.idProvider;
             } else {
                 record.status = 'denied';
             }

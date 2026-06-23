@@ -75,8 +75,8 @@ public class DeviceTokenHandler
         return sb.toString();
     }
 
-    public String sign( final String secret, final String kid, final String issuer, final String subject, final String idProvider,
-                        final String audience, final String clientId, final String scope, final int expiresInSeconds )
+    public String sign( final String secret, final String kid, final String issuer, final String subject, final String audience,
+                        final String clientId, final String scope, final int expiresInSeconds )
     {
         final Instant now = Instant.now();
 
@@ -88,7 +88,6 @@ public class DeviceTokenHandler
             .withAudience( splitToArray( audience ) )
             .withClaim( "client_id", clientId )
             .withClaim( "scope", scope )
-            .withClaim( "idp", idProvider )
             .withIssuedAt( now )
             .withExpiresAt( now.plusSeconds( expiresInSeconds ) )
             .withJWTId( UUID.randomUUID().toString() )

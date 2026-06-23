@@ -30,7 +30,6 @@ function mint(idProviderConfig, params) {
         key.kid,
         getIssuer(idProviderConfig),
         params.subject,
-        params.idProvider,
         params.audience || '',
         params.clientId || '',
         params.scope || '',

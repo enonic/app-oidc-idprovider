@@ -36,10 +36,6 @@ function baseUrl(req) {
     return url + req.contextPath;
 }
 
-function usernameOf(user) {
-    return user.key.substring(user.key.lastIndexOf(':') + 1);
-}
-
 function json(status, body, extraHeaders) {
     const headers = {'Cache-Control': 'no-store', 'Pragma': 'no-cache'};
     if (extraHeaders) {
@@ -152,7 +148,6 @@ function tokenEndpoint(req) {
         const record = result.record;
         const token = deviceToken.mint(config, {
             subject: record.sub,
-            idProvider: record.idProvider,
             audience: record.audience,
             clientId: record.clientId,
             scope: record.scope,
@@ -223,8 +218,8 @@ function verificationSubmit(req) {
         return htmlPage('Device sign-in', `<h1>Device sign-in</h1><p>This code is invalid or has expired.</p>`);
     }
 
-    const principal = {sub: usernameOf(user), idProvider: config._idProviderName};
-    store.resolve(config._idProviderName, found.deviceCode, approve, principal, config.deviceLogin.codeExpiresIn);
+    // The subject is the full principal key (user:<idprovider>:<name>); it identifies the id provider.
+    store.resolve(config._idProviderName, found.deviceCode, approve, {sub: user.key}, config.deviceLogin.codeExpiresIn);
 
     const message = approve
         ? `<h1>You're all set</h1><p>The device has been approved. You can return to your application.</p>`
@@ -291,9 +286,15 @@ function accept(token, config) {
         return false;
     }
 
+    // sub is the full principal key: user:<idprovider>:<name>
+    const parts = payload.sub.split(':');
+    if (parts.length < 3 || parts[0] !== 'user') {
+        return false;
+    }
+
     const result = authLib.login({
-        user: payload.sub,
-        idProvider: payload.idp || config._idProviderName,
+        user: parts.slice(2).join(':'),
+        idProvider: parts[1],
         skipAuth: true,
         scope: config.deviceLogin.createSession ? 'SESSION' : 'REQUEST',
     });
