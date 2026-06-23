@@ -6,12 +6,11 @@ const oidcLib = require('/lib/oidc');
 
 const DEVICE_CODE_GRANT = 'urn:ietf:params:oauth:grant-type:device_code';
 const AUTH_CODE_GRANT = 'authorization_code';
-const AUTH_CODE_TTL_SECONDS = 120;
 const HANDLER_BEAN = 'com.enonic.app.oidcidprovider.handler.DeviceTokenHandler';
 
 // RFC 8252 native-app redirects come in three kinds: loopback IP, private-use URI scheme, and
 // claimed HTTPS. Loopback (any port) needs no registration and is always allowed; private-use-scheme
-// and claimed-https redirects must be registered exactly via deviceLogin.allowedRedirectUris, since
+// and claimed-https redirects must be registered exactly via native.allowedRedirectUris, since
 // they cannot be implicitly trusted. PKCE is mandatory for all of them.
 const LOOPBACK_REDIRECT_PATTERN = /^http:\/\/(127\.0\.0\.1|\[::1\]|localhost)(:\d+)?(\/.*)?$/;
 
@@ -23,7 +22,7 @@ const LOOPBACK_REDIRECT_PATTERN = /^http:\/\/(127\.0\.0\.1|\[::1\]|localhost)(:\
 // Per-vhost flow gating (which flows are allowed on which vhost) is an XP-core
 // concern and is enforced there, not in this app.
 function isEnabled(config) {
-    return !!(config.deviceLogin && config.deviceLogin.secret);
+    return !!(config.accessToken && config.accessToken.secret);
 }
 
 // ---------------------------------------------------------------------------
@@ -96,7 +95,7 @@ function deviceAuthorization(req) {
         return {status: 404};
     }
 
-    const dl = config.deviceLogin;
+    const device = config.device;
     const handler = __.newBean(HANDLER_BEAN);
     const deviceCode = handler.generateDeviceCode();
     const userCode = handler.generateUserCode();
@@ -106,8 +105,8 @@ function deviceAuthorization(req) {
         userCode: userCode,
         clientId: req.params.client_id,
         scope: req.params.scope,
-        audience: resolveAudience(dl, req.params.resource),
-        ttlSeconds: dl.codeExpiresIn,
+        audience: resolveAudience(config.accessToken, req.params.resource),
+        ttlSeconds: device.codeExpiresIn,
     });
 
     const verificationUri = baseUrl(req) + '/device';
@@ -116,8 +115,8 @@ function deviceAuthorization(req) {
         user_code: userCode,
         verification_uri: verificationUri,
         verification_uri_complete: verificationUri + '?user_code=' + encodeURIComponent(userCode),
-        expires_in: dl.codeExpiresIn,
-        interval: dl.pollInterval,
+        expires_in: device.codeExpiresIn,
+        interval: device.pollInterval,
     });
 }
 
@@ -145,8 +144,7 @@ function deviceCodeGrant(req, config) {
         return oauthError(400, 'invalid_request', 'Missing device_code');
     }
 
-    const dl = config.deviceLogin;
-    const result = store.poll(config._idProviderName, deviceCode, dl.pollInterval);
+    const result = store.poll(config._idProviderName, deviceCode, config.device.pollInterval);
 
     switch (result.state) {
     case 'pending':
@@ -187,18 +185,18 @@ function authorizationCodeGrant(req, config) {
 }
 
 function tokenResponse(config, record) {
-    const dl = config.deviceLogin;
+    const expiresIn = config.accessToken.expiresIn;
     const token = deviceToken.mint(config, {
         subject: record.sub,
         audience: record.audience,
         clientId: record.clientId,
         scope: record.scope,
-        expiresInSeconds: dl.tokenExpiresIn,
+        expiresInSeconds: expiresIn,
     });
     const body = {
         access_token: token,
         token_type: 'Bearer',
-        expires_in: dl.tokenExpiresIn,
+        expires_in: expiresIn,
     };
     if (record.scope) {
         body.scope = record.scope;
@@ -213,10 +211,9 @@ function authorizeEndpoint(req) {
         return {status: 404};
     }
 
-    const dl = config.deviceLogin;
     const redirectUri = req.params.redirect_uri;
     // An invalid redirect target must not be redirected to (open-redirect / code-leak guard).
-    if (!redirectUri || !isAllowedRedirectUri(redirectUri, dl)) {
+    if (!redirectUri || !isAllowedRedirectUri(redirectUri, config.native)) {
         return oauthError(400, 'invalid_request', 'redirect_uri is not allowed');
     }
     if (!req.params.code_challenge || req.params.code_challenge_method !== 'S256') {
@@ -237,8 +234,8 @@ function authorizeEndpoint(req) {
         sub: user.key,
         clientId: req.params.client_id,
         scope: req.params.scope,
-        audience: resolveAudience(dl, req.params.resource),
-        ttlSeconds: AUTH_CODE_TTL_SECONDS,
+        audience: resolveAudience(config.accessToken, req.params.resource),
+        ttlSeconds: config.native.codeExpiresIn,
     });
 
     let location = redirectUri + (redirectUri.indexOf('?') >= 0 ? '&' : '?') + 'code=' + encodeURIComponent(code);
@@ -248,20 +245,21 @@ function authorizeEndpoint(req) {
     return {redirect: location};
 }
 
-function resolveAudience(dl, requestedResource) {
-    if (requestedResource && (dl.allowedAudience.length === 0 || dl.allowedAudience.indexOf(requestedResource) !== -1)) {
+function resolveAudience(accessToken, requestedResource) {
+    if (requestedResource &&
+        (accessToken.audience.length === 0 || accessToken.audience.indexOf(requestedResource) !== -1)) {
         return requestedResource;
     }
-    return dl.allowedAudience.join(' ');
+    return accessToken.audience.join(' ');
 }
 
 // RFC 8252: loopback (any port) needs no registration; private-use-scheme and claimed-https
 // redirects must match a registered redirect URI exactly.
-function isAllowedRedirectUri(redirectUri, dl) {
+function isAllowedRedirectUri(redirectUri, nativeConfig) {
     if (LOOPBACK_REDIRECT_PATTERN.test(redirectUri)) {
         return true;
     }
-    return dl.allowedRedirectUris.indexOf(redirectUri) !== -1;
+    return nativeConfig.allowedRedirectUris.indexOf(redirectUri) !== -1;
 }
 
 // GET .../device  (human verification page = verification_uri)
@@ -314,7 +312,7 @@ function verificationSubmit(req) {
     }
 
     // The subject is the full principal key (user:<idprovider>:<name>); it identifies the id provider.
-    store.resolve(config._idProviderName, found.deviceCode, approve, {sub: user.key}, config.deviceLogin.codeExpiresIn);
+    store.resolve(config._idProviderName, found.deviceCode, approve, {sub: user.key}, config.device.codeExpiresIn);
 
     const message = approve
         ? `<h1>You're all set</h1><p>The device has been approved. You can return to your application.</p>`
@@ -380,7 +378,7 @@ function accept(token, config) {
         return false;
     }
 
-    const payload = deviceToken.verify(config, token, config.deviceLogin.allowedAudience);
+    const payload = deviceToken.verify(config, token, config.accessToken.audience);
     if (!payload || !payload.sub) {
         return false;
     }
@@ -395,7 +393,7 @@ function accept(token, config) {
         user: parts.slice(2).join(':'),
         idProvider: parts[1],
         skipAuth: true,
-        scope: config.deviceLogin.createSession ? 'SESSION' : 'REQUEST',
+        scope: config.accessToken.createSession ? 'SESSION' : 'REQUEST',
     });
 
     return !!(result && result.authenticated);

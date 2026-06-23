@@ -222,7 +222,7 @@ exports.logout = logout;
 exports.autoLogin = function (req) {
     const idProviderConfig = configLib.getIdProviderConfig();
 
-    const deviceConfigured = !!(idProviderConfig.deviceLogin && idProviderConfig.deviceLogin.secret);
+    const deviceConfigured = !!(idProviderConfig.accessToken && idProviderConfig.accessToken.secret);
     if (!idProviderConfig.jwksUri && !deviceConfigured) {
         return;
     }

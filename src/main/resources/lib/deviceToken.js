@@ -11,13 +11,13 @@ const BEAN = 'com.enonic.app.oidcidprovider.handler.DeviceTokenHandler';
  */
 function resolveKey(idProviderConfig) {
     return {
-        kid: idProviderConfig.deviceLogin.kid,
-        secret: idProviderConfig.deviceLogin.secret,
+        kid: idProviderConfig.accessToken.kid,
+        secret: idProviderConfig.accessToken.secret,
     };
 }
 
 function getIssuer(idProviderConfig) {
-    return idProviderConfig.deviceLogin.issuer;
+    return idProviderConfig.accessToken.issuer;
 }
 
 /**
@@ -52,7 +52,7 @@ function verify(idProviderConfig, token, allowedAudience) {
  * Based on the unverified 'iss' claim - used only to route to the right verifier.
  */
 function isSelfIssued(idProviderConfig, token) {
-    if (!idProviderConfig.deviceLogin.secret) {
+    if (!idProviderConfig.accessToken.secret) {
         return false;
     }
     const issuer = __.newBean(BEAN).peekIssuer(token);

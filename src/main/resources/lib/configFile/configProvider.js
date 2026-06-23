@@ -59,7 +59,9 @@ exports.getIdProviderConfig = function (idProviderName) {
             allowedAudience: parseStringArray(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.allowedAudience`]),
             applyGroups: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.applyGroups`] === 'true' || false,
         },
-        deviceLogin: parseDeviceLogin(rawIdProviderConfig, idProviderKeyBase, idProviderName),
+        accessToken: parseAccessToken(rawIdProviderConfig, idProviderKeyBase, idProviderName),
+        device: parseDeviceFlow(rawIdProviderConfig, idProviderKeyBase),
+        native: parseNativeFlow(rawIdProviderConfig, idProviderKeyBase),
         groups: parseGroups(rawIdProviderConfig, idProviderKeyBase, idProviderName),
         userEventPrefix: rawIdProviderConfig[`${idProviderKeyBase}.userEventPrefix`] || app.name,
         userEventMode: rawIdProviderConfig[`${idProviderKeyBase}.userEventMode`] || 'local',
@@ -124,24 +126,34 @@ function takeConfigurationFromWellKnownEndpoint(config) {
     }
 }
 
-function parseDeviceLogin(rawConfig, idProviderKeyBase, idProviderName) {
-    const secret = rawConfig[`${idProviderKeyBase}.deviceLogin.secret`] || null;
-
-    // The presence of the signing secret enables device login for this id provider.
-    // 'kid' and 'issuer' are stable, self-describing identifiers; they form the
-    // resolveKey()/issuer seam that maps onto the XP-core managed keyring later.
+// Shared self-issued access token config (used by both the device and native flows).
+// Presence of the signing secret enables token issuance for this id provider; 'kid' and 'issuer'
+// are the resolveKey()/issuer seam that maps onto the XP-core managed keyring later.
+function parseAccessToken(rawConfig, idProviderKeyBase, idProviderName) {
     return {
-        secret: secret,
-        kid: rawConfig[`${idProviderKeyBase}.deviceLogin.kid`] || `${idProviderName}-hs512`,
-        issuer: rawConfig[`${idProviderKeyBase}.deviceLogin.issuer`] || `${app.name}:${idProviderName}`,
-        allowedAudience: parseStringArray(rawConfig[`${idProviderKeyBase}.deviceLogin.allowedAudience`]),
-        // Registered native-app redirect URIs (RFC 8252 private-use scheme / claimed https).
-        // Loopback redirects are always allowed and need not be listed.
-        allowedRedirectUris: parseStringArray(rawConfig[`${idProviderKeyBase}.deviceLogin.allowedRedirectUris`]),
-        codeExpiresIn: parseLong(rawConfig[`${idProviderKeyBase}.deviceLogin.codeExpiresIn`], 600),
-        pollInterval: parseLong(rawConfig[`${idProviderKeyBase}.deviceLogin.pollInterval`], 5),
-        tokenExpiresIn: parseLong(rawConfig[`${idProviderKeyBase}.deviceLogin.tokenExpiresIn`], 3600),
-        createSession: rawConfig[`${idProviderKeyBase}.deviceLogin.createSession`] === 'true' || false,
+        secret: rawConfig[`${idProviderKeyBase}.accessToken.secret`] || null,
+        kid: rawConfig[`${idProviderKeyBase}.accessToken.kid`] || `${idProviderName}-hs512`,
+        issuer: rawConfig[`${idProviderKeyBase}.accessToken.issuer`] || `${app.name}:${idProviderName}`,
+        audience: parseStringArray(rawConfig[`${idProviderKeyBase}.accessToken.audience`]),
+        expiresIn: parseLong(rawConfig[`${idProviderKeyBase}.accessToken.expiresIn`], 3600),
+        createSession: rawConfig[`${idProviderKeyBase}.accessToken.createSession`] === 'true' || false,
+    };
+}
+
+// Device Authorization Grant (RFC 8628) flow parameters.
+function parseDeviceFlow(rawConfig, idProviderKeyBase) {
+    return {
+        codeExpiresIn: parseLong(rawConfig[`${idProviderKeyBase}.device.codeExpiresIn`], 600),
+        pollInterval: parseLong(rawConfig[`${idProviderKeyBase}.device.pollInterval`], 5),
+    };
+}
+
+// Native-app (RFC 8252) flow parameters. Loopback redirects are always allowed and need not be
+// listed; private-use-scheme and claimed-https redirects must be registered in allowedRedirectUris.
+function parseNativeFlow(rawConfig, idProviderKeyBase) {
+    return {
+        codeExpiresIn: parseLong(rawConfig[`${idProviderKeyBase}.native.codeExpiresIn`], 120),
+        allowedRedirectUris: parseStringArray(rawConfig[`${idProviderKeyBase}.native.allowedRedirectUris`]),
     };
 }
 
@@ -150,8 +162,8 @@ function validate(config, idProviderName) {
     checkConfig(config, 'authorizationUrl', idProviderName);
     checkConfig(config, 'tokenUrl', idProviderName);
 
-    if (config.deviceLogin.secret != null && config.deviceLogin.secret.length < 32) {
-        throw `Device login signing secret for '${idProviderName}' ID Provider must be at least 32 characters`;
+    if (config.accessToken.secret != null && config.accessToken.secret.length < 32) {
+        throw `Access token signing secret for '${idProviderName}' ID Provider must be at least 32 characters`;
     }
 
     if (config.clientId != null) {
