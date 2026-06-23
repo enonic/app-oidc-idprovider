@@ -2,7 +2,6 @@ const authLib = require('/lib/xp/auth');
 const configLib = require('/lib/config');
 const store = require('/lib/deviceStore');
 const deviceToken = require('/lib/deviceToken');
-const vhostFlags = require('/lib/vhostFlags');
 
 const DEVICE_CODE_GRANT = 'urn:ietf:params:oauth:grant-type:device_code';
 const HANDLER_BEAN = 'com.enonic.app.oidcidprovider.handler.DeviceTokenHandler';
@@ -11,16 +10,11 @@ const HANDLER_BEAN = 'com.enonic.app.oidcidprovider.handler.DeviceTokenHandler';
 // Enablement
 // ---------------------------------------------------------------------------
 
+// Device login is enabled for this id provider when a signing secret is configured.
+// Per-vhost flow gating (which flows are allowed on which vhost) is an XP-core
+// concern and is enforced there, not in this app.
 function isEnabled(config) {
     return !!(config.deviceLogin && config.deviceLogin.secret);
-}
-
-function issuanceEnabled(config) {
-    return isEnabled(config) && vhostFlags.isFlowEnabled(config, 'issue', true);
-}
-
-function acceptanceEnabled(config) {
-    return isEnabled(config) && vhostFlags.isFlowEnabled(config, 'accept', true);
 }
 
 // ---------------------------------------------------------------------------
@@ -93,7 +87,7 @@ function escapeHtml(value) {
 // POST .../device/code  (RFC 8628 device authorization endpoint)
 function deviceAuthorization(req) {
     const config = configLib.getIdProviderConfig();
-    if (!issuanceEnabled(config)) {
+    if (!isEnabled(config)) {
         return {status: 404};
     }
 
@@ -131,7 +125,7 @@ function deviceAuthorization(req) {
 // POST .../token  (RFC 8628 / RFC 6749 token endpoint, device_code grant)
 function tokenEndpoint(req) {
     const config = configLib.getIdProviderConfig();
-    if (!issuanceEnabled(config)) {
+    if (!isEnabled(config)) {
         return {status: 404};
     }
 
@@ -183,7 +177,7 @@ function tokenEndpoint(req) {
 // GET .../device  (human verification page = verification_uri)
 function verificationPage(req) {
     const config = configLib.getIdProviderConfig();
-    if (!issuanceEnabled(config)) {
+    if (!isEnabled(config)) {
         return {status: 404};
     }
 
@@ -212,7 +206,7 @@ function verificationPage(req) {
 // POST .../device  (approve / deny submission)
 function verificationSubmit(req) {
     const config = configLib.getIdProviderConfig();
-    if (!issuanceEnabled(config)) {
+    if (!isEnabled(config)) {
         return {status: 404};
     }
 
@@ -288,7 +282,7 @@ function handleGet(req) {
 
 // Verifies a self-issued bearer token and logs the principal in. Used by autoLogin.
 function accept(token, config) {
-    if (!acceptanceEnabled(config)) {
+    if (!isEnabled(config)) {
         return false;
     }
 
