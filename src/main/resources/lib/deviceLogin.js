@@ -10,9 +10,9 @@ const AUTH_CODE_TTL_SECONDS = 120;
 const HANDLER_BEAN = 'com.enonic.app.oidcidprovider.handler.DeviceTokenHandler';
 
 // RFC 8252 native-app redirects come in three kinds: loopback IP, private-use URI scheme, and
-// claimed HTTPS. Only loopback is implemented here (it needs no registration); private-use-scheme
-// and claimed-https redirects can be added later under the same `native` flow, with PKCE still
-// mandatory and those redirect targets requiring registration/allow-listing.
+// claimed HTTPS. Loopback (any port) needs no registration and is always allowed; private-use-scheme
+// and claimed-https redirects must be registered exactly via deviceLogin.allowedRedirectUris, since
+// they cannot be implicitly trusted. PKCE is mandatory for all of them.
 const LOOPBACK_REDIRECT_PATTERN = /^http:\/\/(127\.0\.0\.1|\[::1\]|localhost)(:\d+)?(\/.*)?$/;
 
 // ---------------------------------------------------------------------------
@@ -206,17 +206,18 @@ function tokenResponse(config, record) {
     return json(200, body);
 }
 
-// GET .../authorize  (RFC 8252 loopback authorization endpoint, PKCE required)
+// GET .../authorize  (RFC 8252 native-app authorization endpoint, PKCE required)
 function authorizeEndpoint(req) {
     const config = configLib.getIdProviderConfig();
     if (!isEnabled(config)) {
         return {status: 404};
     }
 
+    const dl = config.deviceLogin;
     const redirectUri = req.params.redirect_uri;
     // An invalid redirect target must not be redirected to (open-redirect / code-leak guard).
-    if (!redirectUri || !LOOPBACK_REDIRECT_PATTERN.test(redirectUri)) {
-        return oauthError(400, 'invalid_request', 'redirect_uri must be a loopback address');
+    if (!redirectUri || !isAllowedRedirectUri(redirectUri, dl)) {
+        return oauthError(400, 'invalid_request', 'redirect_uri is not allowed');
     }
     if (!req.params.code_challenge || req.params.code_challenge_method !== 'S256') {
         return oauthError(400, 'invalid_request', 'code_challenge with S256 is required');
@@ -228,7 +229,6 @@ function authorizeEndpoint(req) {
         return {status: 401};
     }
 
-    const dl = config.deviceLogin;
     const code = __.newBean(HANDLER_BEAN).generateDeviceCode();
     store.createAuthCode(config._idProviderName, {
         code: code,
@@ -253,6 +253,15 @@ function resolveAudience(dl, requestedResource) {
         return requestedResource;
     }
     return dl.allowedAudience.join(' ');
+}
+
+// RFC 8252: loopback (any port) needs no registration; private-use-scheme and claimed-https
+// redirects must match a registered redirect URI exactly.
+function isAllowedRedirectUri(redirectUri, dl) {
+    if (LOOPBACK_REDIRECT_PATTERN.test(redirectUri)) {
+        return true;
+    }
+    return dl.allowedRedirectUris.indexOf(redirectUri) !== -1;
 }
 
 // GET .../device  (human verification page = verification_uri)

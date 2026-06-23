@@ -135,6 +135,9 @@ function parseDeviceLogin(rawConfig, idProviderKeyBase, idProviderName) {
         kid: rawConfig[`${idProviderKeyBase}.deviceLogin.kid`] || `${idProviderName}-hs512`,
         issuer: rawConfig[`${idProviderKeyBase}.deviceLogin.issuer`] || `${app.name}:${idProviderName}`,
         allowedAudience: parseStringArray(rawConfig[`${idProviderKeyBase}.deviceLogin.allowedAudience`]),
+        // Registered native-app redirect URIs (RFC 8252 private-use scheme / claimed https).
+        // Loopback redirects are always allowed and need not be listed.
+        allowedRedirectUris: parseStringArray(rawConfig[`${idProviderKeyBase}.deviceLogin.allowedRedirectUris`]),
         codeExpiresIn: parseLong(rawConfig[`${idProviderKeyBase}.deviceLogin.codeExpiresIn`], 600),
         pollInterval: parseLong(rawConfig[`${idProviderKeyBase}.deviceLogin.pollInterval`], 5),
         tokenExpiresIn: parseLong(rawConfig[`${idProviderKeyBase}.deviceLogin.tokenExpiresIn`], 3600),
