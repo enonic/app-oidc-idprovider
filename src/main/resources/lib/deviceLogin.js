@@ -9,7 +9,10 @@ const AUTH_CODE_GRANT = 'authorization_code';
 const AUTH_CODE_TTL_SECONDS = 120;
 const HANDLER_BEAN = 'com.enonic.app.oidcidprovider.handler.DeviceTokenHandler';
 
-// RFC 8252 loopback redirect: http with a loopback host and any port/path.
+// RFC 8252 native-app redirects come in three kinds: loopback IP, private-use URI scheme, and
+// claimed HTTPS. Only loopback is implemented here (it needs no registration); private-use-scheme
+// and claimed-https redirects can be added later under the same `native` flow, with PKCE still
+// mandatory and those redirect targets requiring registration/allow-listing.
 const LOOPBACK_REDIRECT_PATTERN = /^http:\/\/(127\.0\.0\.1|\[::1\]|localhost)(:\d+)?(\/.*)?$/;
 
 // ---------------------------------------------------------------------------
