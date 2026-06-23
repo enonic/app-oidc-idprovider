@@ -80,18 +80,32 @@ public class DeviceTokenHandler
     {
         final Instant now = Instant.now();
 
-        return JWT.create()
+        // Claim emission matches the XP-core AccessTokenService wire format: optional claims are
+        // omitted (not emitted empty) so app-issued and core-issued tokens are shape-identical.
+        final com.auth0.jwt.JWTCreator.Builder builder = JWT.create()
             .withKeyId( kid )
             .withHeader( java.util.Map.of( "typ", TYP ) )
             .withIssuer( issuer )
             .withSubject( subject )
-            .withAudience( splitToArray( audience ) )
-            .withClaim( "client_id", clientId )
-            .withClaim( "scope", scope )
             .withIssuedAt( now )
             .withExpiresAt( now.plusSeconds( expiresInSeconds ) )
-            .withJWTId( UUID.randomUUID().toString() )
-            .sign( Algorithm.HMAC512( secret ) );
+            .withJWTId( UUID.randomUUID().toString() );
+
+        final String[] audiences = splitToArray( audience );
+        if ( audiences.length > 0 )
+        {
+            builder.withAudience( audiences );
+        }
+        if ( clientId != null && !clientId.isEmpty() )
+        {
+            builder.withClaim( "client_id", clientId );
+        }
+        if ( scope != null && !scope.isEmpty() )
+        {
+            builder.withClaim( "scope", scope );
+        }
+
+        return builder.sign( Algorithm.HMAC512( secret ) );
     }
 
     /**
