@@ -202,7 +202,7 @@ function generateRedirectUrl() {
 
 exports.handle401 = redirectToAuthorizationEndpoint;
 
-exports.get = function (req) {
+exports.GET = function (req) {
     // Device-login GET endpoints (verification page) are served from a dedicated
     // module; the base path remains the OAuth authentication-response callback.
     const deviceResponse = deviceLogin.handleGet(req);
@@ -212,7 +212,7 @@ exports.get = function (req) {
     return handleAuthenticationResponse(req);
 };
 
-exports.post = function (req) {
+exports.POST = function (req) {
     // Device-login POST endpoints (RFC 8628 device authorization, token, approval).
     return deviceLogin.handlePost(req) || {status: 404};
 };
