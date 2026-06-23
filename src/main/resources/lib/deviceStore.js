@@ -108,7 +108,43 @@ function poll(idProviderName, deviceCode, intervalSeconds) {
     return result;
 }
 
+/**
+ * Stores a one-time authorization code (RFC 8252 loopback flow) with its PKCE challenge and the
+ * approved principal. Keyed separately from device codes in the same map.
+ */
+function createAuthCode(idProviderName, params) {
+    getMap(idProviderName).set({
+        key: `ac:${params.code}`,
+        value: {
+            challenge: params.challenge,
+            redirectUri: params.redirectUri,
+            sub: params.sub,
+            clientId: params.clientId || '',
+            scope: params.scope || '',
+            audience: params.audience || '',
+        },
+        ttlSeconds: params.ttlSeconds,
+    });
+}
+
+/**
+ * Atomically reads and removes an authorization code (single use). Returns the record or null.
+ */
+function consumeAuthCode(idProviderName, code) {
+    let record = null;
+    getMap(idProviderName).modify({
+        key: `ac:${code}`,
+        func: function (value) {
+            record = value || null;
+            return null; // always remove
+        }
+    });
+    return record;
+}
+
 exports.createPending = createPending;
 exports.findByUserCode = findByUserCode;
 exports.resolve = resolve;
 exports.poll = poll;
+exports.createAuthCode = createAuthCode;
+exports.consumeAuthCode = consumeAuthCode;

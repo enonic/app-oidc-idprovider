@@ -2,9 +2,15 @@ const authLib = require('/lib/xp/auth');
 const configLib = require('/lib/config');
 const store = require('/lib/deviceStore');
 const deviceToken = require('/lib/deviceToken');
+const oidcLib = require('/lib/oidc');
 
 const DEVICE_CODE_GRANT = 'urn:ietf:params:oauth:grant-type:device_code';
+const AUTH_CODE_GRANT = 'authorization_code';
+const AUTH_CODE_TTL_SECONDS = 120;
 const HANDLER_BEAN = 'com.enonic.app.oidcidprovider.handler.DeviceTokenHandler';
+
+// RFC 8252 loopback redirect: http with a loopback host and any port/path.
+const LOOPBACK_REDIRECT_PATTERN = /^http:\/\/(127\.0\.0\.1|\[::1\]|localhost)(:\d+)?(\/.*)?$/;
 
 // ---------------------------------------------------------------------------
 // Enablement
@@ -92,18 +98,12 @@ function deviceAuthorization(req) {
     const deviceCode = handler.generateDeviceCode();
     const userCode = handler.generateUserCode();
 
-    let audience = dl.allowedAudience.join(' ');
-    const requestedResource = req.params.resource;
-    if (requestedResource && (dl.allowedAudience.length === 0 || dl.allowedAudience.indexOf(requestedResource) !== -1)) {
-        audience = requestedResource;
-    }
-
     store.createPending(config._idProviderName, {
         deviceCode: deviceCode,
         userCode: userCode,
         clientId: req.params.client_id,
         scope: req.params.scope,
-        audience: audience,
+        audience: resolveAudience(dl, req.params.resource),
         ttlSeconds: dl.codeExpiresIn,
     });
 
@@ -118,17 +118,25 @@ function deviceAuthorization(req) {
     });
 }
 
-// POST .../token  (RFC 8628 / RFC 6749 token endpoint, device_code grant)
+// POST .../token  (RFC 6749 token endpoint: device_code and authorization_code grants)
 function tokenEndpoint(req) {
     const config = configLib.getIdProviderConfig();
     if (!isEnabled(config)) {
         return {status: 404};
     }
 
-    if (req.params.grant_type !== DEVICE_CODE_GRANT) {
+    switch (req.params.grant_type) {
+    case DEVICE_CODE_GRANT:
+        return deviceCodeGrant(req, config);
+    case AUTH_CODE_GRANT:
+        return authorizationCodeGrant(req, config);
+    default:
         return oauthError(400, 'unsupported_grant_type');
     }
+}
 
+// RFC 8628 device_code grant (polling).
+function deviceCodeGrant(req, config) {
     const deviceCode = req.params.device_code;
     if (!deviceCode) {
         return oauthError(400, 'invalid_request', 'Missing device_code');
@@ -144,29 +152,104 @@ function tokenEndpoint(req) {
         return oauthError(400, 'slow_down');
     case 'denied':
         return oauthError(400, 'access_denied');
-    case 'approved': {
-        const record = result.record;
-        const token = deviceToken.mint(config, {
-            subject: record.sub,
-            audience: record.audience,
-            clientId: record.clientId,
-            scope: record.scope,
-            expiresInSeconds: dl.tokenExpiresIn,
-        });
-        const body = {
-            access_token: token,
-            token_type: 'Bearer',
-            expires_in: dl.tokenExpiresIn,
-        };
-        if (record.scope) {
-            body.scope = record.scope;
-        }
-        return json(200, body);
-    }
+    case 'approved':
+        return tokenResponse(config, result.record);
     case 'expired':
     default:
         return oauthError(400, 'expired_token');
     }
+}
+
+// RFC 6749 / RFC 8252 authorization_code grant (loopback redirect) with mandatory PKCE.
+function authorizationCodeGrant(req, config) {
+    const code = req.params.code;
+    const redirectUri = req.params.redirect_uri;
+    const codeVerifier = req.params.code_verifier;
+    if (!code || !redirectUri || !codeVerifier) {
+        return oauthError(400, 'invalid_request', 'Missing code, redirect_uri or code_verifier');
+    }
+
+    const record = store.consumeAuthCode(config._idProviderName, code);
+    if (!record) {
+        return oauthError(400, 'invalid_grant', 'Invalid or expired code');
+    }
+    if (record.redirectUri !== redirectUri) {
+        return oauthError(400, 'invalid_grant', 'redirect_uri mismatch');
+    }
+    if (oidcLib.generateChallenge(codeVerifier) !== record.challenge) {
+        return oauthError(400, 'invalid_grant', 'PKCE verification failed');
+    }
+
+    return tokenResponse(config, record);
+}
+
+function tokenResponse(config, record) {
+    const dl = config.deviceLogin;
+    const token = deviceToken.mint(config, {
+        subject: record.sub,
+        audience: record.audience,
+        clientId: record.clientId,
+        scope: record.scope,
+        expiresInSeconds: dl.tokenExpiresIn,
+    });
+    const body = {
+        access_token: token,
+        token_type: 'Bearer',
+        expires_in: dl.tokenExpiresIn,
+    };
+    if (record.scope) {
+        body.scope = record.scope;
+    }
+    return json(200, body);
+}
+
+// GET .../authorize  (RFC 8252 loopback authorization endpoint, PKCE required)
+function authorizeEndpoint(req) {
+    const config = configLib.getIdProviderConfig();
+    if (!isEnabled(config)) {
+        return {status: 404};
+    }
+
+    const redirectUri = req.params.redirect_uri;
+    // An invalid redirect target must not be redirected to (open-redirect / code-leak guard).
+    if (!redirectUri || !LOOPBACK_REDIRECT_PATTERN.test(redirectUri)) {
+        return oauthError(400, 'invalid_request', 'redirect_uri must be a loopback address');
+    }
+    if (!req.params.code_challenge || req.params.code_challenge_method !== 'S256') {
+        return oauthError(400, 'invalid_request', 'code_challenge with S256 is required');
+    }
+
+    const user = authLib.getUser();
+    if (!user) {
+        // Trigger interactive login (handle401 -> authorization endpoint); the user returns here.
+        return {status: 401};
+    }
+
+    const dl = config.deviceLogin;
+    const code = __.newBean(HANDLER_BEAN).generateDeviceCode();
+    store.createAuthCode(config._idProviderName, {
+        code: code,
+        challenge: req.params.code_challenge,
+        redirectUri: redirectUri,
+        sub: user.key,
+        clientId: req.params.client_id,
+        scope: req.params.scope,
+        audience: resolveAudience(dl, req.params.resource),
+        ttlSeconds: AUTH_CODE_TTL_SECONDS,
+    });
+
+    let location = redirectUri + (redirectUri.indexOf('?') >= 0 ? '&' : '?') + 'code=' + encodeURIComponent(code);
+    if (req.params.state) {
+        location += '&state=' + encodeURIComponent(req.params.state);
+    }
+    return {redirect: location};
+}
+
+function resolveAudience(dl, requestedResource) {
+    if (requestedResource && (dl.allowedAudience.length === 0 || dl.allowedAudience.indexOf(requestedResource) !== -1)) {
+        return requestedResource;
+    }
+    return dl.allowedAudience.join(' ');
 }
 
 // GET .../device  (human verification page = verification_uri)
@@ -269,10 +352,14 @@ function handlePost(req) {
 
 // Routes a GET. Returns null if the path is not a device-login endpoint.
 function handleGet(req) {
-    if (endpointSubPath(req) === '/device') {
+    switch (endpointSubPath(req)) {
+    case '/device':
         return verificationPage(req);
+    case '/authorize':
+        return authorizeEndpoint(req);
+    default:
+        return null;
     }
-    return null;
 }
 
 // Verifies a self-issued bearer token and logs the principal in. Used by autoLogin.
