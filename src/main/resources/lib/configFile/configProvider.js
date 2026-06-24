@@ -59,9 +59,6 @@ exports.getIdProviderConfig = function (idProviderName) {
             allowedAudience: parseStringArray(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.allowedAudience`]),
             applyGroups: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.applyGroups`] === 'true' || false,
         },
-        accessToken: parseAccessToken(rawIdProviderConfig, idProviderKeyBase, idProviderName),
-        device: parseDeviceFlow(rawIdProviderConfig, idProviderKeyBase),
-        native: parseNativeFlow(rawIdProviderConfig, idProviderKeyBase),
         groups: parseGroups(rawIdProviderConfig, idProviderKeyBase, idProviderName),
         userEventPrefix: rawIdProviderConfig[`${idProviderKeyBase}.userEventPrefix`] || app.name,
         userEventMode: rawIdProviderConfig[`${idProviderKeyBase}.userEventMode`] || 'local',
@@ -126,34 +123,8 @@ function takeConfigurationFromWellKnownEndpoint(config) {
     }
 }
 
-// Shared self-issued access token config (used by both the device and native flows).
-// With Plan B in place, signing keys are managed by XP core (the managed keyring + rotation), so
-// there is no signing secret or kid here - only the token shape (issuer, audience, lifetime).
-// Which id providers may issue tokens, on which vhost, is decided by the core per-vhost flow gating.
-function parseAccessToken(rawConfig, idProviderKeyBase, idProviderName) {
-    return {
-        issuer: rawConfig[`${idProviderKeyBase}.accessToken.issuer`] || `${app.name}:${idProviderName}`,
-        audience: parseStringArray(rawConfig[`${idProviderKeyBase}.accessToken.audience`]),
-        expiresIn: parseLong(rawConfig[`${idProviderKeyBase}.accessToken.expiresIn`], 3600),
-    };
-}
-
-// Device Authorization Grant (RFC 8628) flow parameters.
-function parseDeviceFlow(rawConfig, idProviderKeyBase) {
-    return {
-        codeExpiresIn: parseLong(rawConfig[`${idProviderKeyBase}.device.codeExpiresIn`], 600),
-        pollInterval: parseLong(rawConfig[`${idProviderKeyBase}.device.pollInterval`], 5),
-    };
-}
-
-// Native-app (RFC 8252) flow parameters. Loopback redirects are always allowed and need not be
-// listed; private-use-scheme and claimed-https redirects must be registered in allowedRedirectUris.
-function parseNativeFlow(rawConfig, idProviderKeyBase) {
-    return {
-        codeExpiresIn: parseLong(rawConfig[`${idProviderKeyBase}.native.codeExpiresIn`], 120),
-        allowedRedirectUris: parseStringArray(rawConfig[`${idProviderKeyBase}.native.allowedRedirectUris`]),
-    };
-}
+// Note: device/native login (token shape, code lifetimes, redirect rules) is configured in XP core
+// now, not here - this app only renders the approval page via the predefined `approval` hook.
 
 function validate(config, idProviderName) {
     checkConfig(config, 'issuer', idProviderName);

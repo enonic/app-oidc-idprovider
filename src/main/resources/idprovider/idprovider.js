@@ -6,7 +6,7 @@ const preconditions = require('/lib/preconditions');
 const authLib = require('/lib/xp/auth');
 const portalLib = require('/lib/xp/portal');
 const jwtLib = require('/lib/jwt');
-const deviceLogin = require('/lib/deviceLogin');
+const approvalLib = require('/lib/approval');
 
 function redirectToAuthorizationEndpoint() {
     const idProviderConfig = configLib.getIdProviderConfig();
@@ -202,19 +202,13 @@ function generateRedirectUrl() {
 
 exports.handle401 = redirectToAuthorizationEndpoint;
 
-exports.GET = function (req) {
-    // Device-login GET endpoints (verification page) are served from a dedicated
-    // module; the base path remains the OAuth authentication-response callback.
-    const deviceResponse = deviceLogin.handleGet(req);
-    if (deviceResponse) {
-        return deviceResponse;
-    }
-    return handleAuthenticationResponse(req);
-};
+exports.GET = handleAuthenticationResponse;
 
-exports.POST = function (req) {
-    // Device-login POST endpoints (RFC 8628 device authorization, token, approval).
-    return deviceLogin.handlePost(req) || {status: 404};
+// Predefined device/native login approval hook. XP core owns the endpoints, the OAuth protocol and
+// the per-vhost flow gating; it calls this with the request and a context object (second argument)
+// for the one id-provider-specific step - rendering the human approval / consent page.
+exports.approval = function (req, context) {
+    return approvalLib.render(context);
 };
 
 exports.logout = logout;
