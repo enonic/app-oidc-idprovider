@@ -218,9 +218,9 @@ exports.authorizeConsent = function (req) {
     return deviceLoginUi.renderConsent(req.attributes);
 };
 
-// Redirect policy hook: core allows loopback and private-use-scheme redirects on its own and asks
-// this only for other redirects (e.g. claimed https). Registration is this id provider's concern -
-// here, an exact match against the configured native.allowedRedirectUris.
+// Redirect policy hook: core allows only loopback on its own and asks this for everything else
+// (private-use schemes and claimed https). Registration is this id provider's concern - here, an
+// exact match against the configured native.allowedRedirectUris (so list any private-use schemes too).
 exports.allowRedirectUri = function (req) {
     const config = configLib.getIdProviderConfig();
     const allowed = (config.native && config.native.allowedRedirectUris) || [];
