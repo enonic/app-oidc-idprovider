@@ -218,13 +218,30 @@ exports.authorizeConsent = function (req) {
     return deviceLoginUi.renderConsent(req.attributes);
 };
 
-// Redirect policy hook: core allows only loopback on its own and asks this for everything else
-// (private-use schemes and claimed https). Registration is this id provider's concern - here, an
-// exact match against the configured native.allowedRedirectUris (so list any private-use schemes too).
+// Redirect policy hook. When this id provider implements it, XP core hands over redirect validation
+// entirely (loopback included): return nothing to allow the redirect, or a PortalResponse to reject
+// it. (If this hook were absent, core would fall back to allowing only loopback.) Here a redirect is
+// allowed if it is loopback or an exact match against the configured native.allowedRedirectUris (so
+// list any private-use schemes / claimed https there).
+const LOOPBACK_REDIRECT = /^http:\/\/(127\.0\.0\.1|\[::1\]|localhost)(:\d+)?(\/.*)?$/;
+
 exports.allowRedirectUri = function (req) {
+    const redirectUri = req.params.redirect_uri;
     const config = configLib.getIdProviderConfig();
     const allowed = (config.native && config.native.allowedRedirectUris) || [];
-    return allowed.indexOf(req.params.redirect_uri) !== -1;
+
+    if (LOOPBACK_REDIRECT.test(redirectUri) || allowed.indexOf(redirectUri) !== -1) {
+        return; // allowed - let the flow continue
+    }
+
+    return {
+        status: 400,
+        contentType: 'application/json',
+        body: {
+            error: 'invalid_request',
+            error_description: 'redirect_uri is not allowed'
+        }
+    };
 };
 
 exports.logout = logout;
