@@ -1,12 +1,14 @@
 const authLib = require('/lib/xp/auth');
 const configLib = require('/lib/config');
 const store = require('/lib/deviceStore');
-const deviceToken = require('/lib/deviceToken');
 const oidcLib = require('/lib/oidc');
 
 const DEVICE_CODE_GRANT = 'urn:ietf:params:oauth:grant-type:device_code';
 const AUTH_CODE_GRANT = 'authorization_code';
-const HANDLER_BEAN = 'com.enonic.app.oidcidprovider.handler.DeviceTokenHandler';
+
+const ACCESS_TOKEN_BEAN = 'com.enonic.app.oidcidprovider.handler.AccessTokenHandler';
+const DEVICE_AUTH_BEAN = 'com.enonic.app.oidcidprovider.handler.DeviceAuthHandler';
+const VHOST_BEAN = 'com.enonic.app.oidcidprovider.handler.VirtualHostFlowHandler';
 
 // RFC 8252 native-app redirects come in three kinds: loopback IP, private-use URI scheme, and
 // claimed HTTPS. Loopback (any port) needs no registration and is always allowed; private-use-scheme
@@ -18,11 +20,12 @@ const LOOPBACK_REDIRECT_PATTERN = /^http:\/\/(127\.0\.0\.1|\[::1\]|localhost)(:\
 // Enablement
 // ---------------------------------------------------------------------------
 
-// Device login is enabled for this id provider when a signing secret is configured.
-// Per-vhost flow gating (which flows are allowed on which vhost) is an XP-core
-// concern and is enforced there, not in this app.
-function isEnabled(config) {
-    return !!(config.accessToken && config.accessToken.secret);
+// With Plan B in place, which flows an id provider exposes is decided per virtual host by XP core
+// (the vhost mapping value, e.g. 'enabled=login,autologin,device'). The issuance endpoints below
+// are served only when their flow is enabled here. Token *acceptance* (autologin) and interactive
+// login gating are enforced by core, not by this app.
+function flowEnabled(config, flow) {
+    return __.newBean(VHOST_BEAN).isFlowEnabled(config._idProviderName, flow);
 }
 
 // ---------------------------------------------------------------------------
@@ -91,60 +94,62 @@ function escapeHtml(value) {
 // POST .../device/code  (RFC 8628 device authorization endpoint)
 function deviceAuthorization(req) {
     const config = configLib.getIdProviderConfig();
-    if (!isEnabled(config)) {
+    if (!flowEnabled(config, 'device')) {
         return {status: 404};
     }
 
     const device = config.device;
-    const handler = __.newBean(HANDLER_BEAN);
-    const deviceCode = handler.generateDeviceCode();
-    const userCode = handler.generateUserCode();
-
-    store.createPending(config._idProviderName, {
-        deviceCode: deviceCode,
-        userCode: userCode,
-        clientId: req.params.client_id,
-        scope: req.params.scope,
-        audience: resolveAudience(config.accessToken, req.params.resource),
-        ttlSeconds: device.codeExpiresIn,
-    });
+    // The device-code / user-code pair and the cluster-shared pending state are created and owned
+    // by XP core (DeviceAuthService).
+    const auth = __.newBean(DEVICE_AUTH_BEAN).start(
+        config._idProviderName,
+        req.params.client_id || '',
+        req.params.scope || '',
+        resolveAudience(config.accessToken, req.params.resource),
+        device.codeExpiresIn,
+        device.pollInterval
+    );
 
     const verificationUri = baseUrl(req) + '/device';
     return json(200, {
-        device_code: deviceCode,
-        user_code: userCode,
+        device_code: auth.deviceCode,
+        user_code: auth.userCode,
         verification_uri: verificationUri,
-        verification_uri_complete: verificationUri + '?user_code=' + encodeURIComponent(userCode),
-        expires_in: device.codeExpiresIn,
-        interval: device.pollInterval,
+        verification_uri_complete: verificationUri + '?user_code=' + encodeURIComponent(auth.userCode),
+        expires_in: auth.expiresIn,
+        interval: auth.interval,
     });
 }
 
 // POST .../token  (RFC 6749 token endpoint: device_code and authorization_code grants)
 function tokenEndpoint(req) {
     const config = configLib.getIdProviderConfig();
-    if (!isEnabled(config)) {
-        return {status: 404};
-    }
 
     switch (req.params.grant_type) {
     case DEVICE_CODE_GRANT:
+        if (!flowEnabled(config, 'device')) {
+            return {status: 404};
+        }
         return deviceCodeGrant(req, config);
     case AUTH_CODE_GRANT:
+        if (!flowEnabled(config, 'native')) {
+            return {status: 404};
+        }
         return authorizationCodeGrant(req, config);
     default:
         return oauthError(400, 'unsupported_grant_type');
     }
 }
 
-// RFC 8628 device_code grant (polling).
+// RFC 8628 device_code grant (polling). The poll - including the minimum-interval (slow_down) and
+// single-use semantics - is enforced by core.
 function deviceCodeGrant(req, config) {
     const deviceCode = req.params.device_code;
     if (!deviceCode) {
         return oauthError(400, 'invalid_request', 'Missing device_code');
     }
 
-    const result = store.poll(config._idProviderName, deviceCode, config.device.pollInterval);
+    const result = __.newBean(DEVICE_AUTH_BEAN).poll(config._idProviderName, deviceCode);
 
     switch (result.state) {
     case 'pending':
@@ -154,14 +159,14 @@ function deviceCodeGrant(req, config) {
     case 'denied':
         return oauthError(400, 'access_denied');
     case 'approved':
-        return tokenResponse(config, result.record);
+        return tokenResponse(config, result);
     case 'expired':
     default:
         return oauthError(400, 'expired_token');
     }
 }
 
-// RFC 6749 / RFC 8252 authorization_code grant (loopback redirect) with mandatory PKCE.
+// RFC 6749 / RFC 8252 authorization_code grant (native-app redirect) with mandatory PKCE.
 function authorizationCodeGrant(req, config) {
     const code = req.params.code;
     const redirectUri = req.params.redirect_uri;
@@ -184,15 +189,17 @@ function authorizationCodeGrant(req, config) {
     return tokenResponse(config, record);
 }
 
+// Mints the access token via XP core (AccessTokenService) and shapes the RFC 6749 token response.
 function tokenResponse(config, record) {
     const expiresIn = config.accessToken.expiresIn;
-    const token = deviceToken.mint(config, {
-        subject: record.sub,
-        audience: record.audience,
-        clientId: record.clientId,
-        scope: record.scope,
-        expiresInSeconds: expiresIn,
-    });
+    const token = __.newBean(ACCESS_TOKEN_BEAN).issue(
+        record.sub,
+        config.accessToken.issuer,
+        record.audience || '',
+        record.clientId || '',
+        record.scope || '',
+        expiresIn
+    );
     const body = {
         access_token: token,
         token_type: 'Bearer',
@@ -207,7 +214,7 @@ function tokenResponse(config, record) {
 // GET .../authorize  (RFC 8252 native-app authorization endpoint, PKCE required)
 function authorizeEndpoint(req) {
     const config = configLib.getIdProviderConfig();
-    if (!isEnabled(config)) {
+    if (!flowEnabled(config, 'native')) {
         return {status: 404};
     }
 
@@ -226,7 +233,8 @@ function authorizeEndpoint(req) {
         return {status: 401};
     }
 
-    const code = __.newBean(HANDLER_BEAN).generateDeviceCode();
+    // The authorization-code grant is not (yet) owned by core, so its one-time code is kept by the app.
+    const code = oidcLib.generateToken();
     store.createAuthCode(config._idProviderName, {
         code: code,
         challenge: req.params.code_challenge,
@@ -265,7 +273,7 @@ function isAllowedRedirectUri(redirectUri, nativeConfig) {
 // GET .../device  (human verification page = verification_uri)
 function verificationPage(req) {
     const config = configLib.getIdProviderConfig();
-    if (!isEnabled(config)) {
+    if (!flowEnabled(config, 'device')) {
         return {status: 404};
     }
 
@@ -281,11 +289,11 @@ function verificationPage(req) {
         return htmlPage('Device sign-in', enterCodeForm(''));
     }
 
-    const found = store.findByUserCode(config._idProviderName, userCode.toUpperCase());
-    if (!found || found.record.status !== 'pending') {
+    const deviceCode = __.newBean(DEVICE_AUTH_BEAN).findByUserCode(config._idProviderName, userCode.toUpperCase());
+    if (!deviceCode) {
         return htmlPage('Device sign-in', `<h1>Device sign-in</h1>` +
-                                           `<p>The code <code>${escapeHtml(userCode)}</code> is invalid or has expired.</p>` +
-                                           enterCodeForm(''));
+                                          `<p>The code <code>${escapeHtml(userCode)}</code> is invalid or has expired.</p>` +
+                                          enterCodeForm(''));
     }
 
     return htmlPage('Confirm device sign-in', confirmForm(userCode.toUpperCase(), user));
@@ -294,7 +302,7 @@ function verificationPage(req) {
 // POST .../device  (approve / deny submission)
 function verificationSubmit(req) {
     const config = configLib.getIdProviderConfig();
-    if (!isEnabled(config)) {
+    if (!flowEnabled(config, 'device')) {
         return {status: 404};
     }
 
@@ -306,13 +314,13 @@ function verificationSubmit(req) {
     const userCode = (req.params.user_code || '').toUpperCase();
     const approve = req.params.approve === 'true';
 
-    const found = store.findByUserCode(config._idProviderName, userCode);
-    if (!found || found.record.status !== 'pending') {
+    const deviceCode = __.newBean(DEVICE_AUTH_BEAN).findByUserCode(config._idProviderName, userCode);
+    if (!deviceCode) {
         return htmlPage('Device sign-in', `<h1>Device sign-in</h1><p>This code is invalid or has expired.</p>`);
     }
 
     // The subject is the full principal key (user:<idprovider>:<name>); it identifies the id provider.
-    store.resolve(config._idProviderName, found.deviceCode, approve, {sub: user.key}, config.device.codeExpiresIn);
+    __.newBean(DEVICE_AUTH_BEAN).resolve(config._idProviderName, deviceCode, approve, approve ? user.key : null);
 
     const message = approve
         ? `<h1>You're all set</h1><p>The device has been approved. You can return to your application.</p>`
@@ -372,34 +380,5 @@ function handleGet(req) {
     }
 }
 
-// Verifies a self-issued bearer token and logs the principal in. Used by autoLogin.
-function accept(token, config) {
-    if (!isEnabled(config)) {
-        return false;
-    }
-
-    const payload = deviceToken.verify(config, token, config.accessToken.audience);
-    if (!payload || !payload.sub) {
-        return false;
-    }
-
-    // sub is the full principal key: user:<idprovider>:<name>
-    const parts = payload.sub.split(':');
-    if (parts.length < 3 || parts[0] !== 'user') {
-        return false;
-    }
-
-    const result = authLib.login({
-        user: parts.slice(2).join(':'),
-        idProvider: parts[1],
-        skipAuth: true,
-        scope: config.accessToken.createSession ? 'SESSION' : 'REQUEST',
-    });
-
-    return !!(result && result.authenticated);
-}
-
 exports.handlePost = handlePost;
 exports.handleGet = handleGet;
-exports.accept = accept;
-exports.isSelfIssued = deviceToken.isSelfIssued;

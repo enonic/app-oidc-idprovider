@@ -222,28 +222,16 @@ exports.logout = logout;
 exports.autoLogin = function (req) {
     const idProviderConfig = configLib.getIdProviderConfig();
 
-    const deviceConfigured = !!(idProviderConfig.accessToken && idProviderConfig.accessToken.secret);
-    if (!idProviderConfig.jwksUri && !deviceConfigured) {
+    // Self-issued device/native access tokens are verified and accepted by XP core (the
+    // access-token authenticator, gated on the 'autologin' flow). This app therefore only handles
+    // the external-IdP JWKS bearer path here.
+    if (!idProviderConfig.jwksUri) {
         return;
     }
 
     const jwtToken = extractJwtToken(req, idProviderConfig);
 
     if (!jwtToken) {
-        requestLib.autoLoginFailed();
-        return;
-    }
-
-    // Self-issued device-login token: verified and accepted by this id provider,
-    // independently of the external JWKS path.
-    if (deviceLogin.isSelfIssued(idProviderConfig, jwtToken)) {
-        if (!deviceLogin.accept(jwtToken, idProviderConfig)) {
-            requestLib.autoLoginFailed();
-        }
-        return;
-    }
-
-    if (!idProviderConfig.jwksUri) {
         requestLib.autoLoginFailed();
         return;
     }

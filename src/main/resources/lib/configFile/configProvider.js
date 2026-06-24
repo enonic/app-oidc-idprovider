@@ -127,16 +127,14 @@ function takeConfigurationFromWellKnownEndpoint(config) {
 }
 
 // Shared self-issued access token config (used by both the device and native flows).
-// Presence of the signing secret enables token issuance for this id provider; 'kid' and 'issuer'
-// are the resolveKey()/issuer seam that maps onto the XP-core managed keyring later.
+// With Plan B in place, signing keys are managed by XP core (the managed keyring + rotation), so
+// there is no signing secret or kid here - only the token shape (issuer, audience, lifetime).
+// Which id providers may issue tokens, on which vhost, is decided by the core per-vhost flow gating.
 function parseAccessToken(rawConfig, idProviderKeyBase, idProviderName) {
     return {
-        secret: rawConfig[`${idProviderKeyBase}.accessToken.secret`] || null,
-        kid: rawConfig[`${idProviderKeyBase}.accessToken.kid`] || `${idProviderName}-hs512`,
         issuer: rawConfig[`${idProviderKeyBase}.accessToken.issuer`] || `${app.name}:${idProviderName}`,
         audience: parseStringArray(rawConfig[`${idProviderKeyBase}.accessToken.audience`]),
         expiresIn: parseLong(rawConfig[`${idProviderKeyBase}.accessToken.expiresIn`], 3600),
-        createSession: rawConfig[`${idProviderKeyBase}.accessToken.createSession`] === 'true' || false,
     };
 }
 
@@ -161,10 +159,6 @@ function validate(config, idProviderName) {
     checkConfig(config, 'issuer', idProviderName);
     checkConfig(config, 'authorizationUrl', idProviderName);
     checkConfig(config, 'tokenUrl', idProviderName);
-
-    if (config.accessToken.secret != null && config.accessToken.secret.length < 32) {
-        throw `Access token signing secret for '${idProviderName}' ID Provider must be at least 32 characters`;
-    }
 
     if (config.clientId != null) {
         checkConfig(config, 'clientSecret', idProviderName);
