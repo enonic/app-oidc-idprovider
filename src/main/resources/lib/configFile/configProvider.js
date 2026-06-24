@@ -4,6 +4,7 @@ const wellKnownService = require('/lib/configFile/wellKnownService');
 const END_SESSION_ADDITIONAL_PARAMETERS_PATTERN = '^idprovider\.[a-zA-Z0-9_-]+\.endSession\.additionalParameters\.(\\d+)\.(key|value)$';
 const ADDITIONAL_ENDPOINTS = "^idprovider\.[a-zA-Z0-9_-]+\.additionalEndpoints\.(\\d+)\.(name|url)$";
 const GROUPS_MAPPING_PATTERN = '^idprovider\.[a-zA-Z0-9_-]+\.groups\.mapping\.(\\d+)\.(value|group)$';
+const NATIVE_CLIENTS_PATTERN = '^idprovider\.[a-zA-Z0-9_-]+\.native\.clients\.(\\d+)\.(clientId|redirectUris)$';
 
 const parseStringArray = value => value ? value.split(' ').filter(v => !!v) : [];
 const firstAtsToDollar = value => value ? value.replace(/@@\{/g, '${') : value;
@@ -60,10 +61,11 @@ exports.getIdProviderConfig = function (idProviderName) {
             applyGroups: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.applyGroups`] === 'true' || false,
         },
         native: {
-            // Claimed-https (and other non-loopback) redirect URIs registered for the native flow.
-            // Core allows loopback and private-use schemes on its own; it asks the allowRedirectUri
-            // hook (which checks this list) only for the rest.
-            allowedRedirectUris: parseStringArray(rawIdProviderConfig[`${idProviderKeyBase}.native.allowedRedirectUris`]),
+            // Per-client redirect-URI registry for the native flow (RFC 8252). Each client (matched
+            // by client_id) registers its own redirect URIs; the allowRedirectUri hook only accepts a
+            // redirect_uri that is registered for the request's client_id. Loopback URIs must be
+            // registered too, but are matched ignoring the (ephemeral) port.
+            clients: parseNativeClients(rawIdProviderConfig, idProviderKeyBase),
         },
         groups: parseGroups(rawIdProviderConfig, idProviderKeyBase, idProviderName),
         userEventPrefix: rawIdProviderConfig[`${idProviderKeyBase}.userEventPrefix`] || app.name,
@@ -129,9 +131,22 @@ function takeConfigurationFromWellKnownEndpoint(config) {
     }
 }
 
-// Note: device/native login (token shape, code lifetimes, loopback/private-use redirect rules) is
-// owned by XP core now. The app keeps only native.allowedRedirectUris (consulted by the
+// Note: device/native login (token shape, code lifetimes, the OAuth protocol) is owned by XP core
+// now. The app keeps only the per-client native redirect registry (native.clients, consulted by the
 // allowRedirectUri hook) and renders the UI via the deviceVerification / authorizeConsent hooks.
+
+// Parses the per-client native redirect registry:
+//   idprovider.<name>.native.clients.0.clientId     = my-native-app
+//   idprovider.<name>.native.clients.0.redirectUris = com.example.app:/oauth http://127.0.0.1/cb
+// Entries without a clientId are ignored.
+function parseNativeClients(rawConfig, idProviderKeyBase) {
+    return extractPropertiesToArray(rawConfig, `${idProviderKeyBase}.native.clients.`, NATIVE_CLIENTS_PATTERN)
+        .filter(entry => entry && entry.clientId)
+        .map(entry => ({
+            clientId: entry.clientId,
+            redirectUris: parseStringArray(entry.redirectUris),
+        }));
+}
 
 function validate(config, idProviderName) {
     checkConfig(config, 'issuer', idProviderName);
