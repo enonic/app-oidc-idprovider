@@ -59,6 +59,12 @@ exports.getIdProviderConfig = function (idProviderName) {
             allowedAudience: parseStringArray(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.allowedAudience`]),
             applyGroups: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.applyGroups`] === 'true' || false,
         },
+        native: {
+            // Claimed-https (and other non-loopback) redirect URIs registered for the native flow.
+            // Core allows loopback and private-use schemes on its own; it asks the allowRedirectUri
+            // hook (which checks this list) only for the rest.
+            allowedRedirectUris: parseStringArray(rawIdProviderConfig[`${idProviderKeyBase}.native.allowedRedirectUris`]),
+        },
         groups: parseGroups(rawIdProviderConfig, idProviderKeyBase, idProviderName),
         userEventPrefix: rawIdProviderConfig[`${idProviderKeyBase}.userEventPrefix`] || app.name,
         userEventMode: rawIdProviderConfig[`${idProviderKeyBase}.userEventMode`] || 'local',
@@ -123,8 +129,9 @@ function takeConfigurationFromWellKnownEndpoint(config) {
     }
 }
 
-// Note: device/native login (token shape, code lifetimes, redirect rules) is configured in XP core
-// now, not here - this app only renders the approval page via the predefined `approval` hook.
+// Note: device/native login (token shape, code lifetimes, loopback/private-use redirect rules) is
+// owned by XP core now. The app keeps only native.allowedRedirectUris (consulted by the
+// allowRedirectUri hook) and renders the UI via the deviceVerification / authorizeConsent hooks.
 
 function validate(config, idProviderName) {
     checkConfig(config, 'issuer', idProviderName);

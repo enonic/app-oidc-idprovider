@@ -1,34 +1,33 @@
 /**
- * The id provider's only device/native login responsibility, in the Plan B model: rendering the
- * human-facing approval / consent page.
+ * The id provider's device/native login UI, in the Plan B model: rendering the human-facing pages.
  *
  * XP core owns the endpoints, the OAuth protocol, the device-code lifecycle, token issuance,
- * PKCE / redirect validation and the per-vhost flow gating. It calls this predefined `approval`
- * hook (the same way it calls `autoLogin`) for the one inherently id-provider-specific step,
- * passing a context object as the second argument. The hook only renders HTML; it never routes,
- * issues tokens, or reads flow config.
+ * PKCE / redirect validation and the per-vhost flow gating. It calls the predefined hooks (the same
+ * way it calls `autoLogin`), passing a context object as the second argument. These functions only
+ * render HTML; they never route, issue tokens, or read flow config.
  *
- * Context fields (provided by core):
- *   flow            'device' | 'native'
- *   status          'need_code' | 'confirm' | 'invalid' | 'approved' | 'denied' | 'consent'
- *   actionUrl       where the form must POST back (core processes the decision)
- *   userDisplayName the signed-in user (already authenticated by the interactive login)
- *   userCode        (device) the code being confirmed
- *   redirect_uri, code_challenge, code_challenge_method, scope, state, client_id, resource
- *                   (native consent) echoed back as hidden fields so the POST carries the request
+ *   deviceVerification -> renderDeviceVerification(context)
+ *     status          'need_code' | 'confirm' | 'invalid' | 'approved' | 'denied'
+ *     actionUrl       where the form must POST back (core processes the decision)
+ *     userDisplayName the signed-in user (already authenticated by the interactive login)
+ *     userCode        the code being confirmed
+ *
+ *   authorizeConsent -> renderConsent(context)
+ *     actionUrl       where the consent form must POST back
+ *     userDisplayName the signed-in user
+ *     redirect_uri, code_challenge, code_challenge_method, scope, state, client_id, resource
+ *                     echoed back as hidden fields so the POST carries the original request
  */
 
 const ECHOED_NATIVE_PARAMS =
     ['redirect_uri', 'code_challenge', 'code_challenge_method', 'scope', 'state', 'client_id', 'resource'];
 
-function render(context) {
+function renderDeviceVerification(context) {
     switch (context.status) {
     case 'need_code':
         return page('Device sign-in', enterCodeForm(context.actionUrl));
     case 'confirm':
         return page('Confirm device sign-in', confirmForm(context));
-    case 'consent':
-        return page('Authorize application', consentForm(context));
     case 'approved':
         return page('You’re all set',
             `<h1>You’re all set</h1><p>The device has been approved. You can return to your application.</p>`);
@@ -38,6 +37,10 @@ function render(context) {
     default:
         return page('Device sign-in', `<h1>Device sign-in</h1><p>This code is invalid or has expired.</p>`);
     }
+}
+
+function renderConsent(context) {
+    return page('Authorize application', consentForm(context));
 }
 
 function enterCodeForm(actionUrl) {
@@ -105,4 +108,5 @@ function escapeAttr(value) {
     return escapeHtml(value);
 }
 
-exports.render = render;
+exports.renderDeviceVerification = renderDeviceVerification;
+exports.renderConsent = renderConsent;

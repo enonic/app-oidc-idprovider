@@ -6,7 +6,7 @@ const preconditions = require('/lib/preconditions');
 const authLib = require('/lib/xp/auth');
 const portalLib = require('/lib/xp/portal');
 const jwtLib = require('/lib/jwt');
-const approvalLib = require('/lib/approval');
+const deviceLoginUi = require('/lib/deviceLoginUi');
 
 function redirectToAuthorizationEndpoint() {
     const idProviderConfig = configLib.getIdProviderConfig();
@@ -204,11 +204,27 @@ exports.handle401 = redirectToAuthorizationEndpoint;
 
 exports.GET = handleAuthenticationResponse;
 
-// Predefined device/native login approval hook. XP core owns the endpoints, the OAuth protocol and
-// the per-vhost flow gating; it calls this with the request and a context object (second argument)
-// for the one id-provider-specific step - rendering the human approval / consent page.
-exports.approval = function (req, context) {
-    return approvalLib.render(context);
+// Predefined device/native login hooks. XP core owns the endpoints, the OAuth protocol and the
+// per-vhost flow gating; it calls these with the request and a context object (second argument)
+// for the id-provider-specific steps. The UI hooks only render HTML.
+
+// Device verification / approval page (RFC 8628).
+exports.deviceVerification = function (req, context) {
+    return deviceLoginUi.renderDeviceVerification(context);
+};
+
+// Native-app authorization consent page (RFC 8252).
+exports.authorizeConsent = function (req, context) {
+    return deviceLoginUi.renderConsent(context);
+};
+
+// Redirect policy hook: core allows loopback and private-use-scheme redirects on its own and asks
+// this only for other redirects (e.g. claimed https). Registration is this id provider's concern -
+// here, an exact match against the configured native.allowedRedirectUris.
+exports.allowRedirectUri = function (req, context) {
+    const config = configLib.getIdProviderConfig();
+    const allowed = (config.native && config.native.allowedRedirectUris) || [];
+    return allowed.indexOf(context.redirectUri) !== -1;
 };
 
 exports.logout = logout;
