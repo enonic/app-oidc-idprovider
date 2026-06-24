@@ -205,26 +205,26 @@ exports.handle401 = redirectToAuthorizationEndpoint;
 exports.GET = handleAuthenticationResponse;
 
 // Predefined device/native login hooks. XP core owns the endpoints, the OAuth protocol and the
-// per-vhost flow gating; it calls these with the request and a context object (second argument)
-// for the id-provider-specific steps. The UI hooks only render HTML.
+// per-vhost flow gating; it calls these for the id-provider-specific steps. The approval context is
+// carried on the request itself (req.attributes), so the UI hooks just render HTML from it.
 
 // Device verification / approval page (RFC 8628).
-exports.deviceVerification = function (req, context) {
-    return deviceLoginUi.renderDeviceVerification(context);
+exports.deviceVerification = function (req) {
+    return deviceLoginUi.renderDeviceVerification(req.attributes);
 };
 
 // Native-app authorization consent page (RFC 8252).
-exports.authorizeConsent = function (req, context) {
-    return deviceLoginUi.renderConsent(context);
+exports.authorizeConsent = function (req) {
+    return deviceLoginUi.renderConsent(req.attributes);
 };
 
 // Redirect policy hook: core allows loopback and private-use-scheme redirects on its own and asks
 // this only for other redirects (e.g. claimed https). Registration is this id provider's concern -
 // here, an exact match against the configured native.allowedRedirectUris.
-exports.allowRedirectUri = function (req, context) {
+exports.allowRedirectUri = function (req) {
     const config = configLib.getIdProviderConfig();
     const allowed = (config.native && config.native.allowedRedirectUris) || [];
-    return allowed.indexOf(context.redirectUri) !== -1;
+    return allowed.indexOf(req.params.redirect_uri) !== -1;
 };
 
 exports.logout = logout;
