@@ -219,11 +219,15 @@ exports.authorizeConsent = function (req) {
 };
 
 // Redirect policy hook. When this id provider implements it, XP core hands over redirect validation
-// entirely: return nothing to allow the redirect, or a PortalResponse to reject it. (If this hook
-// were absent, core would fall back to allowing only loopback.) A redirect_uri is allowed only if it
-// is registered for the request's client_id in the per-client registry (native.clients). Loopback
-// URIs (RFC 8252) must be registered too, but are matched ignoring the ephemeral port.
-const LOOPBACK_REDIRECT = /^http:\/\/(127\.0\.0\.1|\[::1\]|localhost)(:\d+)?(\/.*)?$/;
+// entirely: return nothing to allow the redirect, or a PortalResponse to reject it. A redirect_uri is
+// allowed only if it is registered for the request's client_id in the per-client registry
+// (native.clients). Registrations are matched exactly, except for the special token "(_loopback_)",
+// which grants any RFC 8252 loopback redirect for that client (so the ephemeral port and path need
+// not be listed).
+const LOOPBACK_TOKEN = '(_loopback_)';
+
+// RFC 8252 section 7.3 loopback: the literal IPs only - NOT 'localhost', which can resolve off-loopback.
+const LOOPBACK_REDIRECT = /^http:\/\/(127\.0\.0\.1|\[::1\])(:\d+)?(\/.*)?$/;
 
 exports.allowRedirectUri = function (req) {
     const redirectUri = req.params.redirect_uri;
@@ -233,7 +237,8 @@ exports.allowRedirectUri = function (req) {
     const client = config.native.clients.filter(c => c.clientId === clientId)[0];
     const registered = client ? client.redirectUris : [];
 
-    if (registered.some(uri => redirectMatches(uri, redirectUri))) {
+    const loopbackAllowed = registered.indexOf(LOOPBACK_TOKEN) !== -1 && LOOPBACK_REDIRECT.test(redirectUri);
+    if (loopbackAllowed || registered.indexOf(redirectUri) !== -1) {
         return; // registered for this client - let the flow continue
     }
 
@@ -246,20 +251,6 @@ exports.allowRedirectUri = function (req) {
         }
     };
 };
-
-// A requested redirect_uri matches a registered one if they are identical, or - for loopback - if
-// they are equal once the (ephemeral) loopback port is removed, per RFC 8252 section 7.3.
-function redirectMatches(registered, requested) {
-    if (registered === requested) {
-        return true;
-    }
-    return LOOPBACK_REDIRECT.test(registered) && LOOPBACK_REDIRECT.test(requested) &&
-           stripLoopbackPort(registered) === stripLoopbackPort(requested);
-}
-
-function stripLoopbackPort(uri) {
-    return uri.replace(/^(http:\/\/(?:127\.0\.0\.1|\[::1\]|localhost))(:\d+)?(\/.*)?$/, '$1$3');
-}
 
 exports.logout = logout;
 
