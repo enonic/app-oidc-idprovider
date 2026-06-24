@@ -221,12 +221,8 @@ exports.authorizeConsent = function (req) {
 // Redirect policy hook. When this id provider implements it, XP core hands over redirect validation
 // entirely: return nothing to allow the redirect, or a PortalResponse to reject it. A redirect_uri is
 // allowed only if it is registered for the request's client_id in the per-client registry
-// (native.clients). Registrations are matched exactly, except for the special token "(_loopback_)",
-// which grants any RFC 8252 loopback redirect for that client (so the ephemeral port and path need
-// not be listed).
-const LOOPBACK_TOKEN = '(_loopback_)';
-
-// RFC 8252 section 7.3 loopback: the literal IPs only - NOT 'localhost', which can resolve off-loopback.
+// (native.clients). Entries are matched exactly, except RFC 8252 loopback redirects, for which only
+// the port is flexible (scheme, host and path still match).
 const LOOPBACK_REDIRECT = /^http:\/\/(127\.0\.0\.1|\[::1\])(:\d+)?(\/.*)?$/;
 
 exports.allowRedirectUri = function (req) {
@@ -237,8 +233,7 @@ exports.allowRedirectUri = function (req) {
     const client = config.native.clients.filter(c => c.clientId === clientId)[0];
     const registered = client ? client.redirectUris : [];
 
-    const loopbackAllowed = registered.indexOf(LOOPBACK_TOKEN) !== -1 && LOOPBACK_REDIRECT.test(redirectUri);
-    if (loopbackAllowed || registered.indexOf(redirectUri) !== -1) {
+    if (registered.some(uri => redirectMatches(uri, redirectUri))) {
         return; // registered for this client - let the flow continue
     }
 
@@ -251,6 +246,21 @@ exports.allowRedirectUri = function (req) {
         }
     };
 };
+
+// A requested redirect_uri matches a registered one if they are identical, or - for an RFC 8252 §7.3
+// loopback redirect - if they are equal once the ephemeral port is removed. Only the port is flexible;
+// scheme, host and path must still match, as Keycloak / Spring Authorization Server / Entra do.
+function redirectMatches(registered, requested) {
+    if (registered === requested) {
+        return true;
+    }
+    return LOOPBACK_REDIRECT.test(registered) && LOOPBACK_REDIRECT.test(requested) &&
+           stripLoopbackPort(registered) === stripLoopbackPort(requested);
+}
+
+function stripLoopbackPort(uri) {
+    return uri.replace(/^(http:\/\/(?:127\.0\.0\.1|\[::1\]))(:\d+)?(\/.*)?$/, '$1$3');
+}
 
 exports.logout = logout;
 

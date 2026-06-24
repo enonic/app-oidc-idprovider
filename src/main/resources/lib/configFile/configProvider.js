@@ -64,7 +64,7 @@ exports.getIdProviderConfig = function (idProviderName) {
             // Per-client redirect-URI registry for the native flow (RFC 8252). Each client (matched
             // by client_id) registers its own redirect URIs; the allowRedirectUri hook only accepts a
             // redirect_uri registered for the request's client_id. Entries are matched exactly, except
-            // the special token "(_loopback_)", which grants any RFC 8252 loopback redirect.
+            // loopback redirects (RFC 8252 section 7.3), for which only the port is flexible.
             clients: parseNativeClients(rawIdProviderConfig, idProviderKeyBase),
         },
         groups: parseGroups(rawIdProviderConfig, idProviderKeyBase, idProviderName),
@@ -137,7 +137,7 @@ function takeConfigurationFromWellKnownEndpoint(config) {
 
 // Parses the per-client native redirect registry:
 //   idprovider.<name>.native.clients.0.clientId     = my-native-app
-//   idprovider.<name>.native.clients.0.redirectUris = (_loopback_) com.example.app:/oauth
+//   idprovider.<name>.native.clients.0.redirectUris = http://127.0.0.1/cb http://[::1]/cb com.example.app:/oauth
 // Entries without a clientId are ignored.
 function parseNativeClients(rawConfig, idProviderKeyBase) {
     return extractPropertiesToArray(rawConfig, `${idProviderKeyBase}.native.clients.`, NATIVE_CLIENTS_PATTERN)
