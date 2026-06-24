@@ -62,9 +62,8 @@ exports.getIdProviderConfig = function (idProviderName) {
         },
         native: {
             // Per-client redirect-URI registry for the native flow (RFC 8252). Each client (matched
-            // by client_id) registers its own redirect URIs; the allowRedirectUri hook only accepts a
-            // redirect_uri registered for the request's client_id. Entries are matched exactly, except
-            // loopback redirects (RFC 8252 section 7.3), for which only the port is flexible.
+            // by client_id) registers its own redirect URIs. Supplied to XP core via the configure
+            // hook; core does the matching (exact, except loopback redirects whose port is flexible).
             clients: parseNativeClients(rawIdProviderConfig, idProviderKeyBase),
         },
         groups: parseGroups(rawIdProviderConfig, idProviderKeyBase, idProviderName),
@@ -132,8 +131,8 @@ function takeConfigurationFromWellKnownEndpoint(config) {
 }
 
 // Note: device/native login (token shape, code lifetimes, the OAuth protocol) is owned by XP core
-// now. The app keeps only the per-client native redirect registry (native.clients, consulted by the
-// allowRedirectUri hook) and renders the UI via the deviceVerification / authorizeConsent hooks.
+// now. The app keeps only the per-client native redirect registry (native.clients, supplied to core
+// via the configure hook) and renders the UI via the deviceVerification / authorizeConsent hooks.
 
 // Parses the per-client native redirect registry:
 //   idprovider.<name>.native.clients.0.clientId     = my-native-app

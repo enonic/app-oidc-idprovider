@@ -218,49 +218,18 @@ exports.authorizeConsent = function (req) {
     return deviceLoginUi.renderConsent(req.attributes);
 };
 
-// Redirect policy hook. When this id provider implements it, XP core hands over redirect validation
-// entirely: return nothing to allow the redirect, or a PortalResponse to reject it. A redirect_uri is
-// allowed only if it is registered for the request's client_id in the per-client registry
-// (native.clients). Entries are matched exactly, except RFC 8252 loopback redirects, for which only
-// the port is flexible (scheme, host and path still match).
-const LOOPBACK_REDIRECT = /^http:\/\/(127\.0\.0\.1|\[::1\])(:\d+)?(\/.*)?$/;
-
-exports.allowRedirectUri = function (req) {
-    const redirectUri = req.params.redirect_uri;
-    const clientId = req.params.client_id;
-
+// Configuration pre-hook. XP core calls this to read the id-provider configuration it needs, parsed
+// here where the app owns its .cfg. Core owns the OAuth protocol and all policy logic - including
+// redirect matching; this hook only supplies data. Currently the native flow's per-client redirect
+// registry: { native: { clients: [{ clientId, redirectUris: [...] }] } }.
+exports.configure = function (req) {
     const config = configLib.getIdProviderConfig();
-    const client = config.native.clients.filter(c => c.clientId === clientId)[0];
-    const registered = client ? client.redirectUris : [];
-
-    if (registered.some(uri => redirectMatches(uri, redirectUri))) {
-        return; // registered for this client - let the flow continue
-    }
-
     return {
-        status: 400,
-        contentType: 'application/json',
-        body: {
-            error: 'invalid_request',
-            error_description: 'redirect_uri is not allowed'
-        }
+        native: {
+            clients: config.native.clients,
+        },
     };
 };
-
-// A requested redirect_uri matches a registered one if they are identical, or - for an RFC 8252 §7.3
-// loopback redirect - if they are equal once the ephemeral port is removed. Only the port is flexible;
-// scheme, host and path must still match, as Keycloak / Spring Authorization Server / Entra do.
-function redirectMatches(registered, requested) {
-    if (registered === requested) {
-        return true;
-    }
-    return LOOPBACK_REDIRECT.test(registered) && LOOPBACK_REDIRECT.test(requested) &&
-           stripLoopbackPort(registered) === stripLoopbackPort(requested);
-}
-
-function stripLoopbackPort(uri) {
-    return uri.replace(/^(http:\/\/(?:127\.0\.0\.1|\[::1\]))(:\d+)?(\/.*)?$/, '$1$3');
-}
 
 exports.logout = logout;
 
