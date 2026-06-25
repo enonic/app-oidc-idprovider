@@ -78,12 +78,7 @@ function poll(idProviderName, deviceCode, intervalSeconds) {
                 return null;
             }
 
-            const now = Date.now();
-            if (record.lastPolledAt && (now - record.lastPolledAt) < (intervalSeconds * 1000)) {
-                result = {state: 'slow_down'};
-                return withUpdates(record, {});
-            }
-
+            // A resolved request is reported immediately; the rate-limit only throttles pending polls.
             if (record.status === 'denied') {
                 result = {state: 'denied'};
                 return null;
@@ -91,6 +86,12 @@ function poll(idProviderName, deviceCode, intervalSeconds) {
             if (record.status === 'approved') {
                 result = {state: 'approved', record: record};
                 return null;
+            }
+
+            const now = Date.now();
+            if (record.lastPolledAt && (now - record.lastPolledAt) < (intervalSeconds * 1000)) {
+                result = {state: 'slow_down'};
+                return withUpdates(record, {});
             }
             result = {state: 'pending'};
             return withUpdates(record, {lastPolledAt: now});

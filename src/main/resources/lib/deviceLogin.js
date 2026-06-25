@@ -98,6 +98,17 @@ function resourceAudience(resource) {
     return Array.isArray(resource) ? resource.join(' ') : (resource || '');
 }
 
+// Repeated query/form params arrive as arrays. Collapse every param to its first value so the
+// endpoints always see scalars; `resource` is kept intact (RFC 8707 permits repeats).
+function normalizeParams(req) {
+    const src = req.params || {};
+    const out = {};
+    Object.keys(src).forEach(function (key) {
+        out[key] = key === 'resource' ? src[key] : firstParam(src[key]);
+    });
+    req.params = out;
+}
+
 // ---------------------------------------------------------------------------
 // Endpoints
 // ---------------------------------------------------------------------------
@@ -107,7 +118,7 @@ function deviceAuthorization(req) {
     const config = configLib.getIdProviderConfig();
 
     // RFC 8628 section 3.1: client_id is required for public clients.
-    const clientId = firstParam(req.params.client_id);
+    const clientId = req.params.client_id;
     if (!clientId) {
         return oauthError(400, 'invalid_request', 'Missing client_id');
     }
@@ -120,7 +131,7 @@ function deviceAuthorization(req) {
         deviceCode: deviceCode,
         userCode: userCode,
         clientId: clientId,
-        scope: firstParam(req.params.scope),
+        scope: req.params.scope,
         audience: resourceAudience(req.params.resource),
         ttlSeconds: DEVICE_CODE_EXPIRES_IN,
     });
@@ -228,7 +239,7 @@ function verificationPage(req) {
         return {status: 401};
     }
 
-    const userCode = firstParam(req.params.user_code);
+    const userCode = req.params.user_code;
     if (!userCode) {
         return htmlPage('Device sign-in', enterCodeForm(''));
     }
@@ -251,8 +262,8 @@ function verificationSubmit(req) {
         return {status: 401};
     }
 
-    const userCode = (firstParam(req.params.user_code) || '').toUpperCase();
-    const approve = firstParam(req.params.approve) === 'true';
+    const userCode = (req.params.user_code || '').toUpperCase();
+    const approve = req.params.approve === 'true';
 
     const found = store.findByUserCode(config._idProviderName, userCode);
     if (!found || found.record.status !== 'pending') {
@@ -299,10 +310,13 @@ function confirmForm(userCode, user, record) {
 function handlePost(req) {
     switch (endpointSubPath(req)) {
     case '/device/code':
+        normalizeParams(req);
         return deviceAuthorization(req);
     case '/token':
+        normalizeParams(req);
         return tokenEndpoint(req);
     case '/device':
+        normalizeParams(req);
         return verificationSubmit(req);
     default:
         return null;
@@ -311,6 +325,7 @@ function handlePost(req) {
 
 function handleGet(req) {
     if (endpointSubPath(req) === '/device') {
+        normalizeParams(req);
         return verificationPage(req);
     }
     return null;

@@ -221,12 +221,8 @@ exports.autoLogin = function (req) {
 
     const jwtToken = extractJwtToken(req, idProviderConfig);
 
-    if (!jwtToken) {
-        requestLib.autoLoginFailed();
-        return;
-    }
-
-    if (deviceLogin.isSelfIssued(idProviderConfig, jwtToken)) {
+    // Self-issued device-login token: accepted before the JWKS guard, so it works without external JWKS.
+    if (jwtToken && deviceLogin.isSelfIssued(idProviderConfig, jwtToken)) {
         if (!deviceLogin.accept(jwtToken, idProviderConfig)) {
             requestLib.autoLoginFailed();
         }
@@ -234,6 +230,10 @@ exports.autoLogin = function (req) {
     }
 
     if (!idProviderConfig.jwksUri) {
+        return;
+    }
+
+    if (!jwtToken) {
         requestLib.autoLoginFailed();
         return;
     }
