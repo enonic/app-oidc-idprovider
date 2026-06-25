@@ -4,6 +4,7 @@ const wellKnownService = require('/lib/configFile/wellKnownService');
 const END_SESSION_ADDITIONAL_PARAMETERS_PATTERN = '^idprovider\.[a-zA-Z0-9_-]+\.endSession\.additionalParameters\.(\\d+)\.(key|value)$';
 const ADDITIONAL_ENDPOINTS = "^idprovider\.[a-zA-Z0-9_-]+\.additionalEndpoints\.(\\d+)\.(name|url)$";
 const GROUPS_MAPPING_PATTERN = '^idprovider\.[a-zA-Z0-9_-]+\.groups\.mapping\.(\\d+)\.(value|group)$';
+const NATIVE_CLIENTS_PATTERN = '^idprovider\.[a-zA-Z0-9_-]+\.native\.clients\.(\\d+)\.(clientId|redirectUris)$';
 
 const parseStringArray = value => value ? value.split(' ').filter(v => !!v) : [];
 const firstAtsToDollar = value => value ? value.replace(/@@\{/g, '${') : value;
@@ -59,9 +60,13 @@ exports.getIdProviderConfig = function (idProviderName) {
             allowedAudience: parseStringArray(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.allowedAudience`]),
             applyGroups: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.applyGroups`] === 'true' || false,
         },
-        accessToken: parseAccessToken(rawIdProviderConfig, idProviderKeyBase, idProviderName),
-        device: parseDeviceFlow(rawIdProviderConfig, idProviderKeyBase),
-        native: parseNativeFlow(rawIdProviderConfig, idProviderKeyBase),
+        native: {
+            // Per-client redirect-URI registry for the native flow (RFC 8252). Each client (matched
+            // by client_id) registers its own redirect URIs; the allowRedirectUri hook only accepts a
+            // redirect_uri registered for the request's client_id. Entries are matched exactly, except
+            // loopback redirects (RFC 8252 section 7.3), for which only the port is flexible.
+            clients: parseNativeClients(rawIdProviderConfig, idProviderKeyBase),
+        },
         groups: parseGroups(rawIdProviderConfig, idProviderKeyBase, idProviderName),
         userEventPrefix: rawIdProviderConfig[`${idProviderKeyBase}.userEventPrefix`] || app.name,
         userEventMode: rawIdProviderConfig[`${idProviderKeyBase}.userEventMode`] || 'local',
@@ -126,45 +131,27 @@ function takeConfigurationFromWellKnownEndpoint(config) {
     }
 }
 
-// Shared self-issued access token config (used by both the device and native flows).
-// Presence of the signing secret enables token issuance for this id provider; 'kid' and 'issuer'
-// are the resolveKey()/issuer seam that maps onto the XP-core managed keyring later.
-function parseAccessToken(rawConfig, idProviderKeyBase, idProviderName) {
-    return {
-        secret: rawConfig[`${idProviderKeyBase}.accessToken.secret`] || null,
-        kid: rawConfig[`${idProviderKeyBase}.accessToken.kid`] || `${idProviderName}-hs512`,
-        issuer: rawConfig[`${idProviderKeyBase}.accessToken.issuer`] || `${app.name}:${idProviderName}`,
-        audience: parseStringArray(rawConfig[`${idProviderKeyBase}.accessToken.audience`]),
-        expiresIn: parseLong(rawConfig[`${idProviderKeyBase}.accessToken.expiresIn`], 3600),
-        createSession: rawConfig[`${idProviderKeyBase}.accessToken.createSession`] === 'true' || false,
-    };
-}
+// Note: device/native login (token shape, code lifetimes, the OAuth protocol) is owned by XP core
+// now. The app keeps only the per-client native redirect registry (native.clients, consulted by the
+// allowRedirectUri hook) and renders the UI via the deviceVerification / authorizeConsent hooks.
 
-// Device Authorization Grant (RFC 8628) flow parameters.
-function parseDeviceFlow(rawConfig, idProviderKeyBase) {
-    return {
-        codeExpiresIn: parseLong(rawConfig[`${idProviderKeyBase}.device.codeExpiresIn`], 600),
-        pollInterval: parseLong(rawConfig[`${idProviderKeyBase}.device.pollInterval`], 5),
-    };
-}
-
-// Native-app (RFC 8252) flow parameters. Loopback redirects are always allowed and need not be
-// listed; private-use-scheme and claimed-https redirects must be registered in allowedRedirectUris.
-function parseNativeFlow(rawConfig, idProviderKeyBase) {
-    return {
-        codeExpiresIn: parseLong(rawConfig[`${idProviderKeyBase}.native.codeExpiresIn`], 120),
-        allowedRedirectUris: parseStringArray(rawConfig[`${idProviderKeyBase}.native.allowedRedirectUris`]),
-    };
+// Parses the per-client native redirect registry:
+//   idprovider.<name>.native.clients.0.clientId     = my-native-app
+//   idprovider.<name>.native.clients.0.redirectUris = http://127.0.0.1/cb http://[::1]/cb com.example.app:/oauth
+// Entries without a clientId are ignored.
+function parseNativeClients(rawConfig, idProviderKeyBase) {
+    return extractPropertiesToArray(rawConfig, `${idProviderKeyBase}.native.clients.`, NATIVE_CLIENTS_PATTERN)
+        .filter(entry => entry && entry.clientId)
+        .map(entry => ({
+            clientId: entry.clientId,
+            redirectUris: parseStringArray(entry.redirectUris),
+        }));
 }
 
 function validate(config, idProviderName) {
     checkConfig(config, 'issuer', idProviderName);
     checkConfig(config, 'authorizationUrl', idProviderName);
     checkConfig(config, 'tokenUrl', idProviderName);
-
-    if (config.accessToken.secret != null && config.accessToken.secret.length < 32) {
-        throw `Access token signing secret for '${idProviderName}' ID Provider must be at least 32 characters`;
-    }
 
     if (config.clientId != null) {
         checkConfig(config, 'clientSecret', idProviderName);

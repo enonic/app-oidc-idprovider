@@ -6,7 +6,7 @@ const preconditions = require('/lib/preconditions');
 const authLib = require('/lib/xp/auth');
 const portalLib = require('/lib/xp/portal');
 const jwtLib = require('/lib/jwt');
-const deviceLogin = require('/lib/deviceLogin');
+const deviceLoginUi = require('/lib/deviceLoginUi');
 
 function redirectToAuthorizationEndpoint() {
     const idProviderConfig = configLib.getIdProviderConfig();
@@ -202,48 +202,81 @@ function generateRedirectUrl() {
 
 exports.handle401 = redirectToAuthorizationEndpoint;
 
-exports.GET = function (req) {
-    // Device-login GET endpoints (verification page) are served from a dedicated
-    // module; the base path remains the OAuth authentication-response callback.
-    const deviceResponse = deviceLogin.handleGet(req);
-    if (deviceResponse) {
-        return deviceResponse;
-    }
-    return handleAuthenticationResponse(req);
+exports.GET = handleAuthenticationResponse;
+
+// Predefined device/native login hooks. XP core owns the endpoints, the OAuth protocol and the
+// per-vhost flow gating; it calls these for the id-provider-specific steps. The approval context is
+// carried on the request itself (req.attributes), so the UI hooks just render HTML from it.
+
+// Device verification / approval page (RFC 8628).
+exports.deviceVerification = function (req) {
+    return deviceLoginUi.renderDeviceVerification(req.attributes);
 };
 
-exports.POST = function (req) {
-    // Device-login POST endpoints (RFC 8628 device authorization, token, approval).
-    return deviceLogin.handlePost(req) || {status: 404};
+// Native-app authorization consent page (RFC 8252).
+exports.authorizeConsent = function (req) {
+    return deviceLoginUi.renderConsent(req.attributes);
 };
+
+// Redirect policy hook. When this id provider implements it, XP core hands over redirect validation
+// entirely: return nothing to allow the redirect, or a PortalResponse to reject it. A redirect_uri is
+// allowed only if it is registered for the request's client_id in the per-client registry
+// (native.clients). Entries are matched exactly, except RFC 8252 loopback redirects, for which only
+// the port is flexible (scheme, host and path still match).
+const LOOPBACK_REDIRECT = /^http:\/\/(127\.0\.0\.1|\[::1\])(:\d+)?(\/.*)?$/;
+
+exports.allowRedirectUri = function (req) {
+    const redirectUri = req.params.redirect_uri;
+    const clientId = req.params.client_id;
+
+    const config = configLib.getIdProviderConfig();
+    const client = config.native.clients.filter(c => c.clientId === clientId)[0];
+    const registered = client ? client.redirectUris : [];
+
+    if (registered.some(uri => redirectMatches(uri, redirectUri))) {
+        return; // registered for this client - let the flow continue
+    }
+
+    return {
+        status: 400,
+        contentType: 'application/json',
+        body: {
+            error: 'invalid_request',
+            error_description: 'redirect_uri is not allowed'
+        }
+    };
+};
+
+// A requested redirect_uri matches a registered one if they are identical, or - for an RFC 8252 §7.3
+// loopback redirect - if they are equal once the ephemeral port is removed. Only the port is flexible;
+// scheme, host and path must still match, as Keycloak / Spring Authorization Server / Entra do.
+function redirectMatches(registered, requested) {
+    if (registered === requested) {
+        return true;
+    }
+    return LOOPBACK_REDIRECT.test(registered) && LOOPBACK_REDIRECT.test(requested) &&
+           stripLoopbackPort(registered) === stripLoopbackPort(requested);
+}
+
+function stripLoopbackPort(uri) {
+    return uri.replace(/^(http:\/\/(?:127\.0\.0\.1|\[::1\]))(:\d+)?(\/.*)?$/, '$1$3');
+}
 
 exports.logout = logout;
 
 exports.autoLogin = function (req) {
     const idProviderConfig = configLib.getIdProviderConfig();
 
-    const deviceConfigured = !!(idProviderConfig.accessToken && idProviderConfig.accessToken.secret);
-    if (!idProviderConfig.jwksUri && !deviceConfigured) {
+    // Self-issued device/native access tokens are verified and accepted by XP core (the
+    // access-token authenticator, gated on the 'autologin' flow). This app therefore only handles
+    // the external-IdP JWKS bearer path here.
+    if (!idProviderConfig.jwksUri) {
         return;
     }
 
     const jwtToken = extractJwtToken(req, idProviderConfig);
 
     if (!jwtToken) {
-        requestLib.autoLoginFailed();
-        return;
-    }
-
-    // Self-issued device-login token: verified and accepted by this id provider,
-    // independently of the external JWKS path.
-    if (deviceLogin.isSelfIssued(idProviderConfig, jwtToken)) {
-        if (!deviceLogin.accept(jwtToken, idProviderConfig)) {
-            requestLib.autoLoginFailed();
-        }
-        return;
-    }
-
-    if (!idProviderConfig.jwksUri) {
         requestLib.autoLoginFailed();
         return;
     }
