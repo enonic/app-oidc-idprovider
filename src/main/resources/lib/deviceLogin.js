@@ -39,25 +39,42 @@ function oauthError(status, code, description) {
     return json(status, body);
 }
 
+const STYLE =
+    `body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#f5f6f8;margin:0;padding:0;color:#333}` +
+    `.card{max-width:420px;margin:8vh auto;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.12);padding:32px}` +
+    `h1{font-size:20px;margin:0 0 16px}` +
+    `code{font-size:22px;letter-spacing:2px;background:#f0f1f3;padding:4px 8px;border-radius:4px;white-space:nowrap}` +
+    `.codeline{text-align:center;margin:16px 0}` +
+    `.detail{display:flex;margin:6px 0;font-size:14px}` +
+    `.detail .k{flex:0 0 92px;color:#777}.detail .v{color:#222;word-break:break-word}` +
+    `input[type=text]{font-size:18px;padding:8px;width:100%;box-sizing:border-box;border:1px solid #ccc;border-radius:4px;letter-spacing:2px;text-transform:uppercase}` +
+    `button{font-size:15px;padding:10px 18px;border:0;border-radius:4px;cursor:pointer;margin-top:16px}` +
+    `.approve{background:#2c76e0;color:#fff}.deny{background:#e6e8eb;color:#333;margin-left:8px}`;
+
+// CSP style-src source pinned to the exact stylesheet above (computed from STYLE, so it never drifts).
+let styleCspSource = null;
+function styleCsp() {
+    if (!styleCspSource) {
+        styleCspSource = "'sha256-" + __.newBean(HANDLER_BEAN).sha256Base64(STYLE) + "'";
+    }
+    return styleCspSource;
+}
+
 function htmlPage(title, bodyHtml) {
     const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">` +
                  `<meta name="viewport" content="width=device-width, initial-scale=1">` +
                  `<title>${escapeHtml(title)}</title>` +
-                 `<style>body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;` +
-                 `background:#f5f6f8;margin:0;padding:0;color:#333}` +
-                 `.card{max-width:420px;margin:8vh auto;background:#fff;border-radius:8px;` +
-                 `box-shadow:0 1px 4px rgba(0,0,0,.12);padding:32px}` +
-                 `h1{font-size:20px;margin:0 0 16px}` +
-                 `code{font-size:22px;letter-spacing:2px;background:#f0f1f3;padding:4px 8px;border-radius:4px;white-space:nowrap}` +
-                 `.codeline{text-align:center;margin:16px 0}` +
-                 `.detail{display:flex;margin:6px 0;font-size:14px}` +
-                 `.detail .k{flex:0 0 92px;color:#777}.detail .v{color:#222;word-break:break-word}` +
-                 `input[type=text]{font-size:18px;padding:8px;width:100%;box-sizing:border-box;` +
-                 `border:1px solid #ccc;border-radius:4px;letter-spacing:2px;text-transform:uppercase}` +
-                 `button{font-size:15px;padding:10px 18px;border:0;border-radius:4px;cursor:pointer;margin-top:16px}` +
-                 `.approve{background:#2c76e0;color:#fff}.deny{background:#e6e8eb;color:#333;margin-left:8px}` +
-                 `</style></head><body><div class="card">${bodyHtml}</div></body></html>`;
-    return {status: 200, contentType: 'text/html; charset=utf-8', body: html, headers: {'Cache-Control': 'no-store'}};
+                 `<style>${STYLE}</style></head><body><div class="card">${bodyHtml}</div></body></html>`;
+    return {
+        status: 200,
+        contentType: 'text/html; charset=utf-8',
+        body: html,
+        headers: {
+            'Cache-Control': 'no-store',
+            'Content-Security-Policy': `default-src 'none'; style-src ${styleCsp()}; form-action 'self'; base-uri 'none'; frame-ancestors 'none'`,
+            'Referrer-Policy': 'no-referrer',
+        },
+    };
 }
 
 function escapeHtml(value) {

@@ -1,6 +1,7 @@
 package com.enonic.app.oidcidprovider.handler;
 
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Arrays;
@@ -83,6 +84,22 @@ public class DeviceTokenHandler
     public String base64UrlDecode( final String value )
     {
         return new String( Base64.getUrlDecoder().decode( value ), StandardCharsets.UTF_8 );
+    }
+
+    /**
+     * Standard Base64 of the SHA-256 of a UTF-8 string, for a CSP {@code 'sha256-...'} source.
+     */
+    public String sha256Base64( final String value )
+    {
+        try
+        {
+            return Base64.getEncoder()
+                .encodeToString( MessageDigest.getInstance( "SHA-256" ).digest( value.getBytes( StandardCharsets.UTF_8 ) ) );
+        }
+        catch ( java.security.NoSuchAlgorithmException e )
+        {
+            throw new IllegalStateException( e );
+        }
     }
 
     public String sign( final String secret, final String kid, final String issuer, final String subject, final String audience,
