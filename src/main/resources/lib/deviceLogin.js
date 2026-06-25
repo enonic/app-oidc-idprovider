@@ -4,10 +4,16 @@ const store = require('/lib/deviceStore');
 const deviceToken = require('/lib/deviceToken');
 const refreshStore = require('/lib/refreshStore');
 const portalLib = require('/lib/xp/portal');
+const contextLib = require('/lib/xp/context');
 
 const DEVICE_CODE_GRANT = 'urn:ietf:params:oauth:grant-type:device_code';
 const REFRESH_TOKEN_GRANT = 'refresh_token';
 const HANDLER_BEAN = 'com.enonic.app.oidcidprovider.handler.DeviceTokenHandler';
+// Per-vhost audience, set via `mapping.<vhost>.context.deviceauth.audience` (copied into the
+// execution context by XP's ContextFilter). The issuer vhost stamps it on minted tokens; a resource
+// vhost requires it on verification. Unset -> tokens carry the client's `resource` and are accepted
+// regardless of audience (backward compatible).
+const AUDIENCE_ATTR = 'deviceauth.audience';
 
 const TOKEN_EXPIRES_IN = 3600;       // self-issued access token lifetime, seconds
 const DEVICE_CODE_EXPIRES_IN = 600;  // device / user code lifetime, seconds
@@ -98,6 +104,14 @@ function resourceAudience(resource) {
     return Array.isArray(resource) ? resource.join(' ') : (resource || '');
 }
 
+// Audiences this vhost issues / requires, from the deviceauth.audience context attribute -
+// whitespace-separated, like the JWT `aud`, OAuth `scope`, and the `resource`->`aud` path above.
+// Empty list when the vhost configures none.
+function configuredAudiences() {
+    const attrs = contextLib.get().attributes || {};
+    return String(attrs[AUDIENCE_ATTR] || '').split(/\s+/).filter(s => s.length > 0);
+}
+
 // Repeated query/form params arrive as arrays. Collapse every param to its first value so the
 // endpoints always see scalars; `resource` is kept intact (RFC 8707 permits repeats).
 function normalizeParams(req) {
@@ -127,12 +141,16 @@ function deviceAuthorization(req) {
     const deviceCode = handler.generateDeviceCode();
     const userCode = handler.generateUserCode();
 
+    // A vhost-configured audience (deployment authority) wins over the client-requested resource.
+    const configured = configuredAudiences();
+    const audience = configured.length ? configured.join(' ') : resourceAudience(req.params.resource);
+
     store.createPending(config._idProviderName, {
         deviceCode: deviceCode,
         userCode: userCode,
         clientId: clientId,
         scope: req.params.scope,
-        audience: resourceAudience(req.params.resource),
+        audience: audience,
         ttlSeconds: DEVICE_CODE_EXPIRES_IN,
     });
 
@@ -332,7 +350,8 @@ function handleGet(req) {
 }
 
 function accept(token, config) {
-    const payload = deviceToken.verify(config, token);
+    // A resource vhost may require a specific audience; unset -> accept any (backward compatible).
+    const payload = deviceToken.verify(config, token, configuredAudiences());
     if (!payload || !payload.sub) {
         return false;
     }

@@ -38,9 +38,9 @@ function mint(idProviderConfig, params) {
     );
 }
 
-function verify(idProviderConfig, token) {
+function verify(idProviderConfig, token, allowedAudience) {
     const key = resolveKey(idProviderConfig);
-    const payload = __.newBean(BEAN).verify(token, key.secret, getIssuer(idProviderConfig), []);
+    const payload = __.newBean(BEAN).verify(token, key.secret, getIssuer(idProviderConfig), allowedAudience || []);
     return payload ? __.toNativeObject(payload) : null;
 }
 
