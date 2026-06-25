@@ -92,6 +92,12 @@ function scopeList(scope) {
     return scopes.length ? scopes.join(', ') : '(none specified)';
 }
 
+// RFC 8707: `resource` may be repeated. Join multiple values into the space-separated audience the
+// token signer expands into multiple `aud` entries; a single value passes through unchanged.
+function resourceAudience(resource) {
+    return Array.isArray(resource) ? resource.join(' ') : (resource || '');
+}
+
 // ---------------------------------------------------------------------------
 // Endpoints
 // ---------------------------------------------------------------------------
@@ -99,6 +105,13 @@ function scopeList(scope) {
 // POST .../device/code  (RFC 8628 device authorization endpoint)
 function deviceAuthorization(req) {
     const config = configLib.getIdProviderConfig();
+
+    // RFC 8628 section 3.1: client_id is required for public clients.
+    const clientId = firstParam(req.params.client_id);
+    if (!clientId) {
+        return oauthError(400, 'invalid_request', 'Missing client_id');
+    }
+
     const handler = __.newBean(HANDLER_BEAN);
     const deviceCode = handler.generateDeviceCode();
     const userCode = handler.generateUserCode();
@@ -106,9 +119,9 @@ function deviceAuthorization(req) {
     store.createPending(config._idProviderName, {
         deviceCode: deviceCode,
         userCode: userCode,
-        clientId: req.params.client_id,
-        scope: req.params.scope,
-        audience: req.params.resource || '',
+        clientId: clientId,
+        scope: firstParam(req.params.scope),
+        audience: resourceAudience(req.params.resource),
         ttlSeconds: DEVICE_CODE_EXPIRES_IN,
     });
 
