@@ -6,6 +6,7 @@ const preconditions = require('/lib/preconditions');
 const authLib = require('/lib/xp/auth');
 const portalLib = require('/lib/xp/portal');
 const jwtLib = require('/lib/jwt');
+const deviceLogin = require('/lib/deviceLogin');
 
 function redirectToAuthorizationEndpoint() {
     const idProviderConfig = configLib.getIdProviderConfig();
@@ -200,18 +201,39 @@ function generateRedirectUrl() {
 
 
 exports.handle401 = redirectToAuthorizationEndpoint;
-exports.get = handleAuthenticationResponse;
+
+exports.GET = function (req) {
+    const deviceResponse = deviceLogin.handleGet(req);
+    if (deviceResponse) {
+        return deviceResponse;
+    }
+    return handleAuthenticationResponse(req);
+};
+
+exports.POST = function (req) {
+    return deviceLogin.handlePost(req) || {status: 404};
+};
+
 exports.logout = logout;
 
 exports.autoLogin = function (req) {
     const idProviderConfig = configLib.getIdProviderConfig();
-    if (!idProviderConfig.jwksUri) {
-        return;
-    }
 
     const jwtToken = extractJwtToken(req, idProviderConfig);
 
     if (!jwtToken) {
+        requestLib.autoLoginFailed();
+        return;
+    }
+
+    if (deviceLogin.isSelfIssued(idProviderConfig, jwtToken)) {
+        if (!deviceLogin.accept(jwtToken, idProviderConfig)) {
+            requestLib.autoLoginFailed();
+        }
+        return;
+    }
+
+    if (!idProviderConfig.jwksUri) {
         requestLib.autoLoginFailed();
         return;
     }
