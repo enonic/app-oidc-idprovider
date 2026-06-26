@@ -131,7 +131,8 @@ function normalizeParams(req) {
 function deviceAuthorization(req) {
     const config = configLib.getIdProviderConfig();
 
-    // RFC 8628 section 3.1: client_id is required for public clients.
+    // client_id is required (RFC 8628 section 3.1). This app does no client authentication, so
+    // every device client is treated as public.
     const clientId = req.params.client_id;
     if (!clientId) {
         return oauthError(400, 'invalid_request', 'Missing client_id');
