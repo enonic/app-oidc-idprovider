@@ -25,9 +25,12 @@ const DEVICE_POLL_INTERVAL = 5;      // minimum client poll interval, seconds
 // ---------------------------------------------------------------------------
 
 function endpointSubPath(req) {
-    const contextPath = req.contextPath || '';
+    // Strip the id provider's own (per-vhost) URL base off req.path - both are in the client-facing
+    // source space. req.contextPath is derived from the rewritten path, so on a source != target
+    // vhost it won't prefix req.path and every device endpoint would 404.
+    const base = portalLib.idProviderUrl({idProvider: configLib.getIdProviderConfig()._idProviderName, type: 'server'});
     const path = req.path || '';
-    return path.indexOf(contextPath) === 0 ? path.substring(contextPath.length) : path;
+    return path.indexOf(base) === 0 ? path.substring(base.length) : path;
 }
 
 function json(status, body, extraHeaders) {
