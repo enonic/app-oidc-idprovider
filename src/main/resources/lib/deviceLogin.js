@@ -8,6 +8,7 @@ const contextLib = require('/lib/xp/context');
 
 const DEVICE_CODE_GRANT = 'urn:ietf:params:oauth:grant-type:device_code';
 const REFRESH_TOKEN_GRANT = 'refresh_token';
+const OFFLINE_ACCESS_SCOPE = 'offline_access';
 const HANDLER_BEAN = 'com.enonic.app.oidcidprovider.handler.DeviceTokenHandler';
 // Per-vhost audience, set via `mapping.<vhost>.context.deviceauth.audience` (copied into the
 // execution context by XP's ContextFilter). The issuer vhost stamps it on minted tokens; a resource
@@ -197,12 +198,15 @@ function deviceCodeGrant(req, config) {
         return oauthError(400, 'access_denied');
     case 'approved': {
         const grant = result.record;
-        const refreshToken = refreshStore.issue({
+        // Mint a refresh token (a durable profile write) only when the client asked for
+        // offline_access (OIDC Core); otherwise return an access token alone.
+        const offline = String(grant.scope || '').split(/\s+/).indexOf(OFFLINE_ACCESS_SCOPE) !== -1;
+        const refreshToken = offline ? refreshStore.issue({
             sub: grant.sub,
             clientId: grant.clientId,
             scope: grant.scope,
             audience: grant.audience,
-        });
+        }) : null;
         return tokenResponse(config, grant, refreshToken);
     }
     case 'expired':
@@ -242,8 +246,10 @@ function tokenResponse(config, grant, refreshToken) {
         access_token: token,
         token_type: 'Bearer',
         expires_in: TOKEN_EXPIRES_IN,
-        refresh_token: refreshToken,
     };
+    if (refreshToken) {
+        body.refresh_token = refreshToken;
+    }
     if (grant.scope) {
         body.scope = grant.scope;
     }
