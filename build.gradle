@@ -15,6 +15,7 @@ dependencies {
     include xplibs.portal
     include xplibs.cluster
     include xplibs.event
+    include xplibs.grid
 
     include libs.lib.httpclient
     include libs.java.jwt
