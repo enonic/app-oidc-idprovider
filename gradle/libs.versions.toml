@@ -1,5 +1,5 @@
 [versions]
-lib-http-client = "4.0.0-B1"
+lib-http-client = "4.0.0"
 java-jwt = "4.5.2"
 jwks-rsa = "0.24.1"
 jackson-databind = "2.21.3"
