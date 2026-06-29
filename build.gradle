@@ -22,7 +22,7 @@ dependencies {
     include libs.jwks.rsa
     include libs.jackson.databind
 
-    testImplementation "com.enonic.xp:testing:${xpVersion}"
+    testImplementation "com.enonic.xp:testing:${xplibs.versions.xp.get()}"
     testImplementation( platform( libs.junit.bom ) )
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
