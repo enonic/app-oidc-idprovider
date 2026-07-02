@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.26">
-<title>Release notes</title>
+<title>Configuration examples</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -435,117 +435,68 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
-<body class="article toc2 toc-right">
+<body id="examples" class="article toc2 toc-right">
 <div id="header">
-<h1>Release notes</h1>
+<h1>Configuration examples</h1>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#version_4_0">Version 4.0</a>
-<ul class="sectlevel2">
-<li><a href="#new_redirect_uri">new Redirect URI</a></li>
-<li><a href="#user_events">User events</a></li>
-<li><a href="#clientsecret">clientSecret</a></li>
-</ul>
-</li>
-<li><a href="#version_3_0">Version 3.0</a></li>
+<li><a href="#google">Google</a></li>
+<li><a href="#auth0">Auth0</a></li>
 </ul>
 </div>
 </div>
 <div id="content">
-<div class="sect1">
-<h2 id="version_4_0"><a class="link" href="#version_4_0">Version 4.0</a></h2>
+<div id="preamble">
 <div class="sectionbody">
-<div class="sect2">
-<h3 id="new_redirect_uri"><a class="link" href="#new_redirect_uri">new Redirect URI</a></h3>
 <div class="paragraph">
-<p>This version introduces breaking changes to how the Redirect URI is constructed, which require updating the settings in your ID Service Provider.</p>
+<p>Below are some examples of how you can configure the application.</p>
 </div>
-<div class="paragraph">
-<p>Thanks to these changes, deep links will be handled correctly.</p>
 </div>
+</div>
+<div class="sect1">
+<h2 id="google"><a class="link" href="#google">Google</a></h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>The Redirect URI now matches virtual host source path mapping. For instance, you have the following <a href="https://developer.enonic.com/docs/xp/stable/deployment/vhosts">vhost mapping</a>:</p>
+<p>Example configuration using Google OIDC and standard form based authentication</p>
 </div>
 <div class="listingblock">
-<div class="title">com.enonic.xp.web.vhost.cfg</div>
+<div class="title">com.enonic.app.oidcidprovider.cfg:</div>
 <div class="content">
-<pre class="highlight"><code class="language-properties" data-lang="properties">mapping.myoidc.host = xp.example.com
-mapping.myoidc.source = /my-admin
-mapping.myoidc.target = /admin
-mapping.myoidc.idProvider.myoidc = default</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The correct Redirect URI should be:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code>https://xp.example.com/my-admin/_/idprovider/myoidc</code></pre>
-</div>
-</div>
-<div class="sect3">
-<h4 id="required_actions"><a class="link" href="#required_actions">Required Actions</a></h4>
-<div class="ulist">
-<ul>
-<li>
-<p>Review your existing ID Provider settings.</p>
-</li>
-<li>
-<p>Update Redirect URI (aka Callback URI) to follow the new format.</p>
-</li>
-<li>
-<p>Ensure that the Redirect URI exactly matches your virtual host mapping.</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="user_events"><a class="link" href="#user_events">User events</a></h3>
-<div class="paragraph">
-<p>Starting from version 4.0, you can specify the <code>userEventPrefix</code> and <code>userEventMode</code> properties to manage user events. More details can be found <a href="config.ahtml#configuration">here</a>.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="clientsecret"><a class="link" href="#clientsecret">clientSecret</a></h3>
-<div class="paragraph">
-<p>Added support for multiple space-separated <code>clientSecret</code> values to follow Auth0 rotation best practices and avoid downtime from propagation delays.</p>
+<pre class="highlight"><code class="language-properties" data-lang="properties">autoinit=true
+idprovider.google.oidcWellKnownEndpoint=https://accounts.google.com/.well-known/openid-configuration
+idprovider.google.clientId=********.apps.googleusercontent.com
+idprovider.google.clientSecret=********
+idprovider.google.mappings.displayName=@@{userinfo.given_name} @@{userinfo.family_name}
+idprovider.google.rules.forceEmailVerification=true
+idprovider.google.defaultGroups=group:google:employees</code></pre>
 </div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="version_3_0"><a class="link" href="#version_3_0">Version 3.0</a></h2>
+<h2 id="auth0"><a class="link" href="#auth0">Auth0</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>What&#8217;s new in version 3</p>
+<p>Example configuration using Auth0 with autologin supporting websockets</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>Starting from version 3.0, it is possible to specify <code>oidcWellKnownEndpoint</code> (Provider&#8217;s OpenID Connect Discovery URL) to obtain the values for the <code>issuer</code>,<code>authorization_endpoint</code>, <code>token_endpoint</code>,  <code>userinfo_endpoint</code> and <code>jwks_uri</code>  properties.</p>
-</li>
-<li>
-<p>User <code>displayName</code> and <code>email</code> are now automatically updated when the user logs in with Authorization Code Flow.</p>
-</li>
-<li>
-<p>Authorization Code Flow with PKCE is now supported and used by default. Disable it (<code>usePkce = false</code>) if your provider does not support it.</p>
-</li>
-<li>
-<p>In Authorization Code Flow, the ID Token verification is now done with the public keys from the JWKS URI (<code>jwksUri</code>).</p>
-</li>
-<li>
-<p>The <code>clientId</code> and <code>clientSecret</code> fields are now optional in the ID Provider configuration. If you want to disable Authorization Code Flow, <code>clientId</code> should be omitted.</p>
-</li>
-</ul>
+<div class="listingblock">
+<div class="title">com.enonic.app.oidcidprovider.cfg:</div>
+<div class="content">
+<pre class="highlight"><code class="language-properties" data-lang="properties">autoinit=true
+idprovider.auth0.oidcWellKnownEndpoint=https://auth.enonic-qa.com/.well-known/openid-configuration
+idprovider.auth0.rules.forceEmailVerification=true
+idprovider.auth0.autoLogin.wsHeader=true
+idprovider.auth0.autoLogin.allowedAudience=https://service.example.com/api
+idprovider.auth0.mappings.displayName=@@{userinfo.name}</code></pre>
+</div>
 </div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-06-26 09:03:11 UTC
+Last updated 2026-07-02 06:07:40 UTC
 </div>
 </div>
 </body>
