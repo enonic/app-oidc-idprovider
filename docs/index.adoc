@@ -5,6 +5,8 @@ Authenticate using OIDC and JWT tokens
 
 == Intro
 
+NOTE: Versions 5.x target XP 8+.
+
 This application will act as an OIDC Relying Party for your Enonic XP instance. It verifies the identity of End-Users based on your OIDC Authorization Server or JWT token.
 
 Browser-based visitors are redirected to the Authentication Server, and once successfully authenticated, a user will be created in Enonic XP.
