@@ -1,6 +1,8 @@
 = OpenID Connect ID provider
 :imagesdir: media/
 
+NOTE: Versions 4.x target XP 7+.
+
 Authenticate using OIDC and JWT tokens
 
 == Intro
