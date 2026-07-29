@@ -87,7 +87,7 @@ function requestIDToken(params) {
     case 'basic':
         headers = {
             'Authorization': 'Basic ' +
-                             Java.type('java.util.Base64').getEncoder().encodeToString((clientId + ':' + clientSecret).getBytes())
+                             __.newBean('com.enonic.app.oidcidprovider.OIDCUtils').base64Encode(clientId + ':' + clientSecret)
         };
         break;
     case 'jwt':
