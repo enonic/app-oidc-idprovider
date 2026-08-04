@@ -37,6 +37,10 @@ test {
     useJUnitPlatform()
 }
 
+xp {
+    scriptEngines = ['Nashorn', 'GraalJS']
+}
+
 jacocoTestReport {
     reports {
         xml.required = true

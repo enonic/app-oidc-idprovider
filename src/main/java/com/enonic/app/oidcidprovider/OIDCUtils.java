@@ -109,6 +109,11 @@ public class OIDCUtils
         return JWT.create().withPayload( message ).sign( Algorithm.HMAC256( clientSecret ) );
     }
 
+    public String base64Encode( final String value )
+    {
+        return Base64.getEncoder().encodeToString( value.getBytes( StandardCharsets.UTF_8 ) );
+    }
+
     @Override
     public void initialize( final BeanContext beanContext )
     {
