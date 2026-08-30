@@ -20,10 +20,8 @@ const TOKEN_EXPIRES_IN = 3600;       // self-issued access token lifetime, secon
 const DEVICE_CODE_EXPIRES_IN = 600;  // device / user code lifetime, seconds
 const DEVICE_POLL_INTERVAL = 5;      // minimum client poll interval, seconds
 
-// XP dispatches custom endpoints unconditionally and passes the vhost's enabled flow list as
-// req.idProviderFlows for the app to follow. The whole device family (device authorization, token
-// and verification endpoints) follows the informational "device" flow: it must be listed to serve
-// these endpoints. An absent list (older XP, or no vhost) keeps them enabled.
+// The device endpoints are served only where the vhost lists the informational "device" flow;
+// an absent flow list (older XP, or no vhost) keeps them enabled.
 const DEVICE_FLOW = 'device';
 
 // ---------------------------------------------------------------------------

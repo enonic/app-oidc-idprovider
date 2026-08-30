@@ -200,9 +200,8 @@ function generateRedirectUrl() {
 }
 
 
-// The authorization-code callback (custom GET below) only completes an interactive login, so it
-// follows the vhost's login flow when XP provides the flow list on the request. handle401 needs no
-// check of its own: XP only calls it where login is enabled.
+// The authorization-code callback only completes interactive login, so it follows the vhost's
+// login flow.
 function isLoginFlowEnabled(req) {
     const flows = req.idProviderFlows;
     return !flows || flows.indexOf('login') >= 0;
