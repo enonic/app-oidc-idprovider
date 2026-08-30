@@ -200,13 +200,6 @@ function generateRedirectUrl() {
 }
 
 
-// The authorization-code callback only completes interactive login, so it follows the vhost's
-// login flow.
-function isLoginFlowEnabled(req) {
-    const flows = req.idProviderFlows;
-    return !flows || flows.indexOf('login') >= 0;
-}
-
 exports.handle401 = redirectToAuthorizationEndpoint;
 
 exports.GET = function (req) {
@@ -214,7 +207,9 @@ exports.GET = function (req) {
     if (deviceResponse) {
         return deviceResponse;
     }
-    if (!isLoginFlowEnabled(req)) {
+    // The authorization-code callback only completes interactive login, so it follows the vhost's
+    // login flow.
+    if (req.idProviderFlows && req.idProviderFlows.indexOf('login') < 0) {
         return {status: 403};
     }
     return handleAuthenticationResponse(req);

@@ -345,27 +345,21 @@ function isDeviceFlowEnabled(req) {
 }
 
 function handlePost(req) {
-    const endpoint = postEndpoint(endpointSubPath(req));
-    if (!endpoint) {
+    const subPath = endpointSubPath(req);
+    if (subPath !== '/device/code' && subPath !== '/token' && subPath !== '/device') {
         return null;
     }
     if (!isDeviceFlowEnabled(req)) {
         return {status: 403};
     }
     normalizeParams(req);
-    return endpoint(req);
-}
-
-function postEndpoint(subPath) {
     switch (subPath) {
     case '/device/code':
-        return deviceAuthorization;
+        return deviceAuthorization(req);
     case '/token':
-        return tokenEndpoint;
-    case '/device':
-        return verificationSubmit;
+        return tokenEndpoint(req);
     default:
-        return null;
+        return verificationSubmit(req);
     }
 }
 
