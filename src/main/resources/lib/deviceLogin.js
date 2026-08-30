@@ -20,7 +20,7 @@ const TOKEN_EXPIRES_IN = 3600;       // self-issued access token lifetime, secon
 const DEVICE_CODE_EXPIRES_IN = 600;  // device / user code lifetime, seconds
 const DEVICE_POLL_INTERVAL = 5;      // minimum client poll interval, seconds
 
-// The device endpoints are served only where the vhost lists the informational "device" flow;
+// The device endpoints are served only where the vhost lists the additional "device" flow;
 // an absent flow list (older XP, or no vhost) keeps them enabled.
 const DEVICE_FLOW = 'device';
 
