@@ -20,6 +20,12 @@ const TOKEN_EXPIRES_IN = 3600;       // self-issued access token lifetime, secon
 const DEVICE_CODE_EXPIRES_IN = 600;  // device / user code lifetime, seconds
 const DEVICE_POLL_INTERVAL = 5;      // minimum client poll interval, seconds
 
+// XP dispatches custom endpoints unconditionally and passes the vhost's enabled flow list as
+// req.idProviderFlows for the app to follow. The whole device family (device authorization, token
+// and verification endpoints) follows the informational "device" flow: it must be listed to serve
+// these endpoints. An absent list (older XP, or no vhost) keeps them enabled.
+const DEVICE_FLOW = 'device';
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -335,28 +341,45 @@ function confirmForm(userCode, user, record) {
 // Public API
 // ---------------------------------------------------------------------------
 
+function isDeviceFlowEnabled(req) {
+    const flows = req.idProviderFlows;
+    return !flows || flows.indexOf(DEVICE_FLOW) >= 0;
+}
+
 function handlePost(req) {
-    switch (endpointSubPath(req)) {
+    const endpoint = postEndpoint(endpointSubPath(req));
+    if (!endpoint) {
+        return null;
+    }
+    if (!isDeviceFlowEnabled(req)) {
+        return {status: 403};
+    }
+    normalizeParams(req);
+    return endpoint(req);
+}
+
+function postEndpoint(subPath) {
+    switch (subPath) {
     case '/device/code':
-        normalizeParams(req);
-        return deviceAuthorization(req);
+        return deviceAuthorization;
     case '/token':
-        normalizeParams(req);
-        return tokenEndpoint(req);
+        return tokenEndpoint;
     case '/device':
-        normalizeParams(req);
-        return verificationSubmit(req);
+        return verificationSubmit;
     default:
         return null;
     }
 }
 
 function handleGet(req) {
-    if (endpointSubPath(req) === '/device') {
-        normalizeParams(req);
-        return verificationPage(req);
+    if (endpointSubPath(req) !== '/device') {
+        return null;
     }
-    return null;
+    if (!isDeviceFlowEnabled(req)) {
+        return {status: 403};
+    }
+    normalizeParams(req);
+    return verificationPage(req);
 }
 
 function accept(token, config) {
