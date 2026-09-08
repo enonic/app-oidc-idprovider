@@ -21,7 +21,7 @@ const DEVICE_CODE_EXPIRES_IN = 600;  // device / user code lifetime, seconds
 const DEVICE_POLL_INTERVAL = 5;      // minimum client poll interval, seconds
 
 // The device endpoints are served only where the vhost lists the additional "device" flow;
-// an absent flow list (older XP, or no vhost) keeps them enabled.
+// an absent flow list (older XP, or a vhost without a flow restriction) keeps them enabled.
 const DEVICE_FLOW = 'device';
 
 // ---------------------------------------------------------------------------
