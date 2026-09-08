@@ -207,6 +207,11 @@ exports.GET = function (req) {
     if (deviceResponse) {
         return deviceResponse;
     }
+    // The authorization-code callback only completes interactive login, so it follows the vhost's
+    // login flow.
+    if (req.idProviderFlows && req.idProviderFlows.indexOf('login') < 0) {
+        return {status: 403};
+    }
     return handleAuthenticationResponse(req);
 };
 

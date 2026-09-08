@@ -20,6 +20,10 @@ const TOKEN_EXPIRES_IN = 3600;       // self-issued access token lifetime, secon
 const DEVICE_CODE_EXPIRES_IN = 600;  // device / user code lifetime, seconds
 const DEVICE_POLL_INTERVAL = 5;      // minimum client poll interval, seconds
 
+// The device endpoints are served only where the vhost lists the additional "device" flow;
+// an absent flow list (older XP, or a vhost without a flow restriction) keeps them enabled.
+const DEVICE_FLOW = 'device';
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -335,28 +339,39 @@ function confirmForm(userCode, user, record) {
 // Public API
 // ---------------------------------------------------------------------------
 
+function isDeviceFlowEnabled(req) {
+    const flows = req.idProviderFlows;
+    return !flows || flows.indexOf(DEVICE_FLOW) >= 0;
+}
+
 function handlePost(req) {
-    switch (endpointSubPath(req)) {
+    const subPath = endpointSubPath(req);
+    if (subPath !== '/device/code' && subPath !== '/token' && subPath !== '/device') {
+        return null;
+    }
+    if (!isDeviceFlowEnabled(req)) {
+        return {status: 403};
+    }
+    normalizeParams(req);
+    switch (subPath) {
     case '/device/code':
-        normalizeParams(req);
         return deviceAuthorization(req);
     case '/token':
-        normalizeParams(req);
         return tokenEndpoint(req);
-    case '/device':
-        normalizeParams(req);
-        return verificationSubmit(req);
     default:
-        return null;
+        return verificationSubmit(req);
     }
 }
 
 function handleGet(req) {
-    if (endpointSubPath(req) === '/device') {
-        normalizeParams(req);
-        return verificationPage(req);
+    if (endpointSubPath(req) !== '/device') {
+        return null;
     }
-    return null;
+    if (!isDeviceFlowEnabled(req)) {
+        return {status: 403};
+    }
+    normalizeParams(req);
+    return verificationPage(req);
 }
 
 function accept(token, config) {
