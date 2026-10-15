@@ -6,8 +6,8 @@ const STYLE =
     `body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#f5f6f8;margin:0;padding:0;color:#333}` +
     `.card{max-width:420px;margin:8vh auto;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.12);padding:32px}` +
     `h1{font-size:20px;margin:0 0 16px}` +
-    `code{font-size:22px;letter-spacing:2px;background:#f0f1f3;padding:4px 8px;border-radius:4px;white-space:nowrap}` +
-    `.codeline{text-align:center;margin:16px 0}` +
+    `code{font-size:18px;letter-spacing:2px;background:#f0f1f3;padding:3px 8px;border-radius:4px;white-space:nowrap}` +
+    `.codeline{margin:12px 0}.codeline .k{color:#777;font-size:13px}` +
     `.detail{display:flex;margin:6px 0;font-size:14px}` +
     `.detail .k{flex:0 0 92px;color:#777}.detail .v{color:#222;word-break:break-word}` +
     `ul.scopes{list-style:none;padding:0;margin:8px 0}ul.scopes li{margin:6px 0;font-size:14px}` +
@@ -59,13 +59,14 @@ function confirm(context) {
             `<span>${escapeHtml(s.id)}</span></label></li>`).join('') + `</ul>`;
     // The technical view: the code, the audience and the roles behind each scope, folded away by default.
     const details = `<details><summary>Details</summary>` +
-        `<div class="detail"><span class="k">Code</span><span class="v">${escapeHtml(context.userCode)}</span></div>` +
         ((context.audience || []).length ? `<div class="detail"><span class="k">Audience</span><span class="v">${escapeHtml(context.audience.join(', '))}</span></div>` : '') +
         scope.map(s => `<div class="detail"><span class="k"><code class="id">${escapeHtml(s.id)}</code></span>` +
             `<span class="v">${(s.roles || []).length ? escapeHtml(s.roles.join(', ')) : '&ndash;'}</span></div>`).join('') +
         `</details>`;
     return page(`Authorize ${app}`, `<h1>Authorize ${escapeHtml(app)}</h1>` +
         `<p>${escapeHtml(app)} wants to sign in as <strong>${escapeHtml(context.user.displayName || context.user.login)}</strong>.</p>` +
+        // RFC 8628: the user confirms the code matches the one the device shows, against a phished link.
+        `<p class="codeline"><span class="k">Code shown by ${escapeHtml(app)}</span><br><code>${escapeHtml(context.userCode)}</code></p>` +
         `<form method="post" action="">${scopes}${details}` +
         `<p class="warning">Only continue if you started this sign-in.</p>` +
         `<input type="hidden" name="user_code" value="${escapeHtml(context.userCode)}">` +
