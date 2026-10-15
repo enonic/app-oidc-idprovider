@@ -11,7 +11,9 @@ const STYLE =
     `.detail{display:flex;margin:6px 0;font-size:14px}` +
     `.detail .k{flex:0 0 92px;color:#777}.detail .v{color:#222;word-break:break-word}` +
     `ul.scopes{list-style:none;padding:0;margin:8px 0}ul.scopes li{margin:6px 0;font-size:14px}` +
-    `ul.scopes label{display:flex;gap:8px;align-items:baseline}ul.scopes .id{color:#777;font-size:12px}` +
+    `ul.scopes label{display:flex;gap:8px;align-items:baseline}` +
+    `details{margin:12px 0;font-size:14px}summary{cursor:pointer;color:#777}details .detail{margin:6px 0}` +
+    `code.id{font-size:12px;background:none;padding:0;letter-spacing:0}.warning{color:#777;font-size:13px}` +
     `input[type=text]{font-size:18px;padding:8px;width:100%;box-sizing:border-box;border:1px solid #ccc;border-radius:4px;letter-spacing:2px;text-transform:uppercase}` +
     `button{font-size:15px;padding:10px 18px;border:0;border-radius:4px;cursor:pointer;margin-top:16px}` +
     `.approve{background:#2c76e0;color:#fff}.deny{background:#e6e8eb;color:#333;margin-left:8px}.error{color:#b00020}`;
@@ -49,28 +51,27 @@ function enter(context) {
 }
 
 function confirm(context) {
+    const app = context.clientId || 'this device';
     const scope = context.scope || [];
-    const scopes = scope.length === 0
-        ? `<div class="detail"><span class="k">Permissions</span><span class="v">(none specified)</span></div>`
-        : `<div class="detail"><span class="k">Permissions</span><span class="v">Keep the ones you allow</span></div>` +
-          `<ul class="scopes">` + scope.map(s =>
-              `<li><label><input type="checkbox" name="scope" value="${escapeHtml(s.id)}" checked>` +
-              `<span>${escapeHtml(s.description)}` +
-              (s.id === s.description ? '' : ` <span class="id">${escapeHtml(s.id)}</span>`) +
-              `</span></label></li>`).join('') + `</ul>`;
-    const audience = (context.audience || []).length ? context.audience.join(', ') : '(none specified)';
-    return page('Confirm device sign-in', `<h1>Confirm device sign-in</h1>` +
-        `<p>You are signed in as <strong>${escapeHtml(context.user.displayName || context.user.login)}</strong>.</p>` +
-        `<p>A device is requesting access using code:</p>` +
-        `<p class="codeline"><code>${escapeHtml(context.userCode)}</code></p>` +
-        `<div class="detail"><span class="k">Application</span><span class="v">${context.clientId ? escapeHtml(context.clientId) : 'an unidentified client'}</span></div>` +
-        `<div class="detail"><span class="k">Audience</span><span class="v">${escapeHtml(audience)}</span></div>` +
-        `<form method="post" action="">${scopes}` +
-        `<p>Approve only if you started this sign-in and recognise this application.</p>` +
+    const scopes = scope.length === 0 ? '' :
+        `<p>It will be able to:</p><ul class="scopes">` + scope.map(s =>
+            `<li><label><input type="checkbox" name="scope" value="${escapeHtml(s.id)}" checked>` +
+            `<span>${escapeHtml(s.id)}</span></label></li>`).join('') + `</ul>`;
+    // The technical view: the code, the audience and the roles behind each scope, folded away by default.
+    const details = `<details><summary>Details</summary>` +
+        `<div class="detail"><span class="k">Code</span><span class="v">${escapeHtml(context.userCode)}</span></div>` +
+        ((context.audience || []).length ? `<div class="detail"><span class="k">Audience</span><span class="v">${escapeHtml(context.audience.join(', '))}</span></div>` : '') +
+        scope.map(s => `<div class="detail"><span class="k"><code class="id">${escapeHtml(s.id)}</code></span>` +
+            `<span class="v">${(s.roles || []).length ? escapeHtml(s.roles.join(', ')) : '&ndash;'}</span></div>`).join('') +
+        `</details>`;
+    return page(`Authorize ${app}`, `<h1>Authorize ${escapeHtml(app)}</h1>` +
+        `<p>${escapeHtml(app)} wants to sign in as <strong>${escapeHtml(context.user.displayName || context.user.login)}</strong>.</p>` +
+        `<form method="post" action="">${scopes}${details}` +
+        `<p class="warning">Only continue if you started this sign-in.</p>` +
         `<input type="hidden" name="user_code" value="${escapeHtml(context.userCode)}">` +
         `<input type="hidden" name="_csrf" value="${escapeHtml(context.csrf)}">` +
-        `<button class="approve" type="submit" name="approve" value="true">Approve</button>` +
-        `<button class="deny" type="submit" name="approve" value="false">Deny</button></form>`);
+        `<button class="approve" type="submit" name="approve" value="true">Authorize</button>` +
+        `<button class="deny" type="submit" name="approve" value="false">Cancel</button></form>`);
 }
 
 function done(context) {

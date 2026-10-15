@@ -72,9 +72,9 @@ NOTE: `myoidcprovider` in the example above must match the name you used in the 
 
 === Device login for CLIs and other browserless clients
 
-Enonic XP serves the OAuth device authorization flow (RFC 8628) for this ID provider's users: a client asks XP for a code, the user signs in through this ID provider as usual and approves the code on the verification page, and XP issues its own access and refresh tokens. This app only renders the verification page (its `deviceVerification` controller function); the endpoints, the tokens and what may be granted are XP's, configured in XP's `com.enonic.xp.security.cfg`.
+Enonic XP serves the OAuth device authorization flow (RFC 8628) for this ID provider's users: a client asks XP for a code, the user signs in through this ID provider as usual and approves the code on the verification page, and XP issues its own access and refresh tokens. This app only renders the verification page (its `deviceVerification` controller function); the endpoints, the tokens and what may be granted are XP's, configured per vhost in XP's `com.enonic.xp.web.vhost.cfg`.
 
-Enable the flow where the user approves, and token acceptance where the tokens are used:
+Enable the flow where the user approves, and token acceptance where the tokens are used. A scope catalogue on the approving host says what a client may ask for and the roles each scope implies; the token is restricted to the roles of the scopes the user keeps. Without a catalogue, scopes are opaque labels and the token carries the user's full memberships.
 
 .Example: approve on the admin host, use on the API host
 [source,properties]
@@ -84,6 +84,8 @@ mapping.admin.source = /
 mapping.admin.target = /admin
 mapping.admin.idProvider.myoidcprovider = default
 mapping.admin.idProvider.myoidcprovider.flows = login,logout,device
+mapping.admin.idProvider.myoidcprovider.scope.content\:read = role:cms.cm.app, role:cms.project.site.viewer
+mapping.admin.idProvider.myoidcprovider.scope.content\:write = role:cms.cm.app, role:cms.project.site.editor
 
 mapping.api.host = api.example.com
 mapping.api.source = /
