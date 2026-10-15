@@ -57,9 +57,6 @@ function confirm(context) {
     // A required scope is granted with the request; only the others are the user's to drop.
     const required = scope.filter(s => s.required === true);
     const optional = scope.filter(s => s.required !== true);
-    const user = escapeHtml(context.user.displayName || context.user.login);
-    // No scope catalogue on this host: the token carries the user's full rights, and the page says so.
-    const unrestricted = context.unrestricted === true ? `<p>${escapeHtml(app)} will be able to do everything ${user} can.</p>` : '';
     const granted = required.length === 0 ? '' :
         `<p class="lead">It will be able to:</p><ul class="granted">` + required.map(s => `<li>${escapeHtml(s.id)}</li>`).join('') + `</ul>`;
     const scopes = optional.length === 0 ? '' :
@@ -76,7 +73,7 @@ function confirm(context) {
         `<p>${escapeHtml(app)} wants to sign in as <strong>${escapeHtml(context.user.displayName || context.user.login)}</strong>.</p>` +
         // RFC 8628: the user confirms the code matches the one the device shows, against a phished link.
         `<p class="codeline"><span class="k">Code shown by ${escapeHtml(app)}</span><code>${escapeHtml(context.userCode)}</code></p>` +
-        `<form method="post" action="">${unrestricted}${granted}${scopes}${details}` +
+        `<form method="post" action="">${granted}${scopes}${details}` +
         `<p class="warning">Only continue if you started this sign-in.</p>` +
         `<input type="hidden" name="user_code" value="${escapeHtml(context.userCode)}">` +
         `<input type="hidden" name="_csrf" value="${escapeHtml(context.csrf)}">` +
