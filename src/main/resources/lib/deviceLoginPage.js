@@ -44,11 +44,12 @@ function page(title, bodyHtml) {
 
 function enter(context) {
     return page('Enter code', `<h1>Enter code</h1>` +
-        (context.error ? `<p class="error">${escapeHtml(context.error)}</p>` : '') +
+        // XP hands an error code; the wording is this page's.
+        (context.error ? `<p class="error">That code didn't work. Check the code and try again.</p>` : '') +
         `<p>Enter the code displayed on your app or device.</p>` +
         `<form method="get" action="">` +
         `<input type="text" name="user_code" placeholder="XXXX-XXXX" autofocus autocomplete="off">` +
-        `<button class="approve" type="submit">Continue</button></form>`);
+        `<button class="approve" type="submit">Next</button></form>`);
 }
 
 function confirm(context) {
@@ -70,7 +71,7 @@ function confirm(context) {
             `<span class="v">${(s.roles || []).length ? escapeHtml(s.roles.join(', ')) : '&ndash;'}</span></div>`).join('') +
         `</details>`;
     return page(`Authorize ${app}`, `<h1>Authorize ${escapeHtml(app)}</h1>` +
-        `<p>${escapeHtml(app)} wants to sign in as <strong>${escapeHtml(context.user.displayName || context.user.login)}</strong>.</p>` +
+        `<p>${escapeHtml(app)} wants to access your <strong>${escapeHtml(context.user.login)}</strong> account.</p>` +
         // RFC 8628: the user confirms the code matches the one the device shows, against a phished link.
         `<p class="codeline"><span class="k">Verification code</span><code>${escapeHtml(context.userCode)}</code></p>` +
         `<form method="post" action="">${granted}${scopes}${details}` +
