@@ -43,9 +43,9 @@ function page(title, bodyHtml) {
 }
 
 function enter(context) {
-    return page('Device sign-in', `<h1>Device sign-in</h1>` +
+    return page('Enter code', `<h1>Enter code</h1>` +
         (context.error ? `<p class="error">${escapeHtml(context.error)}</p>` : '') +
-        `<p>Enter the code shown by your application.</p>` +
+        `<p>Enter the code displayed on your app or device.</p>` +
         `<form method="get" action="">` +
         `<input type="text" name="user_code" placeholder="XXXX-XXXX" autofocus autocomplete="off">` +
         `<button class="approve" type="submit">Continue</button></form>`);
@@ -74,7 +74,7 @@ function confirm(context) {
         // RFC 8628: the user confirms the code matches the one the device shows, against a phished link.
         `<p class="codeline"><span class="k">Verification code</span><code>${escapeHtml(context.userCode)}</code></p>` +
         `<form method="post" action="">${granted}${scopes}${details}` +
-        `<p class="warning">Only continue if you started this sign-in.</p>` +
+        `<p class="warning">Only continue if you started this request.</p>` +
         `<input type="hidden" name="user_code" value="${escapeHtml(context.userCode)}">` +
         `<input type="hidden" name="_csrf" value="${escapeHtml(context.csrf)}">` +
         `<button class="approve" type="submit" name="approve" value="true">Authorize</button>` +
@@ -82,14 +82,14 @@ function confirm(context) {
 }
 
 function done(context) {
-    return page('Device sign-in', context.approved
-        ? `<h1>You're all set</h1><p>The device has been approved. You can return to your application.</p>`
-        : `<h1>Request denied</h1><p>The device sign-in request was denied.</p>`);
+    return page(context.approved ? 'Request approved' : 'Request denied', context.approved
+        ? `<h1>Request approved</h1><p>You may now close this window.</p>`
+        : `<h1>Request denied</h1><p>No access was granted. You may now close this window.</p>`);
 }
 
 function wrongAccount(context) {
     return page('Wrong account', `<h1>Wrong account</h1><p>You are signed in as <strong>${escapeHtml(context.user.key)}</strong>, ` +
-        `but this device sign-in is for users of the <strong>${escapeHtml(context.idProvider)}</strong> id provider. Sign out and sign in again.</p>`);
+        `but this request is for users of the id provider <strong>${escapeHtml(context.idProvider)}</strong>. Sign out and try again.</p>`);
 }
 
 exports.render = function (context) {
