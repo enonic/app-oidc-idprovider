@@ -12,6 +12,7 @@ const STYLE =
     `.detail .k{flex:0 0 92px;color:#777}.detail .v{color:#222;word-break:break-word}` +
     `ul.scopes{list-style:none;padding:0;margin:8px 0}ul.scopes li{margin:6px 0;font-size:14px}` +
     `ul.scopes label{display:flex;gap:8px;align-items:baseline}` +
+    `ul.granted{list-style:none;padding:0;margin:8px 0}ul.granted li{margin:6px 0;font-size:14px}ul.granted li::before{content:'\\2713';display:inline-block;width:20px;font-weight:600}` +
     `details{margin:12px 0;font-size:14px}summary{cursor:pointer;color:#777}details .detail{margin:6px 0}` +
     `code.id{font-size:12px;background:none;padding:0;letter-spacing:0}.warning{color:#777;font-size:13px}` +
     `input[type=text]{font-size:18px;padding:8px;width:100%;box-sizing:border-box;border:1px solid #ccc;border-radius:4px;letter-spacing:2px;text-transform:uppercase}` +
@@ -53,8 +54,13 @@ function enter(context) {
 function confirm(context) {
     const app = context.clientId || 'this device';
     const scope = context.scope || [];
-    const scopes = scope.length === 0 ? '' :
-        `<p>It will be able to:</p><ul class="scopes">` + scope.map(s =>
+    // A required scope is granted with the request; only the others are the user's to drop.
+    const required = scope.filter(s => s.required === true);
+    const optional = scope.filter(s => s.required !== true);
+    const granted = required.length === 0 ? '' :
+        `<p>It will be able to:</p><ul class="granted">` + required.map(s => `<li>${escapeHtml(s.id)}</li>`).join('') + `</ul>`;
+    const scopes = optional.length === 0 ? '' :
+        `<p>${required.length === 0 ? 'It will be able to:' : 'You can also allow:'}</p><ul class="scopes">` + optional.map(s =>
             `<li><label><input type="checkbox" name="scope" value="${escapeHtml(s.id)}" checked>` +
             `<span>${escapeHtml(s.id)}</span></label></li>`).join('') + `</ul>`;
     // The technical view: the code, the audience and the roles behind each scope, folded away by default.
@@ -67,7 +73,7 @@ function confirm(context) {
         `<p>${escapeHtml(app)} wants to sign in as <strong>${escapeHtml(context.user.displayName || context.user.login)}</strong>.</p>` +
         // RFC 8628: the user confirms the code matches the one the device shows, against a phished link.
         `<p class="codeline"><span class="k">Code shown by ${escapeHtml(app)}</span><br><code>${escapeHtml(context.userCode)}</code></p>` +
-        `<form method="post" action="">${scopes}${details}` +
+        `<form method="post" action="">${granted}${scopes}${details}` +
         `<p class="warning">Only continue if you started this sign-in.</p>` +
         `<input type="hidden" name="user_code" value="${escapeHtml(context.userCode)}">` +
         `<input type="hidden" name="_csrf" value="${escapeHtml(context.csrf)}">` +
