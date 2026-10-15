@@ -3,20 +3,20 @@
 // user_code, approve (true/false), _csrf and one scope per kept permission.
 
 const STYLE =
-    `body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#f5f6f8;margin:0;padding:0;color:#333}` +
+    `body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#f5f6f8;margin:0;padding:0;color:#333;line-height:1.45}` +
     `.card{max-width:420px;margin:8vh auto;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.12);padding:32px}` +
-    `h1{font-size:20px;margin:0 0 16px}` +
+    // One vertical rhythm: every block ends with the same gap, lists sit tight under their lead-in line.
+    `h1{font-size:20px;margin:0 0 16px}p{margin:0 0 16px}p.lead{margin-bottom:6px}` +
     `code{font-size:18px;letter-spacing:2px;background:#f0f1f3;padding:3px 8px;border-radius:4px;white-space:nowrap}` +
-    `.codeline{margin:12px 0}.codeline .k{color:#777;font-size:13px}` +
-    `.detail{display:flex;margin:6px 0;font-size:14px}` +
-    `.detail .k{flex:0 0 92px;color:#777}.detail .v{color:#222;word-break:break-word}` +
-    `ul.scopes{list-style:none;padding:0;margin:8px 0}ul.scopes li{margin:6px 0;font-size:14px}` +
-    `ul.scopes label{display:flex;gap:8px;align-items:baseline}` +
-    `ul.granted{list-style:none;padding:0;margin:8px 0}ul.granted li{margin:6px 0;font-size:14px}ul.granted li::before{content:'\\2713';display:inline-block;width:20px;font-weight:600}` +
-    `details{margin:12px 0;font-size:14px}summary{cursor:pointer;color:#777}details .detail{margin:6px 0}` +
+    `.codeline .k{display:block;color:#777;font-size:13px;margin-bottom:4px}` +
+    `ul.scopes,ul.granted{list-style:none;padding:0;margin:0 0 16px;font-size:15px}ul.scopes li,ul.granted li{margin:0 0 8px}` +
+    `ul.scopes label{display:flex;gap:10px;align-items:baseline;cursor:pointer}` +
+    `ul.granted li{display:flex;gap:10px}ul.granted li::before{content:'\\2713';flex:0 0 13px;text-align:center;font-weight:600}` +
+    `details{margin:0 0 16px;font-size:14px}summary{cursor:pointer;color:#777}details[open] summary{margin-bottom:8px}` +
+    `.detail{display:flex;gap:12px;margin:0 0 6px}.detail .k{flex:0 0 110px;color:#777}.detail .v{color:#222;word-break:break-word}` +
     `code.id{font-size:12px;background:none;padding:0;letter-spacing:0}.warning{color:#777;font-size:13px}` +
-    `input[type=text]{font-size:18px;padding:8px;width:100%;box-sizing:border-box;border:1px solid #ccc;border-radius:4px;letter-spacing:2px;text-transform:uppercase}` +
-    `button{font-size:15px;padding:10px 18px;border:0;border-radius:4px;cursor:pointer;margin-top:16px}` +
+    `input[type=text]{font-size:18px;padding:8px;width:100%;box-sizing:border-box;border:1px solid #ccc;border-radius:4px;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px}` +
+    `button{font-size:15px;padding:10px 18px;border:0;border-radius:4px;cursor:pointer}` +
     `.approve{background:#2c76e0;color:#fff}.deny{background:#e6e8eb;color:#333;margin-left:8px}.error{color:#b00020}`;
 
 function escapeHtml(value) {
@@ -48,7 +48,7 @@ function enter(context) {
         `<p>Enter the code shown by your application.</p>` +
         `<form method="get" action="">` +
         `<input type="text" name="user_code" placeholder="XXXX-XXXX" autofocus autocomplete="off">` +
-        `<div><button class="approve" type="submit">Continue</button></div></form>`);
+        `<button class="approve" type="submit">Continue</button></form>`);
 }
 
 function confirm(context) {
@@ -58,9 +58,9 @@ function confirm(context) {
     const required = scope.filter(s => s.required === true);
     const optional = scope.filter(s => s.required !== true);
     const granted = required.length === 0 ? '' :
-        `<p>It will be able to:</p><ul class="granted">` + required.map(s => `<li>${escapeHtml(s.id)}</li>`).join('') + `</ul>`;
+        `<p class="lead">It will be able to:</p><ul class="granted">` + required.map(s => `<li>${escapeHtml(s.id)}</li>`).join('') + `</ul>`;
     const scopes = optional.length === 0 ? '' :
-        `<p>${required.length === 0 ? 'It will be able to:' : 'You can also allow:'}</p><ul class="scopes">` + optional.map(s =>
+        `<p class="lead">${required.length === 0 ? 'It will be able to:' : 'You can also allow:'}</p><ul class="scopes">` + optional.map(s =>
             `<li><label><input type="checkbox" name="scope" value="${escapeHtml(s.id)}" checked>` +
             `<span>${escapeHtml(s.id)}</span></label></li>`).join('') + `</ul>`;
     // The technical view: the code, the audience and the roles behind each scope, folded away by default.
@@ -72,7 +72,7 @@ function confirm(context) {
     return page(`Authorize ${app}`, `<h1>Authorize ${escapeHtml(app)}</h1>` +
         `<p>${escapeHtml(app)} wants to sign in as <strong>${escapeHtml(context.user.displayName || context.user.login)}</strong>.</p>` +
         // RFC 8628: the user confirms the code matches the one the device shows, against a phished link.
-        `<p class="codeline"><span class="k">Code shown by ${escapeHtml(app)}</span><br><code>${escapeHtml(context.userCode)}</code></p>` +
+        `<p class="codeline"><span class="k">Code shown by ${escapeHtml(app)}</span><code>${escapeHtml(context.userCode)}</code></p>` +
         `<form method="post" action="">${granted}${scopes}${details}` +
         `<p class="warning">Only continue if you started this sign-in.</p>` +
         `<input type="hidden" name="user_code" value="${escapeHtml(context.userCode)}">` +
