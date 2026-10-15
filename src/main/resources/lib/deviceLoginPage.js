@@ -58,9 +58,9 @@ function confirm(context) {
     const required = scope.filter(s => s.required === true);
     const optional = scope.filter(s => s.required !== true);
     const granted = required.length === 0 ? '' :
-        `<p class="lead">It will be able to:</p><ul class="granted">` + required.map(s => `<li>${escapeHtml(s.id)}</li>`).join('') + `</ul>`;
+        `<p class="lead">${escapeHtml(app)} would like to:</p><ul class="granted">` + required.map(s => `<li>${escapeHtml(s.id)}</li>`).join('') + `</ul>`;
     const scopes = optional.length === 0 ? '' :
-        `<p class="lead">${required.length === 0 ? 'It will be able to:' : 'You can also allow:'}</p><ul class="scopes">` + optional.map(s =>
+        `<p class="lead">Select what ${escapeHtml(app)} ${required.length === 0 ? 'can access:' : 'can also access:'}</p><ul class="scopes">` + optional.map(s =>
             `<li><label><input type="checkbox" name="scope" value="${escapeHtml(s.id)}" checked>` +
             `<span>${escapeHtml(s.id)}</span></label></li>`).join('') + `</ul>`;
     // The technical view: the code, the audience and the roles behind each scope, folded away by default.
