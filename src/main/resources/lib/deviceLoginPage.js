@@ -72,7 +72,7 @@ function confirm(context) {
     return page(`Authorize ${app}`, `<h1>Authorize ${escapeHtml(app)}</h1>` +
         `<p>${escapeHtml(app)} wants to sign in as <strong>${escapeHtml(context.user.displayName || context.user.login)}</strong>.</p>` +
         // RFC 8628: the user confirms the code matches the one the device shows, against a phished link.
-        `<p class="codeline"><span class="k">Code shown by ${escapeHtml(app)}</span><code>${escapeHtml(context.userCode)}</code></p>` +
+        `<p class="codeline"><span class="k">Verification code</span><code>${escapeHtml(context.userCode)}</code></p>` +
         `<form method="post" action="">${granted}${scopes}${details}` +
         `<p class="warning">Only continue if you started this sign-in.</p>` +
         `<input type="hidden" name="user_code" value="${escapeHtml(context.userCode)}">` +
