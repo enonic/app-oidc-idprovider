@@ -53,7 +53,7 @@ function enter(context) {
 }
 
 function confirm(context) {
-    const app = context.clientId || 'this device';
+    const app = context.clientId;
     const scope = context.scope || [];
     // A required scope is granted with the request; only the others are the user's to drop.
     const required = scope.filter(s => s.required === true);
