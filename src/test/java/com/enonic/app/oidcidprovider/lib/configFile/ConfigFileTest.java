@@ -26,6 +26,18 @@ public class ConfigFileTest
     }
 
     @Test
+    public void testAllowedAudienceFromVhost()
+    {
+        runFunction( "/lib/configFile/configIdProvider-test.js", "testAllowedAudienceFromVhost" );
+    }
+
+    @Test
+    public void testAllowedAudienceFromVhostCannotBeCombined()
+    {
+        runFunction( "/lib/configFile/configIdProvider-test.js", "testAllowedAudienceFromVhostCannotBeCombined" );
+    }
+
+    @Test
     public void testValidationOfAdditionalEndpoints()
     {
         runFunction( "/lib/configFile/configIdProvider-test.js", "testValidationOfAdditionalEndpoints" );

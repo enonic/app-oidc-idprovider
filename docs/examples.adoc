@@ -35,7 +35,12 @@ idprovider.auth0.autoLogin.allowedAudience=https://service.example.com/api
 idprovider.auth0.mappings.displayName=@@{userinfo.name}
 ----
 
-The virtual host that accepts the tokens declares the same audience, in XP's `com.enonic.xp.web.vhost.cfg`:
+To let XP check the audience and narrow the token's scopes to roles instead (see <<config#tokens-through-xp, tokens through XP>>), point `allowedAudience` at the virtual host and declare the audience there, in XP's `com.enonic.xp.web.vhost.cfg`:
+
+[source,properties]
+----
+idprovider.auth0.autoLogin.allowedAudience=@@{vhost.audience}
+----
 
 [source,properties]
 ----

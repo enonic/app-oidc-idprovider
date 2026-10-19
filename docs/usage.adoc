@@ -97,7 +97,7 @@ mapping.api.audience = api
 
 A client then uses `POST [host+sourcepath]/_/idprovider/myoidcprovider/device/code` and polls `POST .../token`; see the XP documentation on device login for the full contract.
 
-Bearer tokens of your OpenID provider keep working through autologin, and go through the same host rules: the host must declare the token's audience, and the host's scope catalogue decides which roles the token's scopes give. See <<config#autologin, autoLogin>>.
+Bearer tokens of your OpenID provider keep working through autologin as before. With `autoLogin.allowedAudience=@@{vhost.audience}` they go through the same host rules as XP's own tokens: the host must declare the token's audience, and the host's scope catalogue decides which roles the token's scopes give. See <<config#tokens-through-xp, tokens through XP>>.
 
 == Redirect/Callback URI
 

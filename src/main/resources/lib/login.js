@@ -103,10 +103,13 @@ function doLogin(idProviderConfig, userName, isAutoLogin, tokenClaims) {
 
     if (isAutoLogin) {
         loginParams.scope = idProviderConfig.autoLogin.createSession ? 'SESSION' : 'REQUEST';
-        // The bearer token is verified; hand XP what it says, so the login is accepted only where
-        // the vhost declares the token's audience, is restricted to the roles the host's scope
-        // catalogue gives its scopes, and carries the token as request.accessToken.
-        loginParams.accessToken = accessTokenLib.accessTokenFromClaims(tokenClaims);
+        if (idProviderConfig.autoLogin.audienceFromVhost) {
+            // allowedAudience=@@{vhost.audience}: the bearer token is verified, and XP is handed what
+            // it says, so the login is accepted only where the vhost declares the token's audience,
+            // is restricted to the roles the host's scope catalogue gives its scopes, and carries the
+            // token as request.accessToken.
+            loginParams.accessToken = accessTokenLib.accessTokenFromClaims(tokenClaims);
+        }
     }
 
     //Logs in the user

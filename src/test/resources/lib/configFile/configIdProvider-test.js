@@ -139,6 +139,7 @@ exports.testValidConfig = () => {
     test.assertTrue(config.autoLogin.createSession);
     test.assertFalse(config.autoLogin.wsHeader);
     test.assertJsonEquals(['audience1', 'audience2', 'audience3', 'audience4'], config.autoLogin.allowedAudience);
+    test.assertFalse(config.autoLogin.audienceFromVhost);
     test.assertTrue(config.autoLogin.applyGroups);
 
     test.assertEquals('realm_access.roles', config.groups.claim);
@@ -202,6 +203,7 @@ exports.testDefaultConfigWithRequiredOptions = () => {
     test.assertFalse(config.autoLogin.createSession);
     test.assertFalse(config.autoLogin.wsHeader);
     test.assertJsonEquals([], config.autoLogin.allowedAudience);
+    test.assertFalse(config.autoLogin.audienceFromVhost);
     test.assertFalse(config.autoLogin.applyGroups);
 
     test.assertNull(config.groups);
@@ -448,4 +450,47 @@ exports.testMissingEndSessionUrlWithoutWellKnown = () => {
     } catch (e) {
         test.assertEquals(`Missing config 'endSession.url' for ID Provider 'myidp'.`, e);
     }
+};
+
+exports.testAllowedAudienceFromVhost = () => {
+    mockWellKnownService();
+
+    test.mock('/lib/configFile/services/getConfig', {
+        getConfigOrEmpty: function () {
+            return {
+                'idprovider.myidp.oidcWellKnownEndpoint': 'wellKnownEndpoint',
+                'idprovider.myidp.autoLogin.allowedAudience': '  @@{vhost.audience} ',
+            }
+        }
+    });
+
+    const configProvider = require('./configProvider');
+    const config = configProvider.getIdProviderConfig('myidp');
+
+    test.assertTrue(config.autoLogin.audienceFromVhost);
+    test.assertJsonEquals([], config.autoLogin.allowedAudience);
+};
+
+exports.testAllowedAudienceFromVhostCannotBeCombined = () => {
+    mockWellKnownService();
+
+    test.mock('/lib/configFile/services/getConfig', {
+        getConfigOrEmpty: function () {
+            return {
+                'idprovider.myidp.oidcWellKnownEndpoint': 'wellKnownEndpoint',
+                'idprovider.myidp.autoLogin.allowedAudience': '@@{vhost.audience} https://service.example.com/api',
+            }
+        }
+    });
+
+    const configProvider = require('./configProvider');
+
+    let thrown = null;
+    try {
+        configProvider.getIdProviderConfig('myidp');
+    } catch (e) {
+        thrown = e;
+    }
+    test.assertEquals(`Invalid configuration of 'autoLogin.allowedAudience' for ID Provider 'myidp': ` +
+                      `'@@{vhost.audience}' cannot be combined with an audience list.`, thrown);
 };
