@@ -1,6 +1,7 @@
 const configLib = require('/lib/config');
 const oidcLib = require('/lib/oidc');
 const loginLib = require('/lib/login');
+const accessTokenLib = require('/lib/accessToken');
 const requestLib = require('/lib/request');
 const preconditions = require('/lib/preconditions');
 const authLib = require('/lib/xp/auth');
@@ -237,6 +238,13 @@ exports.autoLogin = function (req) {
     const payload = jwtLib.validateTokenAndGetPayload(jwtToken, idProviderConfig);
 
     if (payload) {
+        if (idProviderConfig.autoLogin.audienceFromVhost && !accessTokenLib.isAudienceDeclared(payload, req)) {
+            // Refused here, before the user is created, the profile saved or groups synchronised;
+            // XP refuses the login again when the token is handed over.
+            log.debug(`AutoLogin failed: token audience ${JSON.stringify(payload.aud)} is not declared by the virtual host`);
+            requestLib.autoLoginFailed();
+            return;
+        }
         try {
             checkClaimUsername(payload, idProviderConfig.claimUsername);
             loginLib.login(jwtToken, payload, true);

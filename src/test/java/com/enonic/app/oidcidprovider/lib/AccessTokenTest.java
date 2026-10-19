@@ -31,6 +31,18 @@ public class AccessTokenTest
     }
 
     @Test
+    public void testAudienceDeclared()
+    {
+        run( "testAudienceDeclared" );
+    }
+
+    @Test
+    public void testAudienceOnAHostDeclaringNone()
+    {
+        run( "testAudienceOnAHostDeclaringNone" );
+    }
+
+    @Test
     public void testBareClaims()
     {
         run( "testBareClaims" );

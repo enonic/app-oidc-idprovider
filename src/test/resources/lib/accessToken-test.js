@@ -51,3 +51,17 @@ exports.testBareClaims = function () {
     const accessToken = accessTokenLib.accessTokenFromClaims({iss: 'https://provider.example.com', sub: 'alice'});
     test.assertJsonEquals({issuer: 'https://provider.example.com', scope: [], audience: []}, accessToken);
 };
+
+exports.testAudienceDeclared = function () {
+    const req = {idProviderSettings: {flows: ['autologin'], audience: ['https://service.example.com/api', 'my-client']}};
+    test.assertTrue(accessTokenLib.isAudienceDeclared({aud: 'my-client'}, req));
+    test.assertTrue(accessTokenLib.isAudienceDeclared({aud: ['other', 'https://service.example.com/api']}, req));
+    test.assertFalse(accessTokenLib.isAudienceDeclared({aud: ['other']}, req));
+    test.assertFalse(accessTokenLib.isAudienceDeclared({aud: []}, req));
+    test.assertFalse(accessTokenLib.isAudienceDeclared({}, req));
+};
+
+exports.testAudienceOnAHostDeclaringNone = function () {
+    test.assertFalse(accessTokenLib.isAudienceDeclared({aud: 'my-client'}, {idProviderSettings: {flows: [], audience: []}}));
+    test.assertFalse(accessTokenLib.isAudienceDeclared({aud: 'my-client'}, {}));
+};
