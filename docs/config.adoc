@@ -207,7 +207,7 @@ autoLogin.applyGroups=(true|false, defaults to false) // <5>
 <1> If you disable 'createUser', the user will be logged in, but not persisted as a user within Enonic. If `true`, a user will be created automatically if it doesn't exist.
 <2> Optionally create a session in Enonic when the user is logged in. By default, the user will be logged in with `REQUEST` scope.
 <3> ID provider will look for a token in the Sec-WebSocket-Protocol header.
-<4> `allowedAudience` is a list of space-separated strings. If set, the app will only accept tokens with an audience that matches one of the values in this list. The placeholder `@@{vhost.audience}`, alone, makes the audiences whatever the virtual host declares and hands the token to XP; see <<#tokens-through-xp, tokens through XP>>. It is highly recommended to set one or the other, so that only the right tokens are used for the auto login.
+<4> `allowedAudience` is the placeholder `@@{vhost.audience}`: the audiences are whatever the virtual host declares, and the token is handed to XP; see <<#tokens-through-xp, tokens through XP>>. It is highly recommended to set it, so that only the right tokens are used for the auto login. A list of space-separated audiences that the app checks itself is *deprecated*: it still works, with a warning in the log, and will be removed; the placeholder will become the default.
 <5> When `true`, also apply <<#groups-from-claim,groups from claim>> sync during Bearer autoLogin. The claim is resolved against the raw JWT payload (no userinfo endpoint is called).
 
 [#tokens-through-xp]
@@ -215,7 +215,7 @@ autoLogin.applyGroups=(true|false, defaults to false) // <5>
 
 With `autoLogin.allowedAudience=@@{vhost.audience}` the app still verifies the token, but what the token says is handed to XP with the login, and XP applies the same rules as to the access tokens it issues itself (XP 8.2 and later; an older XP ignores it and logs the user in as before). The token's audience must be one the virtual host declares in XP's `com.enonic.xp.web.vhost.cfg` (`+mapping.<name>.audience+`), or the login is refused: a host declaring no audience accepts no token of another issuer, and the app runs no audience check of its own. The token's scopes are mapped to roles through the host's scope catalogue for this ID provider (`+mapping.<name>.idProvider.<idp>.scope.<id>.roles+`), so the login is restricted to those roles; without a catalogue the user keeps their full memberships. Functions handling the request see the token as `request.accessToken`, with its `issuer`, `clientId`, `scope` and `audience`.
 
-The placeholder stands alone: combining it with an audience list fails configuration. A plain list keeps today's behaviour, where the app checks the audience itself and XP is not involved.
+The placeholder stands alone: combining it with an audience list fails configuration. A plain list keeps the earlier behaviour, where the app checks the audience itself and XP is not involved; that form is deprecated, as the check is XP's now.
 
 .Accepting tokens issued for an API, with their scopes narrowed to roles
 [source,properties]

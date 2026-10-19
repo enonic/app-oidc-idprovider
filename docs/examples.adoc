@@ -31,22 +31,19 @@ autoinit=true
 idprovider.auth0.oidcWellKnownEndpoint=https://auth.enonic-qa.com/.well-known/openid-configuration
 idprovider.auth0.rules.forceEmailVerification=true
 idprovider.auth0.autoLogin.wsHeader=true
-idprovider.auth0.autoLogin.allowedAudience=https://service.example.com/api
+idprovider.auth0.autoLogin.allowedAudience=@@{vhost.audience}
 idprovider.auth0.mappings.displayName=@@{userinfo.name}
 ----
 
-To let XP check the audience and narrow the token's scopes to roles instead (see <<config#tokens-through-xp, tokens through XP>>), point `allowedAudience` at the virtual host and declare the audience there, in XP's `com.enonic.xp.web.vhost.cfg`:
-
-[source,properties]
-----
-idprovider.auth0.autoLogin.allowedAudience=@@{vhost.audience}
-----
+The audience the tokens must name is declared on the virtual host that accepts them, in XP's `com.enonic.xp.web.vhost.cfg`, which also checks it and narrows the token's scopes to roles (see <<config#tokens-through-xp, tokens through XP>>):
 
 [source,properties]
 ----
 mapping.api.idProvider.auth0.flows = autologin
 mapping.api.audience = https://service.example.com/api
 ----
+
+Earlier versions listed the audience in the app instead, `+autoLogin.allowedAudience=https://service.example.com/api+`; that form is deprecated.
 
 == Okta with groups from claim
 

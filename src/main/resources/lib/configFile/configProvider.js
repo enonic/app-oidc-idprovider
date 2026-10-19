@@ -148,7 +148,7 @@ const VHOST_AUDIENCE = '@@{vhost.audience}';
 
 /**
  * `autoLogin.allowedAudience` is either the app's own list of accepted audiences, checked before
- * the token is verified, or the placeholder `@@{vhost.audience}` alone: the audiences are then
+ * the token is verified (deprecated: the check is XP's now), or the placeholder `@@{vhost.audience}` alone: the audiences are then
  * whatever the virtual host declares, and the token is handed to XP with the login so XP checks
  * its audience against the host, maps its scopes to roles and exposes it as request.accessToken.
  * The two cannot be combined; a list naming the placeholder next to audiences is refused.
@@ -156,6 +156,10 @@ const VHOST_AUDIENCE = '@@{vhost.audience}';
 function resolveAllowedAudience(autoLogin, idProviderName) {
     const fromVhost = autoLogin.allowedAudience.indexOf(VHOST_AUDIENCE) >= 0;
     if (!fromVhost) {
+        if (autoLogin.allowedAudience.length > 0) {
+            log.warning(`ID Provider '${idProviderName}': 'autoLogin.allowedAudience' as a list of audiences is deprecated. ` +
+                        `Set it to '${VHOST_AUDIENCE}' and declare the audience on the virtual host (mapping.<name>.audience).`);
+        }
         return;
     }
     if (autoLogin.allowedAudience.length !== 1) {
