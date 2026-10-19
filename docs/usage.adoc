@@ -84,8 +84,8 @@ mapping.admin.source = /
 mapping.admin.target = /admin
 mapping.admin.idProvider.myoidcprovider = default
 mapping.admin.idProvider.myoidcprovider.flows = login,logout,device
-mapping.admin.idProvider.myoidcprovider.scope.content\:read = role:cms.cm.app, role:cms.project.site.viewer
-mapping.admin.idProvider.myoidcprovider.scope.content\:write = role:cms.cm.app, role:cms.project.site.editor
+mapping.admin.idProvider.myoidcprovider.scope.content\:read.roles = role:cms.project.site.viewer
+mapping.admin.idProvider.myoidcprovider.scope.content\:write.roles = role:cms.project.site.editor
 
 mapping.api.host = api.example.com
 mapping.api.source = /
@@ -96,6 +96,8 @@ mapping.api.audience = api
 ----
 
 A client then uses `POST [host+sourcepath]/_/idprovider/myoidcprovider/device/code` and polls `POST .../token`; see the XP documentation on device login for the full contract.
+
+Bearer tokens of your OpenID provider keep working through autologin, and go through the same host rules: the host must declare the token's audience, and the host's scope catalogue decides which roles the token's scopes give. See <<config#autologin, autoLogin>>.
 
 == Redirect/Callback URI
 

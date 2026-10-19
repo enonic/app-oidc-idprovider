@@ -184,6 +184,7 @@ additionalEndpoints.0.url=(string, required)
 TIP: For multiple endpoints, simply add more lines, and iterate the array counter.
 
 
+[#autologin]
 == Autologin
 
 Autologin is a concept in Enonic XP, where every request (without an existing session) may automatically be logged in. This is for instance useful if you want to support authentication for an API, rather than a regular website.
@@ -206,8 +207,24 @@ autoLogin.applyGroups=(true|false, defaults to false) // <5>
 <1> If you disable 'createUser', the user will be logged in, but not persisted as a user within Enonic. If `true`, a user will be created automatically if it doesn't exist.
 <2> Optionally create a session in Enonic when the user is logged in. By default, the user will be logged in with `REQUEST` scope.
 <3> ID provider will look for a token in the Sec-WebSocket-Protocol header.
-<4> `allowedAudience` is a list of space-separated strings. If set, the app will only accept tokens with an audience that matches one of the values in this list. It is highly recommended to set this value to make sure the correct tokens are used for the auto login.
+<4> `allowedAudience` is a list of space-separated strings. If set, the app will only accept tokens with an audience that matches one of the values in this list. XP checks the audience as well, against the virtual host (see below), so list the same values there.
 <5> When `true`, also apply <<#groups-from-claim,groups from claim>> sync during Bearer autoLogin. The claim is resolved against the raw JWT payload (no userinfo endpoint is called).
+
+The app verifies the token; what the token says is then handed to XP with the login, and XP applies the same rules as to the access tokens it issues itself. The token's audience must be one the virtual host declares in XP's `com.enonic.xp.web.vhost.cfg` (`+mapping.<name>.audience+`), or the login is refused: a host declaring no audience accepts no token of another issuer. The token's scopes are mapped to roles through the host's scope catalogue for this ID provider (`+mapping.<name>.idProvider.<idp>.scope.<id>.roles+`), so the login is restricted to those roles; without a catalogue the user keeps their full memberships. Functions handling the request see the token as `request.accessToken`, with its `issuer`, `clientId`, `scope` and `audience`.
+
+.Accepting tokens issued for an API, with their scopes narrowed to roles
+[source,properties]
+----
+mapping.api.host = api.example.com
+mapping.api.source = /
+mapping.api.target = /
+mapping.api.idProvider.myoidcprovider = default
+mapping.api.idProvider.myoidcprovider.flows = autologin
+mapping.api.audience = https://service.example.com/api
+mapping.api.idProvider.myoidcprovider.scope.content\:read.roles = role:cms.project.site.viewer
+----
+
+An ID token names the client as its audience, so a host accepting ID tokens declares the client id. An access token names the API it was issued for, as `allowedAudience` already required you to know.
 
 == endSession
 

@@ -35,6 +35,14 @@ idprovider.auth0.autoLogin.allowedAudience=https://service.example.com/api
 idprovider.auth0.mappings.displayName=@@{userinfo.name}
 ----
 
+The virtual host that accepts the tokens declares the same audience, in XP's `com.enonic.xp.web.vhost.cfg`:
+
+[source,properties]
+----
+mapping.api.idProvider.auth0.flows = autologin
+mapping.api.audience = https://service.example.com/api
+----
+
 == Okta with groups from claim
 
 Example mapping Okta group names from the `groups` claim to Enonic groups on every login.
