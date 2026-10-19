@@ -207,15 +207,15 @@ autoLogin.applyGroups=(true|false, defaults to false) // <5>
 <1> If you disable 'createUser', the user will be logged in, but not persisted as a user within Enonic. If `true`, a user will be created automatically if it doesn't exist.
 <2> Optionally create a session in Enonic when the user is logged in. By default, the user will be logged in with `REQUEST` scope.
 <3> ID provider will look for a token in the Sec-WebSocket-Protocol header.
-<4> `allowedAudience` is the placeholder `@@{vhost.audience}`: the audiences are whatever the virtual host declares, and the token is handed to XP; see <<#tokens-through-xp, tokens through XP>>. It is highly recommended to set it, so that only the right tokens are used for the auto login. A list of space-separated audiences that the app checks itself is *deprecated*: it still works, with a warning in the log, and will be removed; the placeholder will become the default.
+<4> Set to `@@{vhost.audience}`: the accepted audiences are those the virtual host declares, and the token is handed to XP; see <<#tokens-through-xp, tokens through XP>>. A space-separated list of audiences the app checks itself is *deprecated*: it still works, with a warning in the log, and the placeholder will become the default.
 <5> When `true`, also apply <<#groups-from-claim,groups from claim>> sync during Bearer autoLogin. The claim is resolved against the raw JWT payload (no userinfo endpoint is called).
 
 [#tokens-through-xp]
 === Tokens through XP
 
-With `autoLogin.allowedAudience=@@{vhost.audience}` the app still verifies the token, but what the token says is handed to XP with the login, and XP applies the same rules as to the access tokens it issues itself (XP 8.2 and later; an older XP ignores it and logs the user in as before). The token's audience must be one the virtual host declares in XP's `com.enonic.xp.web.vhost.cfg` (`+mapping.<name>.audience+`), or the login is refused: a host declaring no audience accepts no token of another issuer. The app makes that check first, against the host's declared list, before any user is created, profile saved or group synchronised, and XP makes it again when the token is handed over. The token's scopes are mapped to roles through the host's scope catalogue for this ID provider (`+mapping.<name>.idProvider.<idp>.scope.<id>.roles+`), so the login is restricted to those roles; without a catalogue the user keeps their full memberships. Functions handling the request see the token as `request.accessToken`, with its `issuer`, `clientId`, `scope` and `audience`.
+With `autoLogin.allowedAudience=@@{vhost.audience}` the app verifies the token as before and then hands it to XP with the login (XP 8.2 and later; an older XP ignores it). The token's audience must be one the virtual host declares in `com.enonic.xp.web.vhost.cfg` (`+mapping.<name>.audience+`), or the login is refused before any user is created or changed. The token's scopes are mapped to roles through the host's scope catalogue for this ID provider (`+mapping.<name>.idProvider.<idp>.scope.<id>.roles+`); without a catalogue the user keeps their full memberships. Functions handling the request see the token as `request.accessToken`.
 
-The placeholder stands alone: combining it with an audience list fails configuration. A plain list keeps the earlier behaviour, where the app checks the audience itself and XP is not involved; that form is deprecated, as the check is XP's now.
+The placeholder cannot be combined with an audience list.
 
 .Accepting tokens issued for an API, with their scopes narrowed to roles
 [source,properties]
@@ -236,7 +236,7 @@ mapping.api.audience = https://service.example.com/api
 mapping.api.idProvider.myoidcprovider.scope.content\:read.roles = role:cms.project.site.viewer
 ----
 
-An ID token names the client as its audience, so a host accepting ID tokens declares the client id. An access token names the API it was issued for, the value a plain `allowedAudience` list would hold.
+An ID token names the client as its audience, so a host accepting ID tokens declares the client id. An access token names the API it was issued for.
 
 == endSession
 

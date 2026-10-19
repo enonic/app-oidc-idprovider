@@ -35,7 +35,7 @@ idprovider.auth0.autoLogin.allowedAudience=@@{vhost.audience}
 idprovider.auth0.mappings.displayName=@@{userinfo.name}
 ----
 
-The audience the tokens must name is declared on the virtual host that accepts them, in XP's `com.enonic.xp.web.vhost.cfg`, which also checks it and narrows the token's scopes to roles (see <<config#tokens-through-xp, tokens through XP>>):
+The audience is declared on the virtual host that accepts the tokens, in XP's `com.enonic.xp.web.vhost.cfg` (see <<config#tokens-through-xp, tokens through XP>>):
 
 [source,properties]
 ----
@@ -43,7 +43,7 @@ mapping.api.idProvider.auth0.flows = autologin
 mapping.api.audience = https://service.example.com/api
 ----
 
-Earlier versions listed the audience in the app instead, `+autoLogin.allowedAudience=https://service.example.com/api+`; that form is deprecated.
+Listing the audience in the app instead, `+autoLogin.allowedAudience=https://service.example.com/api+`, is deprecated.
 
 == Okta with groups from claim
 
