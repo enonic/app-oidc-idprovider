@@ -213,7 +213,7 @@ autoLogin.applyGroups=(true|false, defaults to false) // <5>
 [#tokens-through-xp]
 === Tokens through XP
 
-With `autoLogin.allowedAudience=@@{vhost.audience}`, XP decides what a verified token may do here, by the same rules as for its own tokens (XP 8.2 and later; an older XP ignores the setting). The virtual host that receives the token declares the audiences it accepts in `com.enonic.xp.web.vhost.cfg` (`+mapping.<name>.audience+`); a token for any other audience is refused, and no user is created or changed. The host may also declare scopes (`+mapping.<name>.idProvider.<idp>.scope.<id>.roles+`): the user then gets only the roles of the scopes the token carries. Without declared scopes the user keeps their full memberships.
+With `autoLogin.allowedAudience=@@{vhost.audience}`, XP decides what a verified token may do here, by the same rules as for its own tokens. This needs XP 8.2 or later: an older XP declares no audiences, so in this mode it accepts no upstream token at all. The virtual host that receives the token declares the audiences it accepts in `com.enonic.xp.web.vhost.cfg` (`+mapping.<name>.audience+`); a token for any other audience is refused, and no user is created or changed. The host may also declare scopes (`+mapping.<name>.idProvider.<idp>.scope.<id>.roles+`): the user then gets only the roles of the scopes the token carries. Without declared scopes the user keeps their full memberships.
 
 The placeholder cannot be combined with an audience list.
 
