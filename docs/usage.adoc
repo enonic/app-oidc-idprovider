@@ -70,6 +70,35 @@ mapping.example.idProvider.myoidcprovider = default
 
 NOTE: `myoidcprovider` in the example above must match the name you used in the ID provider configuration.
 
+=== Device login for CLIs and other browserless clients
+
+Enonic XP serves the OAuth device authorization flow (RFC 8628) for this ID provider's users: a client asks XP for a code, the user signs in through this ID provider as usual and approves the code on a verification page, and XP issues its own access and refresh tokens. This app provides the page the user sees; everything else is XP's, configured per virtual host in `com.enonic.xp.web.vhost.cfg`. See https://developer.enonic.com/docs/platform/stable/security/access-tokens[access tokens and device login] in the XP documentation.
+
+Enable the `device` flow on the host where users approve, and `autologin` with an `audience` on the host where the tokens are used. Scopes declared on the approving host say what a client may ask for and the roles each scope gives; the token gets the roles of the scopes the user keeps. Without declared scopes, a client asks for none and the token carries the user's full memberships.
+
+.Example: approve on the admin host, use on the API host
+[source,properties]
+----
+mapping.admin.host = xp.example.com
+mapping.admin.source = /
+mapping.admin.target = /admin
+mapping.admin.idProvider.myoidcprovider = default
+mapping.admin.idProvider.myoidcprovider.flows = login,logout,device
+mapping.admin.idProvider.myoidcprovider.scope.content\:read.roles = role:cms.project.site.viewer
+mapping.admin.idProvider.myoidcprovider.scope.content\:write.roles = role:cms.project.site.editor
+
+mapping.api.host = api.example.com
+mapping.api.source = /
+mapping.api.target = /
+mapping.api.idProvider.myoidcprovider = default
+mapping.api.idProvider.myoidcprovider.flows = autologin
+mapping.api.audience = api
+----
+
+A client obtains its code at `+https://xp.example.com/_/idprovider/myoidcprovider/device/code+` and its tokens at `+.../token+`.
+
+Bearer tokens of your OpenID provider keep working through autologin. With `autoLogin.allowedAudience=@@{vhost.audience}` the host's audience and scopes apply to them too, see <<config#tokens-through-xp, tokens through XP>>.
+
 == Redirect/Callback URI
 
 Finally, if you want to use form-based authenticated (aka Authorization Code Flow), End-Users will be redirected back to your Enonic endpoint from the authorization server. For security reasons you will need to register this URL in the configuration of your OIDC providers Client/Application.

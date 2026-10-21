@@ -6,6 +6,7 @@ const portalLib = require('/lib/xp/portal');
 const preconditions = require('/lib/preconditions');
 const oidcLib = require('./oidc');
 const groupSync = require('./groupSync');
+const accessTokenLib = require('./accessToken');
 const eventLib = require('/lib/xp/event');
 
 const regExp = /\$\{([^\}]+)\}/g;
@@ -41,7 +42,7 @@ function login(token, tokenClaims, isAutoLogin) {
 
     syncGroups(idProviderConfig, principalKey, claims, tokenClaims, isAutoLogin);
 
-    return doLogin(idProviderConfig, userName, isAutoLogin);
+    return doLogin(idProviderConfig, userName, isAutoLogin, tokenClaims);
 }
 
 function getClaim(claims, claimKey) {
@@ -90,7 +91,7 @@ function saveClaims(claims, principalKey) {
     log.debug(`Modified profile of [${principalKey}]: ${JSON.stringify(profile)}`);
 }
 
-function doLogin(idProviderConfig, userName, isAutoLogin) {
+function doLogin(idProviderConfig, userName, isAutoLogin, tokenClaims) {
     const idProviderKey = idProviderConfig._idProviderName;
     const principalKey = `user:${idProviderKey}:${userName}`;
 
@@ -102,6 +103,13 @@ function doLogin(idProviderConfig, userName, isAutoLogin) {
 
     if (isAutoLogin) {
         loginParams.scope = idProviderConfig.autoLogin.createSession ? 'SESSION' : 'REQUEST';
+        if (idProviderConfig.autoLogin.audienceFromVhost) {
+            // allowedAudience=@@{vhost.audience}: the bearer token is verified, and XP is handed what
+            // it says, so the login is accepted only where the vhost declares the token's audience,
+            // is restricted to the roles the host's scope catalogue gives its scopes, and carries the
+            // token as request.accessToken.
+            loginParams.accessToken = accessTokenLib.accessTokenFromClaims(tokenClaims);
+        }
     }
 
     //Logs in the user

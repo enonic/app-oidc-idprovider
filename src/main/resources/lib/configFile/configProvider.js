@@ -57,6 +57,7 @@ exports.getIdProviderConfig = function (idProviderName) {
             createSession: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.createSession`] === 'true' || false,
             wsHeader: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.wsHeader`] === 'true' || false,
             allowedAudience: parseStringArray(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.allowedAudience`]),
+            audienceFromVhost: false,
             applyGroups: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.applyGroups`] === 'true' || false,
         },
         groups: parseGroups(rawIdProviderConfig, idProviderKeyBase, idProviderName),
@@ -136,10 +137,37 @@ function validate(config, idProviderName) {
     }
 
     checkArrayConfig(config.additionalEndpoints, 'additionalEndpoints', idProviderName);
+    resolveAllowedAudience(config.autoLogin, idProviderName);
     if (config.endSession) {
         required(config.endSession.url, 'endSession.url', idProviderName);
         checkArrayConfig(config.endSession.additionalParameters, 'endSession.additionalParameters', idProviderName);
     }
+}
+
+const VHOST_AUDIENCE = '@@{vhost.audience}';
+
+/**
+ * `autoLogin.allowedAudience` is either the app's own list of accepted audiences, checked before
+ * the token is verified (deprecated: the check is XP's now), or the placeholder `@@{vhost.audience}` alone: the audiences are then
+ * whatever the virtual host declares, and the token is handed to XP with the login so XP checks
+ * its audience against the host, maps its scopes to roles and exposes it as request.accessToken.
+ * The two cannot be combined; a list naming the placeholder next to audiences is refused.
+ */
+function resolveAllowedAudience(autoLogin, idProviderName) {
+    const fromVhost = autoLogin.allowedAudience.indexOf(VHOST_AUDIENCE) >= 0;
+    if (!fromVhost) {
+        if (autoLogin.allowedAudience.length > 0) {
+            log.warning(`ID Provider '${idProviderName}': 'autoLogin.allowedAudience' as a list of audiences is deprecated. ` +
+                        `Set it to '${VHOST_AUDIENCE}' and declare the audience on the virtual host (mapping.<name>.audience).`);
+        }
+        return;
+    }
+    if (autoLogin.allowedAudience.length !== 1) {
+        throw `Invalid configuration of 'autoLogin.allowedAudience' for ID Provider '${idProviderName}': ` +
+              `'${VHOST_AUDIENCE}' cannot be combined with an audience list.`;
+    }
+    autoLogin.allowedAudience = [];
+    autoLogin.audienceFromVhost = true;
 }
 
 function parseGroups(rawConfig, idProviderKeyBase, idProviderName) {

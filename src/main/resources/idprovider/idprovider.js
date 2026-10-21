@@ -1,12 +1,13 @@
 const configLib = require('/lib/config');
 const oidcLib = require('/lib/oidc');
 const loginLib = require('/lib/login');
+const accessTokenLib = require('/lib/accessToken');
 const requestLib = require('/lib/request');
 const preconditions = require('/lib/preconditions');
 const authLib = require('/lib/xp/auth');
 const portalLib = require('/lib/xp/portal');
 const jwtLib = require('/lib/jwt');
-const deviceLogin = require('/lib/deviceLogin');
+const deviceLoginPage = require('/lib/deviceLoginPage');
 
 function redirectToAuthorizationEndpoint() {
     const idProviderConfig = configLib.getIdProviderConfig();
@@ -203,20 +204,19 @@ function generateRedirectUrl() {
 exports.handle401 = redirectToAuthorizationEndpoint;
 
 exports.GET = function (req) {
-    const deviceResponse = deviceLogin.handleGet(req);
-    if (deviceResponse) {
-        return deviceResponse;
-    }
     // The authorization-code callback only completes interactive login, so it follows the vhost's
     // login flow.
-    if (req.idProviderFlows && req.idProviderFlows.indexOf('login') < 0) {
+    const flows = req.idProviderSettings ? req.idProviderSettings.flows : [];
+    if (flows.length > 0 && flows.indexOf('login') < 0) {
         return {status: 403};
     }
     return handleAuthenticationResponse(req);
 };
 
-exports.POST = function (req) {
-    return deviceLogin.handlePost(req) || {status: 404};
+// XP's device login (RFC 8628): XP serves the endpoints and issues the tokens; this id provider
+// only renders the verification page from the data XP hands it as req.deviceLogin
+exports.deviceVerification = function (req) {
+    return deviceLoginPage.render(req.deviceLogin);
 };
 
 exports.logout = logout;
@@ -225,14 +225,6 @@ exports.autoLogin = function (req) {
     const idProviderConfig = configLib.getIdProviderConfig();
 
     const jwtToken = extractJwtToken(req, idProviderConfig);
-
-    // Self-issued device-login token: accepted before the JWKS guard, so it works without external JWKS.
-    if (jwtToken && deviceLogin.isSelfIssued(idProviderConfig, jwtToken)) {
-        if (!deviceLogin.accept(jwtToken, idProviderConfig)) {
-            requestLib.autoLoginFailed();
-        }
-        return;
-    }
 
     if (!idProviderConfig.jwksUri) {
         return;
@@ -246,6 +238,13 @@ exports.autoLogin = function (req) {
     const payload = jwtLib.validateTokenAndGetPayload(jwtToken, idProviderConfig);
 
     if (payload) {
+        if (idProviderConfig.autoLogin.audienceFromVhost && !accessTokenLib.isAudienceDeclared(payload, req)) {
+            // Refused here, before the user is created, the profile saved or groups synchronised;
+            // XP refuses the login again when the token is handed over.
+            log.debug(`AutoLogin failed: token audience ${JSON.stringify(payload.aud)} is not declared by the virtual host`);
+            requestLib.autoLoginFailed();
+            return;
+        }
         try {
             checkClaimUsername(payload, idProviderConfig.claimUsername);
             loginLib.login(jwtToken, payload, true);
