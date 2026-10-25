@@ -1,6 +1,6 @@
-// The device verification page of XP's device login (RFC 8628), rendered from the data XP hands
-// the id provider as req.deviceLogin. XP owns the flow and checks what the form posts back:
-// user_code, approve (true/false), _csrf and one scope per kept permission.
+// The consent page of XP's device login (RFC 8628) and authorization code flow, rendered from the
+// data XP hands the id provider as req.deviceLogin. XP owns the flows and checks what the form
+// posts back: user_code or request, approve (true/false), _csrf and one scope per kept permission.
 
 const STYLE =
     `body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#f5f6f8;margin:0;padding:0;color:#333;line-height:1.45}` +
@@ -15,6 +15,7 @@ const STYLE =
     `details{margin:0 0 16px;font-size:14px}summary{cursor:pointer;color:#777}details[open] summary{margin-bottom:8px}` +
     `.detail{display:flex;gap:12px;margin:0 0 6px}.detail .k{flex:0 0 110px;color:#777}.detail .v{color:#222;word-break:break-word}` +
     `code.id{font-size:12px;background:none;padding:0;letter-spacing:0}.warning{color:#777;font-size:13px}` +
+    `.scope-description{display:block;font-size:13px;color:#777}.detail a{color:#2c76e0;text-decoration:none}` +
     `input[type=text]{font-size:18px;padding:8px;width:100%;box-sizing:border-box;border:1px solid #ccc;border-radius:4px;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px}` +
     `button{font-size:15px;padding:10px 18px;border:0;border-radius:4px;cursor:pointer}` +
     `.approve{background:#2c76e0;color:#fff}.deny{background:#e6e8eb;color:#333;margin-left:8px}.error{color:#b00020}`;
@@ -52,31 +53,53 @@ function enter(context) {
         `<button class="approve" type="submit">Next</button></form>`);
 }
 
+// A scope as the user reads it: the title and description its id provider gave it, else its id.
+function wording(s) {
+    const title = escapeHtml(s.displayName || s.id);
+    return s.description ? `${title}<span class="scope-description">${escapeHtml(s.description)}</span>` : title;
+}
+
+function link(label, url) {
+    return url ? `<div class="detail"><span class="k">${label}</span><span class="v"><a href="${escapeHtml(url)}" rel="noopener noreferrer">${escapeHtml(url)}</a></span></div>` : '';
+}
+
 function confirm(context) {
-    const app = context.clientId;
+    const client = context.client || {};
+    const app = client.displayName || context.clientId;
+    const codeFlow = context.flow === 'code';
     const scope = context.scope || [];
     // A required scope is granted with the request; only the others are the user's to drop.
     const required = scope.filter(s => s.required === true);
     const optional = scope.filter(s => s.required !== true);
+    // With no scopes, the token can do what the account can; the page says so instead of listing nothing.
+    const everything = context.unrestricted === true ? `<p>${escapeHtml(app)} will be able to do everything your account can.</p>` : '';
     const granted = required.length === 0 ? '' :
-        `<p class="lead">${escapeHtml(app)} would like to:</p><ul class="granted">` + required.map(s => `<li>${escapeHtml(s.id)}</li>`).join('') + `</ul>`;
+        `<p class="lead">${escapeHtml(app)} would like to:</p><ul class="granted">` + required.map(s => `<li>${wording(s)}</li>`).join('') + `</ul>`;
     const scopes = optional.length === 0 ? '' :
         `<p class="lead">Select what ${escapeHtml(app)} ${required.length === 0 ? 'can access:' : 'can also access:'}</p><ul class="scopes">` + optional.map(s =>
             `<li><label><input type="checkbox" name="scope" value="${escapeHtml(s.id)}" checked>` +
-            `<span>${escapeHtml(s.id)}</span></label></li>`).join('') + `</ul>`;
-    // The technical view: the code, the audience and the roles behind each scope, folded away by default.
+            `<span>${wording(s)}</span></label></li>`).join('') + `</ul>`;
+    // The technical view: the client's links, the audience and the roles behind each scope, folded away by default.
     const details = `<details><summary>Details</summary>` +
+        link('Website', client.uri) + link('Privacy policy', client.policyUri) + link('Terms of service', client.tosUri) +
         ((context.audience || []).length ? `<div class="detail"><span class="k">Audience</span><span class="v">${escapeHtml(context.audience.join(', '))}</span></div>` : '') +
         scope.map(s => `<div class="detail"><span class="k"><code class="id">${escapeHtml(s.id)}</code></span>` +
             `<span class="v">${(s.roles || []).length ? escapeHtml(s.roles.join(', ')) : '&ndash;'}</span></div>`).join('') +
         `</details>`;
+    // RFC 8628: in device login the user confirms the code matches the one the device shows, against a phished link.
+    const code = codeFlow ? '' : `<p class="codeline"><span class="k">Verification code</span><code>${escapeHtml(context.userCode)}</code></p>`;
+    const reference = codeFlow
+        ? `<input type="hidden" name="request" value="${escapeHtml(context.requestId)}">`
+        : `<input type="hidden" name="user_code" value="${escapeHtml(context.userCode)}">`;
+    const warning = codeFlow
+        ? 'Only continue if you started this request.'
+        : 'Only continue if you started this request and the code matches the one on your device.';
     return page(`Authorize ${app}`, `<h1>Authorize ${escapeHtml(app)}</h1>` +
         `<p>${escapeHtml(app)} wants to access your <strong>${escapeHtml(context.user.login)}</strong> account.</p>` +
-        // RFC 8628: the user confirms the code matches the one the device shows, against a phished link.
-        `<p class="codeline"><span class="k">Verification code</span><code>${escapeHtml(context.userCode)}</code></p>` +
-        `<form method="post" action="">${granted}${scopes}${details}` +
-        `<p class="warning">Only continue if you started this request.</p>` +
-        `<input type="hidden" name="user_code" value="${escapeHtml(context.userCode)}">` +
+        code + everything +
+        `<form method="post" action="?">${granted}${scopes}${details}` +
+        `<p class="warning">${warning}</p>` +
+        reference +
         `<input type="hidden" name="_csrf" value="${escapeHtml(context.csrf)}">` +
         `<button class="approve" type="submit" name="approve" value="true">Authorize</button>` +
         `<button class="deny" type="submit" name="approve" value="false">Cancel</button></form>`);

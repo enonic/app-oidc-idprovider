@@ -3,6 +3,7 @@
 const beanService = require("/lib/configFile/services/bean");
 const configFileLib = require("/lib/configFile/configFile");
 const groupSync = require("/lib/groupSync");
+const consentRegistry = require("/lib/consentRegistry");
 
 
 /**
@@ -65,15 +66,17 @@ exports.initUserStores = function() {
     });
 
     // After all userstores exist, eagerly provision the groups referenced by each
-    // ID Provider's groups.mapping. Runs for every configured ID Provider (not just newly-created ones),
-    // so mappings added to an existing provider are picked up.
+    // ID Provider's groups.mapping, and register the scopes and clients it declares for XP's
+    // tokens. Runs for every configured ID Provider (not just newly-created ones), so entries
+    // added to an existing provider are picked up.
     if (configFileLib.shouldAutoInit()) {
         configedIdProviderNames.forEach(idProviderName => {
             try {
                 const config = configFileLib.getConfigForIdProvider(idProviderName);
                 groupSync.ensureGroupsExist(config);
+                consentRegistry.supply(config);
             } catch (e) {
-                log.warning(`Could not ensure groups for ID Provider '${idProviderName}': ${e}`);
+                log.warning(`Could not provision groups, scopes or clients for ID Provider '${idProviderName}': ${e}`);
             }
         });
     }
