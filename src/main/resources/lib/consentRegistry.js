@@ -15,7 +15,7 @@ function supplyScopes(idProviderName, scopes) {
         const params = {
             idProvider: idProviderName,
             id: scope.id,
-            displayName: scope.displayName || undefined,
+            title: scope.title || undefined,
             description: scope.description || undefined,
             roles: scope.roles,
             required: scope.required,
@@ -24,7 +24,7 @@ function supplyScopes(idProviderName, scopes) {
             authLib.modifyScope({
                 idProvider: idProviderName,
                 id: scope.id,
-                displayName: scope.displayName,
+                title: scope.title,
                 description: scope.description,
                 roles: scope.roles,
                 required: scope.required,

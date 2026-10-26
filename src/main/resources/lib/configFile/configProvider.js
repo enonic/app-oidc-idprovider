@@ -4,7 +4,7 @@ const wellKnownService = require('/lib/configFile/wellKnownService');
 const END_SESSION_ADDITIONAL_PARAMETERS_PATTERN = '^idprovider\.[a-zA-Z0-9_-]+\.endSession\.additionalParameters\.(\\d+)\.(key|value)$';
 const ADDITIONAL_ENDPOINTS = "^idprovider\.[a-zA-Z0-9_-]+\.additionalEndpoints\.(\\d+)\.(name|url)$";
 const GROUPS_MAPPING_PATTERN = '^idprovider\.[a-zA-Z0-9_-]+\.groups\.mapping\.(\\d+)\.(value|group)$';
-const CONSENT_SCOPE_PATTERN = '^idprovider\.[a-zA-Z0-9_-]+\.consent\.scope\.(\\d+)\.(id|displayName|description|roles|required)$';
+const CONSENT_SCOPE_PATTERN = '^idprovider\.[a-zA-Z0-9_-]+\.consent\.scope\.(\\d+)\.(id|title|description|roles|required)$';
 const CONSENT_CLIENT_PATTERN = '^idprovider\.[a-zA-Z0-9_-]+\.consent\.client\.(\\d+)\.(id|displayName|uri|logoUri|policyUri|tosUri|grantTypes|redirectUris|scope|resource|grantTtl|enabled)$';
 
 const parseStringArray = value => value ? value.split(' ').filter(v => !!v) : [];
@@ -234,7 +234,7 @@ function parseConsent(rawConfig, idProviderKeyBase, idProviderName) {
         })
         .map(entry => ({
             id: entry.id,
-            displayName: entry.displayName || null,
+            title: entry.title || null,
             description: entry.description || null,
             roles: parseStringArray(entry.roles),
             required: entry.required === 'true',

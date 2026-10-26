@@ -101,12 +101,12 @@ exports.testValidConfig = () => {
                 'idprovider.myidp.acceptLeeway': '2',
 
                 'idprovider.myidp.consent.scope.0.id': 'content:read',
-                'idprovider.myidp.consent.scope.0.displayName': 'Read content',
+                'idprovider.myidp.consent.scope.0.title': 'Read content',
                 'idprovider.myidp.consent.scope.0.description': 'See content in every project',
                 'idprovider.myidp.consent.scope.0.roles': 'role:cms.project.site.viewer  role:cms.cm.app',
                 'idprovider.myidp.consent.scope.1.id': 'profile',
                 'idprovider.myidp.consent.scope.1.required': 'true',
-                'idprovider.myidp.consent.scope.2.displayName': 'No id, dropped',
+                'idprovider.myidp.consent.scope.2.title': 'No id, dropped',
                 'idprovider.myidp.consent.client.0.id': 'claude',
                 'idprovider.myidp.consent.client.0.displayName': 'Claude',
                 'idprovider.myidp.consent.client.0.uri': 'https://claude.ai',
@@ -128,7 +128,7 @@ exports.testValidConfig = () => {
         scopes: [
             {id: 'content:read', displayName: 'Read content', description: 'See content in every project',
              roles: ['role:cms.project.site.viewer', 'role:cms.cm.app'], required: false},
-            {id: 'profile', displayName: null, description: null, roles: [], required: true},
+            {id: 'profile', title: null, description: null, roles: [], required: true},
         ],
         clients: [
             {id: 'claude', displayName: 'Claude', uri: 'https://claude.ai', logoUri: null, policyUri: null, tosUri: null,

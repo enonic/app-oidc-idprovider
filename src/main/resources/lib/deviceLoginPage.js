@@ -55,7 +55,7 @@ function enter(context) {
 
 // A scope as the user reads it: the title and description its id provider gave it, else its id.
 function wording(s) {
-    const title = escapeHtml(s.displayName || s.id);
+    const title = escapeHtml(s.title || s.id);
     return s.description ? `${title}<span class="scope-description">${escapeHtml(s.description)}</span>` : title;
 }
 

@@ -26,8 +26,8 @@ const CONFIG = {
     _idProviderName: 'myidp',
     consent: {
         scopes: [
-            {id: 'content:read', displayName: 'Read content', description: null, roles: ['role:cms.project.site.viewer'], required: false},
-            {id: 'profile', displayName: null, description: 'Who you are', roles: [], required: true},
+            {id: 'content:read', title: 'Read content', description: null, roles: ['role:cms.project.site.viewer'], required: false},
+            {id: 'profile', title: null, description: 'Who you are', roles: [], required: true},
         ],
         clients: [
             {
@@ -47,7 +47,7 @@ exports.testSupply_createsWhatIsMissing = () => {
     test.assertEquals(3, calls.length);
     test.assertEquals('createScope', calls[0][0]);
     test.assertJsonEquals({
-        idProvider: 'myidp', id: 'content:read', displayName: 'Read content', roles: ['role:cms.project.site.viewer'], required: false,
+        idProvider: 'myidp', id: 'content:read', title: 'Read content', roles: ['role:cms.project.site.viewer'], required: false,
     }, calls[0][1]);
     test.assertEquals('createScope', calls[1][0]);
     test.assertJsonEquals({idProvider: 'myidp', id: 'profile', description: 'Who you are', roles: [], required: true}, calls[1][1]);
@@ -71,7 +71,7 @@ exports.testSupply_bringsWhatExistsUpToDate = () => {
     test.assertEquals('content:read', calls[0][1].id);
     test.assertEquals('modifyScope', calls[1][0]);
     test.assertJsonEquals({
-        idProvider: 'myidp', id: 'profile', displayName: null, description: 'Who you are', roles: [], required: true,
+        idProvider: 'myidp', id: 'profile', title: null, description: 'Who you are', roles: [], required: true,
     }, calls[1][1]);
     test.assertEquals('modifyClient', calls[2][0]);
     test.assertEquals('Claude', calls[2][1].displayName);

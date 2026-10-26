@@ -249,7 +249,7 @@ XP 8.2 and later issues its own access tokens to command-line tools and other cl
 ----
 # Scopes a client may ask for
 consent.scope.0.id=(string, required) // <1>
-consent.scope.0.displayName=(string, optional) // <2>
+consent.scope.0.title=(string, optional) // <2>
 consent.scope.0.description=(string, optional)
 consent.scope.0.roles=(space-separated role keys, optional) // <3>
 consent.scope.0.required=(true|false, optional, defaults to false) // <4>
@@ -370,7 +370,7 @@ idprovider.<name>.rules.forceEmailVerification=(true|false)
 
 # Scopes and clients for XP's tokens, see <<#consent, above>>
 idprovider.<name>.consent.scope.<n>.id=(string)
-idprovider.<name>.consent.scope.<n>.displayName=(string)
+idprovider.<name>.consent.scope.<n>.title=(string)
 idprovider.<name>.consent.scope.<n>.description=(string)
 idprovider.<name>.consent.scope.<n>.roles=(space separated role keys)
 idprovider.<name>.consent.scope.<n>.required=(true|false)

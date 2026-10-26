@@ -24,8 +24,8 @@ exports.testConfirm_codeFlow_postsTheRequestAndNamesTheClient = () => {
         idProvider: 'myidp', action: 'confirm', flow: 'code', requestId: 'r1', clientId: 'eyJ.x.y',
         client: {id: 'eyJ.x.y', displayName: 'Claude <MCP>', uri: 'https://claude.ai', policyUri: 'https://anthropic.com/privacy', registered: true},
         scope: [
-            {id: 'content:read', displayName: 'Read content', description: 'See content in every project', roles: ['role:cms.project.site.viewer'], required: false},
-            {id: 'profile', displayName: 'profile', roles: [], required: true},
+            {id: 'content:read', title: 'Read content', description: 'See content in every project', roles: ['role:cms.project.site.viewer'], required: false},
+            {id: 'profile', title: 'profile', roles: [], required: true},
         ],
         audience: ['https://example.com/api/mcp'], unrestricted: false, csrf: 'c', user: USER,
     });
