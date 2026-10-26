@@ -71,7 +71,7 @@ function confirm(context) {
     // A required scope is granted with the request; only the others are the user's to drop.
     const required = scope.filter(s => s.required === true);
     const optional = scope.filter(s => s.required !== true);
-    // With no scopes, the token can do what the account can; the page says so instead of listing nothing.
+    // With no scopes, the token can do what the account can; the page states that instead of listing nothing.
     const everything = context.unrestricted === true ? `<p>${escapeHtml(app)} will be able to do everything your account can.</p>` : '';
     const granted = required.length === 0 ? '' :
         `<p class="lead">${escapeHtml(app)} would like to:</p><ul class="granted">` + required.map(s => `<li>${wording(s)}</li>`).join('') + `</ul>`;
