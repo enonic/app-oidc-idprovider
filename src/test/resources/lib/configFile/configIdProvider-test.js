@@ -126,7 +126,7 @@ exports.testValidConfig = () => {
 
     test.assertJsonEquals({
         scopes: [
-            {id: 'content:read', displayName: 'Read content', description: 'See content in every project',
+            {id: 'content:read', title: 'Read content', description: 'See content in every project',
              roles: ['role:cms.project.site.viewer', 'role:cms.cm.app'], required: false},
             {id: 'profile', title: null, description: null, roles: [], required: true},
         ],
