@@ -1,6 +1,6 @@
 const test = require('/lib/xp/testing');
 
-const lib = require('/lib/deviceLoginPage');
+const lib = require('/lib/oauthConsentPage');
 
 const USER = {key: 'user:myidp:alice', login: 'alice', displayName: 'Alice'};
 

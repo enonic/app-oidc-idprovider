@@ -1,5 +1,5 @@
 // The consent page of XP's device login (RFC 8628) and authorization code flow, rendered from the
-// data XP hands the id provider as req.deviceLogin. XP owns the flows and checks what the form
+// data XP hands the id provider as req.oauthConsent. XP owns the flows and checks what the form
 // posts back: user_code or request, approve (true/false), _csrf and one scope per kept permission.
 
 const STYLE =
