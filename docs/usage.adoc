@@ -74,7 +74,7 @@ NOTE: `myoidcprovider` in the example above must match the name you used in the 
 
 Enonic XP serves the OAuth device authorization flow (RFC 8628) for this ID provider's users: a client asks XP for a code, the user signs in through this ID provider as usual and approves the code on a verification page, and XP issues its own access and refresh tokens. This app provides the page the user sees; everything else is XP's, configured per virtual host in `com.enonic.xp.web.vhost.cfg`. See https://developer.enonic.com/docs/platform/stable/security/access-tokens[access tokens and device login] in the XP documentation.
 
-Enable the `device` flow on the host where users approve, and `autologin` with an `audience` on the host where the tokens are used. Scopes declared on the approving host say what a client may ask for and the roles each scope gives; the token gets the roles of the scopes the user keeps. Without declared scopes, a client asks for none and the token carries the user's full memberships.
+Enable the `device`, `code` and `register` flows on the host where users approve, and `autologin` with an `audience` on the host where the tokens are used. The scopes the ID provider declares, see <<config#consent, scopes and clients>>, say what a client may ask for and the roles each scope gives; the token gets the roles of the scopes the user keeps. Without declared scopes, a client asks for none and the token carries the user's full memberships.
 
 .Example: approve on the admin host, use on the API host
 [source,properties]
@@ -95,7 +95,7 @@ mapping.api.audience = api
 
 A client obtains its code at `+https://xp.example.com/_/idprovider/myoidcprovider/device/code+` and its tokens at `+.../token+`.
 
-Bearer tokens of your OpenID provider keep working through autologin. With `autoLogin.allowedAudience=@@{vhost.audience}` the host's audience and scopes apply to them too, see <<config#tokens-through-xp, tokens through XP>>.
+Bearer tokens of your OpenID provider keep working through autologin. With `autoLogin.allowedAudience=@@{vhost.audience}` the host's audience and the ID provider's scopes apply to them too, see <<config#tokens-through-xp, tokens through XP>>.
 
 == Redirect/Callback URI
 
