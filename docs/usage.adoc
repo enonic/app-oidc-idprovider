@@ -83,9 +83,7 @@ mapping.admin.host = xp.example.com
 mapping.admin.source = /
 mapping.admin.target = /admin
 mapping.admin.idProvider.myoidcprovider = default
-mapping.admin.idProvider.myoidcprovider.flows = login,logout,device
-mapping.admin.idProvider.myoidcprovider.scope.content\:read.roles = role:cms.project.site.viewer
-mapping.admin.idProvider.myoidcprovider.scope.content\:write.roles = role:cms.project.site.editor
+mapping.admin.idProvider.myoidcprovider.flows = login,logout,device,code,register
 
 mapping.api.host = api.example.com
 mapping.api.source = /
