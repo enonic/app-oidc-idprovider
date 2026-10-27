@@ -2,6 +2,16 @@
 // data XP hands the id provider as req.oauthConsent. XP owns the flows and checks what the form
 // posts back: user_code or request, approve (true/false), _csrf and one scope per kept permission.
 
+const oidcLib = require('/lib/oidc');
+
+// While none of the optional permissions is kept, the request cannot be approved, since XP denies
+// a request that keeps no permission. Inline, allowed by a nonce in the page's policy.
+const KEEP_ONE_SCRIPT =
+    `(function(){var f=document.querySelector('form'),b=f.querySelectorAll('input[type=checkbox][name=scope]'),` +
+    `a=f.querySelector('button.approve'),h=document.getElementById('keep-one');function u(){var k=false;` +
+    `for(var i=0;i<b.length;i++){k=k||b[i].checked}a.disabled=!k;h.hidden=k}` +
+    `for(var i=0;i<b.length;i++){b[i].addEventListener('change',u)}u()})();`;
+
 const STYLE =
     `body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#f5f6f8;margin:0;padding:0;color:#333;line-height:1.45}` +
     `.card{max-width:420px;margin:8vh auto;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.12);padding:32px}` +
@@ -18,7 +28,8 @@ const STYLE =
     `.scope-description{display:block;font-size:13px;color:#777}.detail a{color:#2c76e0;text-decoration:none}` +
     `input[type=text]{font-size:18px;padding:8px;width:100%;box-sizing:border-box;border:1px solid #ccc;border-radius:4px;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px}` +
     `button{font-size:15px;padding:10px 18px;border:0;border-radius:4px;cursor:pointer}` +
-    `.approve{background:#2c76e0;color:#fff}.deny{background:#e6e8eb;color:#333;margin-left:8px}.error{color:#b00020}`;
+    `.approve{background:#2c76e0;color:#fff}.deny{background:#e6e8eb;color:#333;margin-left:8px}.error{color:#b00020}` +
+    `button:disabled{opacity:.5;cursor:not-allowed}.hint{color:#b00020;font-size:13px;margin:-8px 0 16px}`;
 
 function escapeHtml(value) {
     return String(value == null ? '' : value)
@@ -26,18 +37,23 @@ function escapeHtml(value) {
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-function page(title, bodyHtml) {
+// A page, with a script of this file's own when one is given; no other script runs on it.
+function page(title, bodyHtml, script) {
+    const nonce = script ? oidcLib.generateToken() : null;
     const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">` +
                  `<meta name="viewport" content="width=device-width, initial-scale=1">` +
                  `<title>${escapeHtml(title)}</title>` +
-                 `<style>${STYLE}</style></head><body><div class="card">${bodyHtml}</div></body></html>`;
+                 `<style>${STYLE}</style></head><body><div class="card">${bodyHtml}</div>` +
+                 (script ? `<script nonce="${nonce}">${script}</script>` : '') + `</body></html>`;
     return {
         status: 200,
         contentType: 'text/html; charset=utf-8',
         body: html,
         headers: {
             'Cache-Control': 'no-store',
-            'Content-Security-Policy': `default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'`,
+            'Content-Security-Policy': `default-src 'none'; style-src 'unsafe-inline'; ` +
+                (script ? `script-src 'nonce-${nonce}'; ` : '') +
+                `form-action 'self'; base-uri 'none'; frame-ancestors 'none'`,
             'Referrer-Policy': 'no-referrer',
         },
     };
@@ -79,6 +95,9 @@ function confirm(context) {
         `<p class="lead">Select what ${escapeHtml(app)} ${required.length === 0 ? 'can access:' : 'can also access:'}</p><ul class="scopes">` + optional.map(s =>
             `<li><label><input type="checkbox" name="scope" value="${escapeHtml(s.id)}" checked>` +
             `<span>${wording(s)}</span></label></li>`).join('') + `</ul>`;
+    // With only optional permissions to choose from, approval waits until one is kept.
+    const keepOne = optional.length > 0 && required.length === 0;
+    const hint = keepOne ? `<p id="keep-one" class="hint" hidden>Keep at least one permission to continue.</p>` : '';
     // The technical view: the client's links, the audience and the roles behind each scope, folded away by default.
     const details = `<details><summary>Details</summary>` +
         link('Website', client.uri) + link('Privacy policy', client.policyUri) + link('Terms of service', client.tosUri) +
@@ -97,12 +116,12 @@ function confirm(context) {
     return page(`Authorize ${app}`, `<h1>Authorize ${escapeHtml(app)}</h1>` +
         `<p>${escapeHtml(app)} wants to access your <strong>${escapeHtml(context.user.login)}</strong> account.</p>` +
         code + everything +
-        `<form method="post" action="?">${granted}${scopes}${details}` +
+        `<form method="post" action="?">${granted}${scopes}${hint}${details}` +
         `<p class="warning">${warning}</p>` +
         reference +
         `<input type="hidden" name="_csrf" value="${escapeHtml(context.csrf)}">` +
         `<button class="approve" type="submit" name="approve" value="true">Authorize</button>` +
-        `<button class="deny" type="submit" name="approve" value="false">Cancel</button></form>`);
+        `<button class="deny" type="submit" name="approve" value="false">Cancel</button></form>`, keepOne ? KEEP_ONE_SCRIPT : null);
 }
 
 function done(context) {
