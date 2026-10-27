@@ -9,7 +9,7 @@ function supplyScopes(idProviderName, scopes) {
     if (scopes.length === 0) {
         return;
     }
-    const existing = {};
+    const existing = Object.create(null);
     authLib.getScopes({idProvider: idProviderName}).forEach(scope => existing[scope.id] = scope);
     scopes.forEach(scope => {
         const params = {
@@ -40,7 +40,7 @@ function supplyClients(idProviderName, clients) {
     if (clients.length === 0) {
         return;
     }
-    const existing = {};
+    const existing = Object.create(null);
     authLib.getClients({idProvider: idProviderName}).forEach(client => existing[client.id] = client);
     clients.forEach(client => {
         const values = {

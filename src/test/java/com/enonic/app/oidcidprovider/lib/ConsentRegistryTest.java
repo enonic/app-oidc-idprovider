@@ -25,6 +25,12 @@ public class ConsentRegistryTest
     }
 
     @Test
+    public void testSupply_anIdNamedLikeAnObjectProperty_isCreated()
+    {
+        run( "testSupply_anIdNamedLikeAnObjectProperty_isCreated" );
+    }
+
+    @Test
     public void testSupply_nothingDeclared_touchesNothing()
     {
         run( "testSupply_nothingDeclared_touchesNothing" );

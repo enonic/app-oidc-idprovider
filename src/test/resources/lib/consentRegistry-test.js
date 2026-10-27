@@ -78,6 +78,25 @@ exports.testSupply_bringsWhatExistsUpToDate = () => {
     test.assertEquals(null, calls[2][1].logoUri, 'a link no longer declared is cleared');
 };
 
+exports.testSupply_anIdNamedLikeAnObjectProperty_isCreated = () => {
+    reset();
+
+    lib.supply({
+        _idProviderName: 'myidp',
+        consent: {
+            scopes: [{id: 'constructor', title: null, description: null, roles: [], required: false}],
+            clients: [{
+                id: 'toString', displayName: null, uri: null, logoUri: null, policyUri: null, tosUri: null,
+                grantTypes: ['authorization_code'], redirectUris: [], scope: [], resource: [], grantTtl: null, enabled: true,
+            }],
+        },
+    });
+
+    test.assertEquals(2, calls.length);
+    test.assertEquals('createScope', calls[0][0]);
+    test.assertEquals('createClient', calls[1][0]);
+};
+
 exports.testSupply_nothingDeclared_touchesNothing = () => {
     reset();
 
