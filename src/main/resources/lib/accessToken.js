@@ -2,7 +2,7 @@
  * Translates the payload of a verified bearer token into the `accessToken` option of
  * `authLib.login()`, so XP records the token on the login and applies its own audience and scope
  * policy to it: the audience must be one the virtual host declares, and the scopes map to roles
- * through the host's scope catalogue for this ID provider. Nothing here verifies anything; the
+ * through the ID provider's scopes. Nothing here verifies anything; the
  * caller has.
  *
  * `scope` is read from `scp` (a list or a string) or `scope` (space-separated); `aud` may be a

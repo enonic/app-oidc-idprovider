@@ -213,7 +213,7 @@ autoLogin.applyGroups=(true|false, defaults to false) // <5>
 [#tokens-through-xp]
 === Tokens through XP
 
-With `autoLogin.allowedAudience=@@{vhost.audience}`, XP decides what a verified token may do here, by the same rules as for its own tokens. This needs XP 8.2 or later: an older XP declares no audiences, so in this mode it accepts no upstream token at all. The virtual host that receives the token declares the audiences it accepts in `com.enonic.xp.web.vhost.cfg` (`+mapping.<name>.audience+`); a token for any other audience is refused, and no user is created or changed. The host may also declare scopes (`+mapping.<name>.idProvider.<idp>.scope.<id>.roles+`): the user then gets only the roles of the scopes the token carries. Without declared scopes the user keeps their full memberships.
+With `autoLogin.allowedAudience=@@{vhost.audience}`, XP decides what a verified token may do here, by the same rules as for its own tokens. This needs XP 8.2 or later: an older XP declares no audiences, so in this mode it accepts no upstream token at all. The virtual host that receives the token accepts the audiences it declares in `com.enonic.xp.web.vhost.cfg` (`+mapping.<name>.audience+`) and its own URL; a token for any other audience is refused, and no user is created or changed. XP's issuer name, which XP's own tokens may carry, is not an audience for an upstream token. The token's scopes are mapped to roles through the ID provider's <<#consent, scopes>>: the user then gets only the roles of the scopes the token carries. Without scopes the user keeps their full memberships.
 
 The placeholder cannot be combined with an audience list.
 
@@ -222,6 +222,8 @@ The placeholder cannot be combined with an audience list.
 ----
 # com.enonic.app.oidcidprovider.cfg
 idprovider.myoidcprovider.autoLogin.allowedAudience=@@{vhost.audience}
+idprovider.myoidcprovider.consent.scope.0.id=content:read
+idprovider.myoidcprovider.consent.scope.0.roles=role:cms.project.site.viewer
 ----
 
 [source,properties]
@@ -233,10 +235,52 @@ mapping.api.target = /
 mapping.api.idProvider.myoidcprovider = default
 mapping.api.idProvider.myoidcprovider.flows = autologin
 mapping.api.audience = https://service.example.com/api
-mapping.api.idProvider.myoidcprovider.scope.content\:read.roles = role:cms.project.site.viewer
 ----
 
 The audience of an ID token is the client id; the audience of an access token is the API it was issued for. Declare on the host the one for the kind of token it receives.
+
+[#consent]
+== Scopes and clients for XP's tokens
+
+XP 8.2 and later issues its own access tokens to command-line tools and other clients of this ID provider's users, after the user approves on a consent page this app renders. What a client may ask for, and who a client is, are registered with the ID provider in XP. The configuration can declare both, and the app registers them when it starts, with `autoinit=true`: an entry is created if missing and brought up to date if present, and entries declared elsewhere are left alone. See https://developer.enonic.com/docs/platform/stable/security/access-tokens[access tokens] in the platform documentation for what scopes and clients are.
+
+.com.enonic.app.oidcidprovider.cfg
+[source,properties]
+----
+# Scopes a client may ask for
+consent.scope.0.id=(string, required) // <1>
+consent.scope.0.title=(string, optional) // <2>
+consent.scope.0.description=(string, optional)
+consent.scope.0.roles=(space-separated role keys, optional) // <3>
+consent.scope.0.required=(true|false, optional, defaults to false) // <4>
+
+# Clients, registered by hand
+consent.client.0.id=(string, required) // <5>
+consent.client.0.displayName=(string, optional)
+consent.client.0.uri=(string, optional) // <6>
+consent.client.0.logoUri=(string, optional)
+consent.client.0.policyUri=(string, optional)
+consent.client.0.tosUri=(string, optional)
+consent.client.0.grantTypes=(space-separated, optional) // <7>
+consent.client.0.redirectUris=(space-separated, optional) // <8>
+consent.client.0.scope=(space-separated scope ids, optional) // <9>
+consent.client.0.resource=(space-separated, optional)
+consent.client.0.grantTtl=(ISO 8601 duration, optional) // <10>
+consent.client.0.enabled=(true|false, optional, defaults to true)
+----
+
+<1> The scope's id: what a client sends in `scope` and what the token carries. Printable ASCII without spaces, quotes or backslashes.
+<2> The title and the description the consent page shows. The id when there is no title.
+<3> The roles a token granted this scope is restricted to. With none, the scope is a label that restricts nothing by itself.
+<4> A required scope cannot be dropped by the user when a client asks for it.
+<5> The client id, as the client sends it in `+client_id+`.
+<6> The client's website, logo, privacy policy and terms of service, linked from the consent page.
+<7> The flows the client may use: `+urn:ietf:params:oauth:grant-type:device_code+`, `+authorization_code+`, `+refresh_token+`. A flow not listed is refused to it.
+<8> The redirect URIs the client may be sent an authorization code to, matched exactly. Loopback addresses need no registration.
+<9> The most scopes and audiences the client may ask for, and what it gets when it names none. Omit for any.
+<10> How long a grant to the client lives, such as `P30D`. Omit for XP's default.
+
+TIP: For more scopes or clients, iterate the counter (`consent.scope.1.id`, `consent.client.1.id`, ...). A client that registers itself, as MCP clients do, needs no entry here.
 
 == endSession
 
@@ -323,6 +367,25 @@ idprovider.<name>.usePkce=(true|false)
 
 # Rules
 idprovider.<name>.rules.forceEmailVerification=(true|false)
+
+# Scopes and clients for XP's tokens, see <<#consent, above>>
+idprovider.<name>.consent.scope.<n>.id=(string)
+idprovider.<name>.consent.scope.<n>.title=(string)
+idprovider.<name>.consent.scope.<n>.description=(string)
+idprovider.<name>.consent.scope.<n>.roles=(space separated role keys)
+idprovider.<name>.consent.scope.<n>.required=(true|false)
+idprovider.<name>.consent.client.<n>.id=(string)
+idprovider.<name>.consent.client.<n>.displayName=(string)
+idprovider.<name>.consent.client.<n>.uri=(string)
+idprovider.<name>.consent.client.<n>.logoUri=(string)
+idprovider.<name>.consent.client.<n>.policyUri=(string)
+idprovider.<name>.consent.client.<n>.tosUri=(string)
+idprovider.<name>.consent.client.<n>.grantTypes=(space separated)
+idprovider.<name>.consent.client.<n>.redirectUris=(space separated)
+idprovider.<name>.consent.client.<n>.scope=(space separated scope ids)
+idprovider.<name>.consent.client.<n>.resource=(space separated)
+idprovider.<name>.consent.client.<n>.grantTtl=(ISO 8601 duration)
+idprovider.<name>.consent.client.<n>.enabled=(true|false)
 
 # User mappings
 idprovider.<name>.useUserinfo=(true|false)

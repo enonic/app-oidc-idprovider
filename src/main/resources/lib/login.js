@@ -106,7 +106,7 @@ function doLogin(idProviderConfig, userName, isAutoLogin, tokenClaims) {
         if (idProviderConfig.autoLogin.audienceFromVhost) {
             // allowedAudience=@@{vhost.audience}: the bearer token is verified, and XP is handed what
             // it says, so the login is accepted only where the vhost declares the token's audience,
-            // is restricted to the roles the host's scope catalogue gives its scopes, and carries the
+            // is restricted to the roles the ID provider's scopes imply, and carries the
             // token as request.accessToken.
             loginParams.accessToken = accessTokenLib.accessTokenFromClaims(tokenClaims);
         }
