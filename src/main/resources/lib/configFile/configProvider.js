@@ -60,6 +60,7 @@ exports.getIdProviderConfig = function (idProviderName) {
             wsHeader: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.wsHeader`] === 'true' || false,
             allowedAudience: parseStringArray(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.allowedAudience`]),
             audienceFromVhost: false,
+            allowedIssuer: parseStringArray(rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.allowedIssuer`]),
             applyGroups: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.applyGroups`] === 'true' || false,
         },
         groups: parseGroups(rawIdProviderConfig, idProviderKeyBase, idProviderName),
@@ -141,6 +142,7 @@ function validate(config, idProviderName) {
 
     checkArrayConfig(config.additionalEndpoints, 'additionalEndpoints', idProviderName);
     resolveAllowedAudience(config.autoLogin, idProviderName);
+    resolveAllowedIssuer(config);
     if (config.endSession) {
         required(config.endSession.url, 'endSession.url', idProviderName);
         checkArrayConfig(config.endSession.additionalParameters, 'endSession.additionalParameters', idProviderName);
@@ -171,6 +173,19 @@ function resolveAllowedAudience(autoLogin, idProviderName) {
     }
     autoLogin.allowedAudience = [];
     autoLogin.audienceFromVhost = true;
+}
+
+/**
+ * `autoLogin.allowedIssuer` lists the issuers (`iss`) a bearer token may name. With
+ * `allowedAudience=@@{vhost.audience}` it defaults to the provider's own issuer: the signature only
+ * says the token was signed with the provider's keys, and some providers sign for many tenants
+ * with the same keys. With an audience list (deprecated) it stays empty unless set, and the issuer
+ * is not checked, as before.
+ */
+function resolveAllowedIssuer(config) {
+    if (config.autoLogin.allowedIssuer.length === 0 && config.autoLogin.audienceFromVhost) {
+        config.autoLogin.allowedIssuer = [config.issuer];
+    }
 }
 
 function parseGroups(rawConfig, idProviderKeyBase, idProviderName) {

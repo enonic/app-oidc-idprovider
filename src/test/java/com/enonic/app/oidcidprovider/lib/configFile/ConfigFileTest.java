@@ -32,6 +32,12 @@ public class ConfigFileTest
     }
 
     @Test
+    public void testAllowedIssuer()
+    {
+        runFunction( "/lib/configFile/configIdProvider-test.js", "testAllowedIssuer" );
+    }
+
+    @Test
     public void testAllowedAudienceFromVhostCannotBeCombined()
     {
         runFunction( "/lib/configFile/configIdProvider-test.js", "testAllowedAudienceFromVhostCannotBeCombined" );

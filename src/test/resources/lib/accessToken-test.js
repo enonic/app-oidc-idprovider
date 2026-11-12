@@ -54,14 +54,35 @@ exports.testBareClaims = function () {
 
 exports.testAudienceDeclared = function () {
     const req = {idProviderSettings: {flows: ['autologin'], audience: ['https://service.example.com/api', 'my-client']}};
-    test.assertTrue(accessTokenLib.isAudienceDeclared({aud: 'my-client'}, req));
-    test.assertTrue(accessTokenLib.isAudienceDeclared({aud: ['other', 'https://service.example.com/api']}, req));
-    test.assertFalse(accessTokenLib.isAudienceDeclared({aud: ['other']}, req));
-    test.assertFalse(accessTokenLib.isAudienceDeclared({aud: []}, req));
-    test.assertFalse(accessTokenLib.isAudienceDeclared({}, req));
+    test.assertTrue(accessTokenLib.isAudienceAccepted({aud: 'my-client'}, req));
+    test.assertTrue(accessTokenLib.isAudienceAccepted({aud: ['other', 'https://service.example.com/api']}, req));
+    test.assertFalse(accessTokenLib.isAudienceAccepted({aud: ['other']}, req));
+    test.assertFalse(accessTokenLib.isAudienceAccepted({aud: []}, req));
+    test.assertFalse(accessTokenLib.isAudienceAccepted({}, req));
 };
 
 exports.testAudienceOnAHostDeclaringNone = function () {
-    test.assertFalse(accessTokenLib.isAudienceDeclared({aud: 'my-client'}, {idProviderSettings: {flows: [], audience: []}}));
-    test.assertFalse(accessTokenLib.isAudienceDeclared({aud: 'my-client'}, {}));
+    test.assertFalse(accessTokenLib.isAudienceAccepted({aud: 'my-client'}, {idProviderSettings: {flows: [], audience: []}}));
+    test.assertFalse(accessTokenLib.isAudienceAccepted({aud: 'my-client'}, {}));
+};
+
+// XP hands over the audiences the host declares and the host's own URL
+exports.testAudienceIsTheEndpointTheClientCalls = function () {
+    const settings = {flows: ['autologin'], audience: ['https://api.example.com']};
+    const at = (url) => ({url: url, idProviderSettings: settings});
+    const endpoint = {aud: ['https://api.example.com/api/mcp', 'https://tenant.auth0.com/userinfo']};
+
+    test.assertTrue(accessTokenLib.isAudienceAccepted(endpoint, at('https://api.example.com/api/mcp')));
+    test.assertTrue(accessTokenLib.isAudienceAccepted(endpoint, at('https://api.example.com/api/mcp/tools?x=1')));
+    test.assertTrue(accessTokenLib.isAudienceAccepted({aud: 'https://api.example.com/api/'}, at('https://api.example.com/api/mcp')));
+
+    // the request is not at or below what the token is for
+    test.assertFalse(accessTokenLib.isAudienceAccepted(endpoint, at('https://api.example.com/api/other')));
+    test.assertFalse(accessTokenLib.isAudienceAccepted(endpoint, at('https://api.example.com/api/mcp-admin')));
+    test.assertFalse(accessTokenLib.isAudienceAccepted(endpoint, at('https://api.example.com/api')));
+    // the token is for another host, or for a name that only begins like this one
+    test.assertFalse(accessTokenLib.isAudienceAccepted({aud: 'https://other.example.com/api/mcp'}, at('https://other.example.com/api/mcp')));
+    test.assertFalse(accessTokenLib.isAudienceAccepted({aud: 'https://api.example.com.evil.test/x'}, at('https://api.example.com/x')));
+    // the request URL is unknown
+    test.assertFalse(accessTokenLib.isAudienceAccepted(endpoint, {idProviderSettings: settings}));
 };

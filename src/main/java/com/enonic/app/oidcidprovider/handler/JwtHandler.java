@@ -31,7 +31,8 @@ public class JwtHandler
         this.idProviderConfigServiceSupplier = context.getService( IdProviderConfigService.class );
     }
 
-    public MapSerializable validateTokenAndGetPayload( final String jwtToken, final String idProviderName, final List<String> allowedAudience )
+    public MapSerializable validateTokenAndGetPayload( final String jwtToken, final String idProviderName, final List<String> allowedAudience,
+                                                       final List<String> allowedIssuer )
     {
         if ( jwtToken == null )
         {
@@ -51,6 +52,12 @@ public class JwtHandler
                     LOG.debug( "Invalid audience: {}", decodedJwt.getAudience() );
                     return null;
                 }
+            }
+
+            if ( !allowedIssuer.isEmpty() && !allowedIssuer.contains( decodedJwt.getIssuer() ) )
+            {
+                LOG.debug( "Invalid issuer: {}", decodedJwt.getIssuer() );
+                return null;
             }
 
             RSAAlgorithmProvider rsaAlgorithmProvider = idProviderConfigServiceSupplier.get().getAlgorithmProvider( idProviderName );

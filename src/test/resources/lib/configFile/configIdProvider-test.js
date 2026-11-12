@@ -500,6 +500,34 @@ exports.testAllowedAudienceFromVhost = () => {
 
     test.assertTrue(config.autoLogin.audienceFromVhost);
     test.assertJsonEquals([], config.autoLogin.allowedAudience);
+    // the provider's own issuer, where none is listed
+    test.assertJsonEquals(['issuer'], config.autoLogin.allowedIssuer);
+};
+
+exports.testAllowedIssuer = () => {
+    mockWellKnownService();
+
+    test.mock('/lib/configFile/services/getConfig', {
+        getConfigOrEmpty: function () {
+            return {
+                'idprovider.listed.oidcWellKnownEndpoint': 'wellKnownEndpoint',
+                'idprovider.listed.autoLogin.allowedAudience': '@@{vhost.audience}',
+                'idprovider.listed.autoLogin.allowedIssuer': 'https://sts.example.com/tenant/ https://login.example.com/tenant/v2.0',
+                'idprovider.legacy.oidcWellKnownEndpoint': 'wellKnownEndpoint',
+                'idprovider.legacy.autoLogin.allowedAudience': 'audience1',
+                'idprovider.legacylisted.oidcWellKnownEndpoint': 'wellKnownEndpoint',
+                'idprovider.legacylisted.autoLogin.allowedIssuer': 'issuer',
+            }
+        }
+    });
+
+    const configProvider = require('./configProvider');
+
+    test.assertJsonEquals(['https://sts.example.com/tenant/', 'https://login.example.com/tenant/v2.0'],
+        configProvider.getIdProviderConfig('listed').autoLogin.allowedIssuer);
+    // with an audience list the issuer is checked only when listed, as before
+    test.assertJsonEquals([], configProvider.getIdProviderConfig('legacy').autoLogin.allowedIssuer);
+    test.assertJsonEquals(['issuer'], configProvider.getIdProviderConfig('legacylisted').autoLogin.allowedIssuer);
 };
 
 exports.testAllowedAudienceFromVhostCannotBeCombined = () => {

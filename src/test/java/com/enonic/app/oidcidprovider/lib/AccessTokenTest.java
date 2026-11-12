@@ -43,6 +43,12 @@ public class AccessTokenTest
     }
 
     @Test
+    public void testAudienceIsTheEndpointTheClientCalls()
+    {
+        run( "testAudienceIsTheEndpointTheClientCalls" );
+    }
+
+    @Test
     public void testBareClaims()
     {
         run( "testBareClaims" );

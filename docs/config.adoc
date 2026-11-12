@@ -202,6 +202,7 @@ autoLogin.createSession=(false|true) // <2>
 autoLogin.wsHeader=(false|true) // <3>
 autoLogin.allowedAudience=(space separated strings, or @@{vhost.audience}) // <4>
 autoLogin.applyGroups=(true|false, defaults to false) // <5>
+autoLogin.allowedIssuer=(space separated strings) // <6>
 ----
 
 <1> If you disable 'createUser', the user will be logged in, but not persisted as a user within Enonic. If `true`, a user will be created automatically if it doesn't exist.
@@ -209,11 +210,12 @@ autoLogin.applyGroups=(true|false, defaults to false) // <5>
 <3> ID provider will look for a token in the Sec-WebSocket-Protocol header.
 <4> Set to `@@{vhost.audience}`: the accepted audiences are those the virtual host declares, see <<#tokens-through-xp, tokens through XP>>. A space-separated list of audiences is *deprecated*: it still works, with a warning in the log, and the placeholder will become the default.
 <5> When `true`, also apply <<#groups-from-claim,groups from claim>> sync during Bearer autoLogin. The claim is resolved against the raw JWT payload (no userinfo endpoint is called).
+<6> The issuers (`iss`) a token may name, compared as written. With `+allowedAudience=@@{vhost.audience}+` it defaults to the provider's `issuer`, so a token signed with the provider's keys for another tenant is refused; list the issuers here when the provider's access tokens name another one than its `issuer`. With an audience list the issuer is checked only when this is set.
 
 [#tokens-through-xp]
 === Tokens through XP
 
-With `autoLogin.allowedAudience=@@{vhost.audience}`, XP decides what a verified token may do here, by the same rules as for its own tokens. This needs XP 8.2 or later: an older XP declares no audiences, so in this mode it accepts no upstream token at all. The virtual host that receives the token accepts the audiences it declares in `com.enonic.xp.web.vhost.cfg` (`+mapping.<name>.audience+`) and its own URL; a token for any other audience is refused, and no user is created or changed. XP's issuer name, which XP's own tokens may carry, is not an audience for an upstream token. The token's scopes are mapped to roles through the ID provider's <<#consent, scopes>>: the user then gets only the roles of the scopes the token carries. Without scopes the user keeps their full memberships.
+With `autoLogin.allowedAudience=@@{vhost.audience}`, XP decides what a verified token may do here, by the same rules as for its own tokens. This needs XP 8.2 or later: an older XP declares no audiences, so in this mode it accepts no upstream token at all. The virtual host that receives the token accepts the audiences it declares in `com.enonic.xp.web.vhost.cfg` (`+mapping.<name>.audience+`), its own URL, and a URL under it that the request is at or below - the endpoint a client names when it asks for a token for what it calls; a token for any other audience is refused, and no user is created or changed. The token must also name an <<#autologin, allowed issuer>>, the provider's own unless others are listed. XP's issuer name, which XP's own tokens may carry, is not an audience for an upstream token. The token's scopes are mapped to roles through the ID provider's <<#consent, scopes>>: the user then gets only the roles of the scopes the token carries. Without scopes the user keeps their full memberships.
 
 The placeholder cannot be combined with an audience list.
 

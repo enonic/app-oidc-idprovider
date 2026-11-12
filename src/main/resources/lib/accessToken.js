@@ -33,14 +33,26 @@ function scopes(claims) {
 /**
  * The check XP will make at login, made first, before any user is created, any profile saved or
  * any group synchronised: with `allowedAudience=@@{vhost.audience}` the token must name an
- * audience the virtual host declares (`request.idProviderSettings.audience`). A token naming no
- * audience is refused, and a host declaring none accepts no upstream token, as in XP.
+ * audience the virtual host accepts (`request.idProviderSettings.audience`: the audiences it
+ * declares and its own URL), or a URL under one of them that the request is at or below, which is
+ * what a client asks for when it names the endpoint it calls. A token naming no audience is
+ * refused, and XP's own issuer name is not an audience for an upstream token. XP has the last word.
  */
-function isAudienceDeclared(claims, req) {
-    const declared = (req.idProviderSettings && req.idProviderSettings.audience) || [];
+function isAudienceAccepted(claims, req) {
+    const accepted = (req.idProviderSettings && req.idProviderSettings.audience) || [];
     const named = [].concat(claims.aud || []);
-    return named.some((aud) => declared.indexOf(aud) >= 0);
+    const requestUrl = withoutQuery(req.url);
+    return named.some((aud) => accepted.indexOf(aud) >= 0 ||
+                               accepted.some((url) => isUnder(aud, url)) && (requestUrl === aud || isUnder(requestUrl, aud)));
+}
+
+function isUnder(url, base) {
+    return typeof url === 'string' && url.indexOf(base.charAt(base.length - 1) === '/' ? base : base + '/') === 0;
+}
+
+function withoutQuery(url) {
+    return typeof url === 'string' ? url.split(/[?#]/)[0] : null;
 }
 
 exports.accessTokenFromClaims = accessTokenFromClaims;
-exports.isAudienceDeclared = isAudienceDeclared;
+exports.isAudienceAccepted = isAudienceAccepted;
