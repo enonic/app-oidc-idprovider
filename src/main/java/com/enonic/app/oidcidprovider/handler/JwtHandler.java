@@ -1,9 +1,7 @@
 package com.enonic.app.oidcidprovider.handler;
 
 import java.util.List;
-import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,15 +41,11 @@ public class JwtHandler
         {
             DecodedJWT decodedJwt = JWT.decode( jwtToken );
 
-            if ( !allowedAudience.isEmpty() && decodedJwt.getAudience() != null )
+            if ( !allowedAudience.isEmpty() &&
+                ( decodedJwt.getAudience() == null || decodedJwt.getAudience().stream().noneMatch( allowedAudience::contains ) ) )
             {
-                Set<String> intersection =
-                    decodedJwt.getAudience().stream().distinct().filter( allowedAudience::contains ).collect( Collectors.toSet() );
-                if ( intersection.isEmpty() )
-                {
-                    LOG.debug( "Invalid audience: {}", decodedJwt.getAudience() );
-                    return null;
-                }
+                LOG.debug( "Invalid audience: {}", decodedJwt.getAudience() );
+                return null;
             }
 
             if ( !allowedIssuer.isEmpty() && !allowedIssuer.contains( decodedJwt.getIssuer() ) )

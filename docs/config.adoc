@@ -208,7 +208,7 @@ autoLogin.allowedIssuer=(space separated strings) // <6>
 <1> If you disable 'createUser', the user will be logged in, but not persisted as a user within Enonic. If `true`, a user will be created automatically if it doesn't exist.
 <2> Optionally create a session in Enonic when the user is logged in. By default, the user will be logged in with `REQUEST` scope.
 <3> ID provider will look for a token in the Sec-WebSocket-Protocol header.
-<4> Set to `@@{vhost.audience}`: the accepted audiences are those the virtual host declares, see <<#tokens-through-xp, tokens through XP>>. A space-separated list of audiences is *deprecated*: it still works, with a warning in the log, and the placeholder will become the default.
+<4> Set to `@@{vhost.audience}`: the accepted audiences are those the virtual host declares, see <<#tokens-through-xp, tokens through XP>>. A space-separated list of audiences is *deprecated*: it still works, with a warning in the log, and the placeholder will become the default. A token must name one of the listed audiences; a token that names none at all is refused.
 <5> When `true`, also apply <<#groups-from-claim,groups from claim>> sync during Bearer autoLogin. The claim is resolved against the raw JWT payload (no userinfo endpoint is called).
 <6> The issuers (`iss`) a token may name, compared as written. With `+allowedAudience=@@{vhost.audience}+` it defaults to the provider's `issuer`, so a token signed with the provider's keys for another tenant is refused; list the issuers here when the provider's access tokens name another one than its `issuer`. With an audience list the issuer is checked only when this is set.
 

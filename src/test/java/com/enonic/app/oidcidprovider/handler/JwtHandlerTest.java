@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.algorithms.Algorithm;
 
 import com.enonic.xp.app.ApplicationKey;
@@ -92,15 +93,41 @@ public class JwtHandlerTest
         return bytes.length > 1 && bytes[0] == 0 ? java.util.Arrays.copyOfRange( bytes, 1, bytes.length ) : bytes;
     }
 
+    private static final String AUDIENCE = "https://api.example.com/api/mcp";
+
     private static String token( final KeyPair keys, final String issuer )
     {
-        return JWT.create()
-            .withKeyId( "key1" )
-            .withIssuer( issuer )
-            .withSubject( "alice" )
-            .withAudience( "https://api.example.com/api/mcp" )
-            .withExpiresAt( Instant.now().plusSeconds( 300 ) )
-            .sign( Algorithm.RSA256( (RSAPublicKey) keys.getPublic(), (RSAPrivateKey) keys.getPrivate() ) );
+        return token( keys, issuer, AUDIENCE );
+    }
+
+    private static String token( final KeyPair keys, final String issuer, final String... audience )
+    {
+        final JWTCreator.Builder builder =
+            JWT.create().withKeyId( "key1" ).withIssuer( issuer ).withSubject( "alice" ).withExpiresAt( Instant.now().plusSeconds( 300 ) );
+        if ( audience.length > 0 )
+        {
+            builder.withAudience( audience );
+        }
+        return builder.sign( Algorithm.RSA256( (RSAPublicKey) keys.getPublic(), (RSAPrivateKey) keys.getPrivate() ) );
+    }
+
+    @Test
+    public void withAllowedAudiencesTheTokenMustNameOne()
+    {
+        final List<String> allowed = List.of( "my-client", AUDIENCE );
+
+        assertNotNull( handler.validateTokenAndGetPayload( token( providerKeys, ISSUER ), ID_PROVIDER, allowed, List.of() ) );
+        assertNotNull( handler.validateTokenAndGetPayload( token( providerKeys, ISSUER, "other", "my-client" ), ID_PROVIDER, allowed, List.of() ) );
+        assertNull( handler.validateTokenAndGetPayload( token( providerKeys, ISSUER, "other" ), ID_PROVIDER, allowed, List.of() ) );
+        // a token for no audience at all names none of them
+        assertNull( handler.validateTokenAndGetPayload( token( providerKeys, ISSUER, new String[0] ), ID_PROVIDER, allowed, List.of() ) );
+    }
+
+    @Test
+    public void withoutAllowedAudiencesTheAudienceIsNotChecked()
+    {
+        assertNotNull( handler.validateTokenAndGetPayload( token( providerKeys, ISSUER, "other" ), ID_PROVIDER, List.of(), List.of() ) );
+        assertNotNull( handler.validateTokenAndGetPayload( token( providerKeys, ISSUER, new String[0] ), ID_PROVIDER, List.of(), List.of() ) );
     }
 
     @Test
