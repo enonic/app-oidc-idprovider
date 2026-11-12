@@ -33,6 +33,11 @@ function isAutoLoginFailed() {
     return bean.isAutoLoginFailed();
 }
 
+function acceptsAudience(audience) {
+    const bean = __.newBean('com.enonic.app.oidcidprovider.PortalRequestBean');
+    return bean.acceptsAudience(audience);
+}
+
 function getRedirectUri() {
     const bean = __.newBean('com.enonic.app.oidcidprovider.PortalRequestBean');
     return bean.getRedirectUri();
@@ -45,4 +50,5 @@ exports.storeIdToken = storeIdToken;
 exports.getIdToken = getIdToken;
 exports.autoLoginFailed = autoLoginFailed;
 exports.isAutoLoginFailed = isAutoLoginFailed;
+exports.acceptsAudience = acceptsAudience;
 exports.getRedirectUri = getRedirectUri;

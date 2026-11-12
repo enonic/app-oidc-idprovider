@@ -238,7 +238,7 @@ exports.autoLogin = function (req) {
     const payload = jwtLib.validateTokenAndGetPayload(jwtToken, idProviderConfig);
 
     if (payload) {
-        if (idProviderConfig.autoLogin.audienceFromVhost && !accessTokenLib.isAudienceAccepted(payload, req)) {
+        if (idProviderConfig.autoLogin.audienceFromVhost && !accessTokenLib.isAudienceAccepted(payload)) {
             // Refused here, before the user is created, the profile saved or groups synchronised;
             // XP refuses the login again when the token is handed over.
             log.debug(`AutoLogin failed: token audience ${JSON.stringify(payload.aud)} is not accepted by the virtual host`);

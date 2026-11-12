@@ -1,10 +1,16 @@
 package com.enonic.app.oidcidprovider;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import com.enonic.app.oidcidprovider.mapper.ContextMapper;
 import com.enonic.xp.portal.PortalRequest;
@@ -125,6 +131,47 @@ public class PortalRequestBean
     public boolean isAutoLoginFailed()
     {
         return Boolean.TRUE.equals( this.portalRequest.getRawRequest().getAttribute( autoLoginAttr ) );
+    }
+
+    /**
+     * Whether the virtual host of the request accepts a bearer token naming these audiences, by the
+     * rule XP applies when the token is handed over at login: an audience the host declares, or a URL
+     * at or under the host's own that the request is at or below. XP's issuer name is not an audience
+     * for an upstream token.
+     */
+    public boolean acceptsAudience( final List<String> audience )
+    {
+        final HttpServletRequest rawRequest = portalRequest.getRawRequest();
+        final VirtualHost virtualHost = rawRequest == null ? null : VirtualHostHelper.getVirtualHost( rawRequest );
+        final Set<String> named = audience.stream().filter( Objects::nonNull ).collect( Collectors.toUnmodifiableSet() );
+        if ( virtualHost == null || named.isEmpty() )
+        {
+            return false;
+        }
+        // A name none of the audiences is, so that none of them counts as XP's own.
+        String notNamed = "";
+        while ( named.contains( notNamed ) )
+        {
+            notNamed += "-";
+        }
+        return virtualHost.acceptsAudience( named, notNamed, requestedUrl( rawRequest ) );
+    }
+
+    /**
+     * The URL the request came to as the client sent it, the one XP holds the audience against; null
+     * when the path is not in canonical form.
+     */
+    private String requestedUrl( final HttpServletRequest rawRequest )
+    {
+        final String path = VirtualHostHelper.getRequestedPath( rawRequest );
+        if ( path == null )
+        {
+            return null;
+        }
+        final String scheme = portalRequest.getScheme();
+        final int port = portalRequest.getPort();
+        final boolean defaultPort = port <= 0 || ( "https".equals( scheme ) ? port == 443 : "http".equals( scheme ) && port == 80 );
+        return scheme + "://" + portalRequest.getHost() + ( defaultPort ? "" : ":" + port ) + path;
     }
 
     public String getRedirectUri()

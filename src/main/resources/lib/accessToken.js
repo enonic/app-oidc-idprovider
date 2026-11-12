@@ -1,3 +1,5 @@
+const requestLib = require('/lib/request');
+
 /**
  * Translates the payload of a verified bearer token into the `accessToken` option of
  * `authLib.login()`, so XP records the token on the login and applies its own audience and scope
@@ -33,25 +35,13 @@ function scopes(claims) {
 /**
  * The check XP will make at login, made first, before any user is created, any profile saved or
  * any group synchronised: with `allowedAudience=@@{vhost.audience}` the token must name an
- * audience the virtual host accepts (`request.idProviderSettings.audience`: the audiences it
- * declares and its own URL), or a URL under one of them that the request is at or below, which is
- * what a client asks for when it names the endpoint it calls. A token naming no audience is
- * refused, and XP's own issuer name is not an audience for an upstream token. XP has the last word.
+ * audience the virtual host accepts. XP's own rule decides: an audience the host declares, or a
+ * URL at or under the host's own that the request is at or below, which is what a client asks for
+ * when it names the endpoint it calls. A token naming no audience is refused, and XP's issuer name
+ * is not an audience for an upstream token.
  */
-function isAudienceAccepted(claims, req) {
-    const accepted = (req.idProviderSettings && req.idProviderSettings.audience) || [];
-    const named = [].concat(claims.aud || []);
-    const requestUrl = withoutQuery(req.url);
-    return named.some((aud) => accepted.indexOf(aud) >= 0 ||
-                               accepted.some((url) => isUnder(aud, url)) && (requestUrl === aud || isUnder(requestUrl, aud)));
-}
-
-function isUnder(url, base) {
-    return typeof url === 'string' && url.indexOf(base.charAt(base.length - 1) === '/' ? base : base + '/') === 0;
-}
-
-function withoutQuery(url) {
-    return typeof url === 'string' ? url.split(/[?#]/)[0] : null;
+function isAudienceAccepted(claims) {
+    return requestLib.acceptsAudience([].concat(claims.aud || []).filter((aud) => typeof aud === 'string'));
 }
 
 exports.accessTokenFromClaims = accessTokenFromClaims;
