@@ -24,4 +24,10 @@ public class OAuthConsentPageTest
     {
         runFunction( "/lib/oauthConsentPage-test.js", "testConfirm_codeFlow_allowsTheClientsOriginOnly" );
     }
+
+    @Test
+    public void testConfirm_scriptRunsByTheBuildersNonce()
+    {
+        runFunction( "/lib/oauthConsentPage-test.js", "testConfirm_scriptRunsByTheBuildersNonce" );
+    }
 }

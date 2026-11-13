@@ -1,5 +1,33 @@
 const test = require('/lib/xp/testing');
 
+// XP's CSP builder, recording what the page asks of it: the directives and their sources.
+let policy;
+test.mock('/lib/xp/portal', {
+    csp: () => {
+        const directives = {};
+        policy = directives;
+        const add = (name) => function () {
+            directives[name] = (directives[name] || []).concat(Array.prototype.slice.call(arguments));
+            return builder;
+        };
+        const builder = {
+            strict: () => {
+                directives['default-src'] = [`'none'`];
+                directives['base-uri'] = [`'none'`];
+                directives['frame-ancestors'] = [`'none'`];
+                return builder;
+            },
+            styleSrc: add('style-src'),
+            formAction: add('form-action'),
+            nonceScriptSrc: () => {
+                add('script-src')(`'nonce-n0nce'`);
+                return 'n0nce';
+            },
+        };
+        return builder;
+    },
+});
+
 const lib = require('/lib/oauthConsentPage');
 
 const USER = {key: 'user:myidp:alice', login: 'alice', displayName: 'Alice'};
@@ -42,22 +70,40 @@ exports.testConfirm_codeFlow_postsTheRequestAndNamesTheClient = () => {
     test.assertTrue(body.indexOf('action="?"') >= 0, 'the form drops the query it was opened with');
 };
 
+// The page's policy is XP's builder's: strict, inline styles, and a form that may only post to this host.
 // Approving in the code flow ends in a redirect to the client, which form-action 'self' alone would block:
-// the client's origin XP names is allowed, and nothing else.
+// the client's origin XP names is allowed, and nothing else; without one, form-action is left open.
 exports.testConfirm_codeFlow_allowsTheClientsOriginOnly = () => {
-    const policy = (flow, redirectOrigin) => lib.render({
-        idProvider: 'myidp', action: 'confirm', flow: flow, requestId: 'r1', userCode: 'BCDF-GHJK', clientId: 'enonic-cli',
-        client: {id: 'enonic-cli', displayName: 'Enonic CLI', registered: true},
-        scope: [], audience: [], unrestricted: true, csrf: 'c', user: USER, redirectOrigin: redirectOrigin,
-    }).headers['Content-Security-Policy'];
+    const render = (flow, redirectOrigin) => {
+        policy = null;
+        const response = lib.render({
+            idProvider: 'myidp', action: 'confirm', flow: flow, requestId: 'r1', userCode: 'BCDF-GHJK', clientId: 'enonic-cli',
+            client: {id: 'enonic-cli', displayName: 'Enonic CLI', registered: true},
+            scope: [], audience: [], unrestricted: true, csrf: 'c', user: USER, redirectOrigin: redirectOrigin,
+        });
+        test.assertEquals(undefined, response.headers['Content-Security-Policy'], 'no header of its own');
+        test.assertJsonEquals([`'none'`], policy['default-src']);
+        test.assertJsonEquals([`'unsafe-inline'`], policy['style-src']);
+        return policy['form-action'];
+    };
 
-    test.assertTrue(policy('code', 'http://127.0.0.1:51234').indexOf("form-action 'self' http://127.0.0.1:51234; ") >= 0,
-        'code flow: ' + policy('code', 'http://127.0.0.1:51234'));
-    test.assertTrue(policy('code', 'http://127.0.0.1:51234').indexOf("frame-ancestors 'none'") >= 0, 'the rest of the policy stays');
-    test.assertTrue(policy('code', undefined).indexOf('form-action') < 0, 'an XP that names no origin');
-    const injected = policy('code', "http://x; script-src 'unsafe-inline'");
-    test.assertTrue(injected.indexOf('form-action') < 0 && injected.indexOf('script-src') < 0, 'not an origin: ' + injected);
-    test.assertTrue(policy('device', 'http://127.0.0.1:51234').indexOf("form-action 'self'; ") >= 0, 'device flow: ' + policy('device'));
-    const enter = lib.render({idProvider: 'myidp', action: 'enter', user: USER}).headers['Content-Security-Policy'];
-    test.assertTrue(enter.indexOf("form-action 'self'; ") >= 0, 'entering a code: ' + enter);
+    test.assertJsonEquals([`'self'`, 'http://127.0.0.1:51234'], render('code', 'http://127.0.0.1:51234'));
+    test.assertEquals(undefined, render('code', undefined), 'an XP that names no origin');
+    test.assertJsonEquals([`'self'`], render('device', 'http://127.0.0.1:51234'));
+    policy = null;
+    lib.render({idProvider: 'myidp', action: 'enter', user: USER});
+    test.assertJsonEquals([`'self'`], policy['form-action'], 'entering a code');
+};
+
+// The keep-one script runs by the builder's nonce, and no other script is allowed.
+exports.testConfirm_scriptRunsByTheBuildersNonce = () => {
+    policy = null;
+    const body = lib.render({
+        idProvider: 'myidp', action: 'confirm', flow: 'code', requestId: 'r1', clientId: 'cli',
+        client: {id: 'cli', displayName: 'cli', registered: false},
+        scope: [{id: 'content:read', title: 'Read content', roles: [], required: false}],
+        audience: [], unrestricted: false, csrf: 'c', user: USER,
+    }).body;
+    test.assertTrue(body.indexOf('<script nonce="n0nce">') >= 0, 'the script carries the nonce');
+    test.assertJsonEquals([`'nonce-n0nce'`], policy['script-src']);
 };
