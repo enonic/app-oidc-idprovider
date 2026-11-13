@@ -18,4 +18,10 @@ public class OAuthConsentPageTest
     {
         runFunction( "/lib/oauthConsentPage-test.js", "testConfirm_codeFlow_postsTheRequestAndNamesTheClient" );
     }
+
+    @Test
+    public void testConfirm_codeFlow_leavesFormActionOpenForTheRedirect()
+    {
+        runFunction( "/lib/oauthConsentPage-test.js", "testConfirm_codeFlow_leavesFormActionOpenForTheRedirect" );
+    }
 }

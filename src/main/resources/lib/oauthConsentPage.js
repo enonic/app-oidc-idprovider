@@ -37,8 +37,11 @@ function escapeHtml(value) {
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-// A page, with a script of this file's own when one is given; no other script runs on it.
-function page(title, bodyHtml, script) {
+// A page, with a script of this file's own when one is given; no other script runs on it. The forms post
+// to this host, but browsers hold a form's redirects to form-action too, and approving an authorization
+// request ends in a redirect to the client, such as a CLI listening on 127.0.0.1, so that page leaves
+// form-action open.
+function page(title, bodyHtml, script, redirectsToClient) {
     const nonce = script ? oidcLib.generateToken() : null;
     const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">` +
                  `<meta name="viewport" content="width=device-width, initial-scale=1">` +
@@ -53,7 +56,7 @@ function page(title, bodyHtml, script) {
             'Cache-Control': 'no-store',
             'Content-Security-Policy': `default-src 'none'; style-src 'unsafe-inline'; ` +
                 (script ? `script-src 'nonce-${nonce}'; ` : '') +
-                `form-action 'self'; base-uri 'none'; frame-ancestors 'none'`,
+                (redirectsToClient ? '' : `form-action 'self'; `) + `base-uri 'none'; frame-ancestors 'none'`,
             'Referrer-Policy': 'no-referrer',
         },
     };
@@ -121,7 +124,7 @@ function confirm(context) {
         reference +
         `<input type="hidden" name="_csrf" value="${escapeHtml(context.csrf)}">` +
         `<button class="approve" type="submit" name="approve" value="true">Authorize</button>` +
-        `<button class="deny" type="submit" name="approve" value="false">Cancel</button></form>`, keepOne ? KEEP_ONE_SCRIPT : null);
+        `<button class="deny" type="submit" name="approve" value="false">Cancel</button></form>`, keepOne ? KEEP_ONE_SCRIPT : null, codeFlow);
 }
 
 function done(context) {

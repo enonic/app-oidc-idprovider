@@ -41,3 +41,18 @@ exports.testConfirm_codeFlow_postsTheRequestAndNamesTheClient = () => {
     test.assertTrue(body.indexOf('Only continue if you started this request.</p>') >= 0);
     test.assertTrue(body.indexOf('action="?"') >= 0, 'the form drops the query it was opened with');
 };
+
+// Approving in the code flow ends in a redirect to the client, which form-action 'self' would block.
+exports.testConfirm_codeFlow_leavesFormActionOpenForTheRedirect = () => {
+    const confirm = (flow) => lib.render({
+        idProvider: 'myidp', action: 'confirm', flow: flow, requestId: 'r1', userCode: 'BCDF-GHJK', clientId: 'enonic-cli',
+        client: {id: 'enonic-cli', displayName: 'Enonic CLI', registered: true},
+        scope: [], audience: [], unrestricted: true, csrf: 'c', user: USER,
+    }).headers['Content-Security-Policy'];
+
+    test.assertTrue(confirm('code').indexOf('form-action') < 0, 'code flow: ' + confirm('code'));
+    test.assertTrue(confirm('code').indexOf("frame-ancestors 'none'") >= 0, 'the rest of the policy stays');
+    test.assertTrue(confirm('device').indexOf("form-action 'self'") >= 0, 'device flow: ' + confirm('device'));
+    const enter = lib.render({idProvider: 'myidp', action: 'enter', user: USER}).headers['Content-Security-Policy'];
+    test.assertTrue(enter.indexOf("form-action 'self'") >= 0, 'entering a code: ' + enter);
+};

@@ -284,6 +284,8 @@ consent.client.0.enabled=(true|false, optional, defaults to true)
 
 TIP: For more scopes or clients, iterate the counter (`consent.scope.1.id`, `consent.client.1.id`, ...). A client that registers itself, as MCP clients do, needs no entry here.
 
+The Enonic CLI logs in as the client `enonic-cli` and needs no entry either: a client that is not registered may use every flow. If you register it, to set a scope or a grant lifetime for instance, list the flows it uses: `consent.client.0.grantTypes=urn:ietf:params:oauth:grant-type:device_code authorization_code refresh_token`. `authorization_code` is what `enonic login --browser` uses, with a loopback redirect.
+
 == endSession
 
 OpenID Connect Front-Channel Logout is optional and might not be supported by your authentication server. You can check if the endpoint is available in the OpenID Configuration (`.well-known/openid-configuration`) under the field `end_session_endpoint`.
