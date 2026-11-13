@@ -37,11 +37,22 @@ function escapeHtml(value) {
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-// A page, with a script of this file's own when one is given; no other script runs on it. The forms post
-// to this host, but browsers hold a form's redirects to form-action too, and approving an authorization
-// request ends in a redirect to the client, such as a CLI listening on 127.0.0.1, so that page leaves
-// form-action open.
-function page(title, bodyHtml, script, redirectsToClient) {
+// An origin as XP names it: a scheme, then a host with an optional port, or nothing for a private-use scheme.
+const ORIGIN = /^[a-z][a-z0-9+.-]*:(\/\/[a-z0-9.\-[\]:]+)?$/;
+
+// form-action of a page: its forms post to this host, but browsers hold a form's redirects to form-action
+// too, and approving an authorization request ends in a redirect to the client, such as a CLI listening on
+// 127.0.0.1. That page also allows the client's origin XP names, and nothing else; without one, or with a
+// value that is not an origin, it leaves form-action open.
+function formAction(redirectsToClient, redirectOrigin) {
+    if (!redirectsToClient) {
+        return `form-action 'self'; `;
+    }
+    return redirectOrigin && ORIGIN.test(redirectOrigin) ? `form-action 'self' ${redirectOrigin}; ` : '';
+}
+
+// A page, with a script of this file's own when one is given; no other script runs on it.
+function page(title, bodyHtml, script, redirectsToClient, redirectOrigin) {
     const nonce = script ? oidcLib.generateToken() : null;
     const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">` +
                  `<meta name="viewport" content="width=device-width, initial-scale=1">` +
@@ -56,7 +67,7 @@ function page(title, bodyHtml, script, redirectsToClient) {
             'Cache-Control': 'no-store',
             'Content-Security-Policy': `default-src 'none'; style-src 'unsafe-inline'; ` +
                 (script ? `script-src 'nonce-${nonce}'; ` : '') +
-                (redirectsToClient ? '' : `form-action 'self'; `) + `base-uri 'none'; frame-ancestors 'none'`,
+                formAction(redirectsToClient, redirectOrigin) + `base-uri 'none'; frame-ancestors 'none'`,
             'Referrer-Policy': 'no-referrer',
         },
     };
@@ -124,7 +135,7 @@ function confirm(context) {
         reference +
         `<input type="hidden" name="_csrf" value="${escapeHtml(context.csrf)}">` +
         `<button class="approve" type="submit" name="approve" value="true">Authorize</button>` +
-        `<button class="deny" type="submit" name="approve" value="false">Cancel</button></form>`, keepOne ? KEEP_ONE_SCRIPT : null, codeFlow);
+        `<button class="deny" type="submit" name="approve" value="false">Cancel</button></form>`, keepOne ? KEEP_ONE_SCRIPT : null, codeFlow, context.redirectOrigin);
 }
 
 function done(context) {

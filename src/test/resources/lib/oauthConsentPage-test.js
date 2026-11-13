@@ -42,17 +42,22 @@ exports.testConfirm_codeFlow_postsTheRequestAndNamesTheClient = () => {
     test.assertTrue(body.indexOf('action="?"') >= 0, 'the form drops the query it was opened with');
 };
 
-// Approving in the code flow ends in a redirect to the client, which form-action 'self' would block.
-exports.testConfirm_codeFlow_leavesFormActionOpenForTheRedirect = () => {
-    const confirm = (flow) => lib.render({
+// Approving in the code flow ends in a redirect to the client, which form-action 'self' alone would block:
+// the client's origin XP names is allowed, and nothing else.
+exports.testConfirm_codeFlow_allowsTheClientsOriginOnly = () => {
+    const policy = (flow, redirectOrigin) => lib.render({
         idProvider: 'myidp', action: 'confirm', flow: flow, requestId: 'r1', userCode: 'BCDF-GHJK', clientId: 'enonic-cli',
         client: {id: 'enonic-cli', displayName: 'Enonic CLI', registered: true},
-        scope: [], audience: [], unrestricted: true, csrf: 'c', user: USER,
+        scope: [], audience: [], unrestricted: true, csrf: 'c', user: USER, redirectOrigin: redirectOrigin,
     }).headers['Content-Security-Policy'];
 
-    test.assertTrue(confirm('code').indexOf('form-action') < 0, 'code flow: ' + confirm('code'));
-    test.assertTrue(confirm('code').indexOf("frame-ancestors 'none'") >= 0, 'the rest of the policy stays');
-    test.assertTrue(confirm('device').indexOf("form-action 'self'") >= 0, 'device flow: ' + confirm('device'));
+    test.assertTrue(policy('code', 'http://127.0.0.1:51234').indexOf("form-action 'self' http://127.0.0.1:51234; ") >= 0,
+        'code flow: ' + policy('code', 'http://127.0.0.1:51234'));
+    test.assertTrue(policy('code', 'http://127.0.0.1:51234').indexOf("frame-ancestors 'none'") >= 0, 'the rest of the policy stays');
+    test.assertTrue(policy('code', undefined).indexOf('form-action') < 0, 'an XP that names no origin');
+    const injected = policy('code', "http://x; script-src 'unsafe-inline'");
+    test.assertTrue(injected.indexOf('form-action') < 0 && injected.indexOf('script-src') < 0, 'not an origin: ' + injected);
+    test.assertTrue(policy('device', 'http://127.0.0.1:51234').indexOf("form-action 'self'; ") >= 0, 'device flow: ' + policy('device'));
     const enter = lib.render({idProvider: 'myidp', action: 'enter', user: USER}).headers['Content-Security-Policy'];
-    test.assertTrue(enter.indexOf("form-action 'self'") >= 0, 'entering a code: ' + enter);
+    test.assertTrue(enter.indexOf("form-action 'self'; ") >= 0, 'entering a code: ' + enter);
 };

@@ -20,8 +20,8 @@ public class OAuthConsentPageTest
     }
 
     @Test
-    public void testConfirm_codeFlow_leavesFormActionOpenForTheRedirect()
+    public void testConfirm_codeFlow_allowsTheClientsOriginOnly()
     {
-        runFunction( "/lib/oauthConsentPage-test.js", "testConfirm_codeFlow_leavesFormActionOpenForTheRedirect" );
+        runFunction( "/lib/oauthConsentPage-test.js", "testConfirm_codeFlow_allowsTheClientsOriginOnly" );
     }
 }
