@@ -8,6 +8,7 @@ import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -90,7 +91,7 @@ public class JwtHandlerTest
 
     private static byte[] unsigned( final byte[] bytes )
     {
-        return bytes.length > 1 && bytes[0] == 0 ? java.util.Arrays.copyOfRange( bytes, 1, bytes.length ) : bytes;
+        return bytes.length > 1 && bytes[0] == 0 ? Arrays.copyOfRange( bytes, 1, bytes.length ) : bytes;
     }
 
     private static final String AUDIENCE = "https://api.example.com/api/mcp";
@@ -147,6 +148,17 @@ public class JwtHandlerTest
         // the issuer compares as a string
         assertNull( handler.validateTokenAndGetPayload( token( providerKeys, "https://tenant.example.com" ), ID_PROVIDER, List.of(),
                                                         List.of( ISSUER ) ) );
+    }
+
+    @Test
+    public void aTokenWithoutIssuerIsRefusedWhereIssuersAreListed()
+    {
+        final String noIssuer = token( providerKeys, null );
+
+        assertNull( handler.validateTokenAndGetPayload( noIssuer, ID_PROVIDER, List.of(), List.of( ISSUER ) ) );
+        // not even a list that holds no issuer lets it through
+        assertNull( handler.validateTokenAndGetPayload( noIssuer, ID_PROVIDER, List.of(), Arrays.asList( (String) null ) ) );
+        assertNotNull( handler.validateTokenAndGetPayload( noIssuer, ID_PROVIDER, List.of(), List.of() ) );
     }
 
     @Test

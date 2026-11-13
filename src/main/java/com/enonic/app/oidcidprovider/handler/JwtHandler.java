@@ -48,7 +48,7 @@ public class JwtHandler
                 return null;
             }
 
-            if ( !allowedIssuer.isEmpty() && !allowedIssuer.contains( decodedJwt.getIssuer() ) )
+            if ( !allowedIssuer.isEmpty() && ( decodedJwt.getIssuer() == null || !allowedIssuer.contains( decodedJwt.getIssuer() ) ) )
             {
                 LOG.debug( "Invalid issuer: {}", decodedJwt.getIssuer() );
                 return null;

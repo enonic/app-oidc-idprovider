@@ -142,7 +142,7 @@ function validate(config, idProviderName) {
 
     checkArrayConfig(config.additionalEndpoints, 'additionalEndpoints', idProviderName);
     resolveAllowedAudience(config.autoLogin, idProviderName);
-    resolveAllowedIssuer(config);
+    resolveAllowedIssuer(config, idProviderName);
     if (config.endSession) {
         required(config.endSession.url, 'endSession.url', idProviderName);
         checkArrayConfig(config.endSession.additionalParameters, 'endSession.additionalParameters', idProviderName);
@@ -182,9 +182,9 @@ function resolveAllowedAudience(autoLogin, idProviderName) {
  * with the same keys. With an audience list (deprecated) it stays empty unless set, and the issuer
  * is not checked, as before.
  */
-function resolveAllowedIssuer(config) {
+function resolveAllowedIssuer(config, idProviderName) {
     if (config.autoLogin.allowedIssuer.length === 0 && config.autoLogin.audienceFromVhost) {
-        config.autoLogin.allowedIssuer = [config.issuer];
+        config.autoLogin.allowedIssuer = [checkConfig(config, 'issuer', idProviderName)];
     }
 }
 
