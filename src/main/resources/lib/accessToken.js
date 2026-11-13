@@ -1,3 +1,5 @@
+const requestLib = require('/lib/request');
+
 /**
  * Translates the payload of a verified bearer token into the `accessToken` option of
  * `authLib.login()`, so XP records the token on the login and applies its own audience and scope
@@ -33,14 +35,14 @@ function scopes(claims) {
 /**
  * The check XP will make at login, made first, before any user is created, any profile saved or
  * any group synchronised: with `allowedAudience=@@{vhost.audience}` the token must name an
- * audience the virtual host declares (`request.idProviderSettings.audience`). A token naming no
- * audience is refused, and a host declaring none accepts no upstream token, as in XP.
+ * audience the virtual host accepts. XP's own rule decides: an audience the host declares, or a
+ * URL at or under the host's own that the request is at or below, which is what a client asks for
+ * when it names the endpoint it calls. A token naming no audience is refused, and XP's issuer name
+ * is not an audience for an upstream token.
  */
-function isAudienceDeclared(claims, req) {
-    const declared = (req.idProviderSettings && req.idProviderSettings.audience) || [];
-    const named = [].concat(claims.aud || []);
-    return named.some((aud) => declared.indexOf(aud) >= 0);
+function isAudienceAccepted(claims) {
+    return requestLib.acceptsAudience([].concat(claims.aud || []).filter((aud) => typeof aud === 'string'));
 }
 
 exports.accessTokenFromClaims = accessTokenFromClaims;
-exports.isAudienceDeclared = isAudienceDeclared;
+exports.isAudienceAccepted = isAudienceAccepted;

@@ -52,16 +52,16 @@ exports.testBareClaims = function () {
     test.assertJsonEquals({issuer: 'https://provider.example.com', scope: [], audience: []}, accessToken);
 };
 
-exports.testAudienceDeclared = function () {
-    const req = {idProviderSettings: {flows: ['autologin'], audience: ['https://service.example.com/api', 'my-client']}};
-    test.assertTrue(accessTokenLib.isAudienceDeclared({aud: 'my-client'}, req));
-    test.assertTrue(accessTokenLib.isAudienceDeclared({aud: ['other', 'https://service.example.com/api']}, req));
-    test.assertFalse(accessTokenLib.isAudienceDeclared({aud: ['other']}, req));
-    test.assertFalse(accessTokenLib.isAudienceDeclared({aud: []}, req));
-    test.assertFalse(accessTokenLib.isAudienceDeclared({}, req));
+// The rule is XP's; here the host of the test accepts 'accepted' and nothing else.
+exports.testAudienceIsAskedOfTheVirtualHost = function () {
+    test.assertTrue(accessTokenLib.isAudienceAccepted({aud: 'accepted'}));
+    test.assertTrue(accessTokenLib.isAudienceAccepted({aud: ['other', 'accepted']}));
+    test.assertFalse(accessTokenLib.isAudienceAccepted({aud: ['other']}));
+    test.assertFalse(accessTokenLib.isAudienceAccepted({aud: 'other'}));
 };
 
-exports.testAudienceOnAHostDeclaringNone = function () {
-    test.assertFalse(accessTokenLib.isAudienceDeclared({aud: 'my-client'}, {idProviderSettings: {flows: [], audience: []}}));
-    test.assertFalse(accessTokenLib.isAudienceDeclared({aud: 'my-client'}, {}));
+exports.testNoAudienceIsRefused = function () {
+    test.assertFalse(accessTokenLib.isAudienceAccepted({aud: []}));
+    test.assertFalse(accessTokenLib.isAudienceAccepted({}));
+    test.assertFalse(accessTokenLib.isAudienceAccepted({aud: [42, null]}));
 };

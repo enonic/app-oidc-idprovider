@@ -1,9 +1,7 @@
 package com.enonic.app.oidcidprovider.handler;
 
 import java.util.List;
-import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +29,8 @@ public class JwtHandler
         this.idProviderConfigServiceSupplier = context.getService( IdProviderConfigService.class );
     }
 
-    public MapSerializable validateTokenAndGetPayload( final String jwtToken, final String idProviderName, final List<String> allowedAudience )
+    public MapSerializable validateTokenAndGetPayload( final String jwtToken, final String idProviderName, final List<String> allowedAudience,
+                                                       final List<String> allowedIssuer )
     {
         if ( jwtToken == null )
         {
@@ -42,15 +41,17 @@ public class JwtHandler
         {
             DecodedJWT decodedJwt = JWT.decode( jwtToken );
 
-            if ( !allowedAudience.isEmpty() && decodedJwt.getAudience() != null )
+            if ( !allowedAudience.isEmpty() &&
+                ( decodedJwt.getAudience() == null || decodedJwt.getAudience().stream().noneMatch( allowedAudience::contains ) ) )
             {
-                Set<String> intersection =
-                    decodedJwt.getAudience().stream().distinct().filter( allowedAudience::contains ).collect( Collectors.toSet() );
-                if ( intersection.isEmpty() )
-                {
-                    LOG.debug( "Invalid audience: {}", decodedJwt.getAudience() );
-                    return null;
-                }
+                LOG.debug( "Invalid audience: {}", decodedJwt.getAudience() );
+                return null;
+            }
+
+            if ( !allowedIssuer.isEmpty() && ( decodedJwt.getIssuer() == null || !allowedIssuer.contains( decodedJwt.getIssuer() ) ) )
+            {
+                LOG.debug( "Invalid issuer: {}", decodedJwt.getIssuer() );
+                return null;
             }
 
             RSAAlgorithmProvider rsaAlgorithmProvider = idProviderConfigServiceSupplier.get().getAlgorithmProvider( idProviderName );
