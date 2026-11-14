@@ -2,10 +2,10 @@
 // data XP hands the id provider as req.oauthConsent. XP owns the flows and checks what the form
 // posts back: user_code or request, approve (true/false), _csrf and one scope per kept permission.
 
-const oidcLib = require('/lib/oidc');
+const portalLib = require('/lib/xp/portal');
 
 // While none of the optional permissions is kept, the request cannot be approved, since XP denies
-// a request that keeps no permission. Inline, allowed by a nonce in the page's policy.
+// a request that keeps no permission. Inline, allowed by the builder's nonce in the page's policy.
 const KEEP_ONE_SCRIPT =
     `(function(){var f=document.querySelector('form'),b=f.querySelectorAll('input[type=checkbox][name=scope]'),` +
     `a=f.querySelector('button.approve'),h=document.getElementById('keep-one');function u(){var k=false;` +
@@ -37,23 +37,31 @@ function escapeHtml(value) {
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-// A page, with a script of this file's own when one is given; no other script runs on it.
-function page(title, bodyHtml, script) {
-    const nonce = script ? oidcLib.generateToken() : null;
+// A page, with a script of this file's own when one is given; no other script runs on it. Its Content
+// Security Policy goes through XP's builder, which emits the header: nothing loads but its inline styles and
+// that script, by the builder's nonce. Its forms post to this host, but browsers hold a form's redirects to
+// form-action too, and approving an authorization request ends in a redirect to the client, such as a CLI
+// listening on 127.0.0.1. That page also allows the client's origin XP names, and nothing else; without one,
+// it leaves form-action open.
+function page(title, bodyHtml, script, redirectsToClient, redirectOrigin) {
+    const policy = portalLib.csp().strict().styleSrc(`'unsafe-inline'`);
+    const nonce = script ? policy.nonceScriptSrc() : null;
+    if (!redirectsToClient) {
+        policy.formAction(`'self'`);
+    } else if (redirectOrigin) {
+        policy.formAction(`'self'`, redirectOrigin);
+    }
     const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">` +
                  `<meta name="viewport" content="width=device-width, initial-scale=1">` +
                  `<title>${escapeHtml(title)}</title>` +
                  `<style>${STYLE}</style></head><body><div class="card">${bodyHtml}</div>` +
-                 (script ? `<script nonce="${nonce}">${script}</script>` : '') + `</body></html>`;
+                 (script ? `<script nonce="${escapeHtml(nonce)}">${script}</script>` : '') + `</body></html>`;
     return {
         status: 200,
         contentType: 'text/html; charset=utf-8',
         body: html,
         headers: {
             'Cache-Control': 'no-store',
-            'Content-Security-Policy': `default-src 'none'; style-src 'unsafe-inline'; ` +
-                (script ? `script-src 'nonce-${nonce}'; ` : '') +
-                `form-action 'self'; base-uri 'none'; frame-ancestors 'none'`,
             'Referrer-Policy': 'no-referrer',
         },
     };
@@ -121,7 +129,7 @@ function confirm(context) {
         reference +
         `<input type="hidden" name="_csrf" value="${escapeHtml(context.csrf)}">` +
         `<button class="approve" type="submit" name="approve" value="true">Authorize</button>` +
-        `<button class="deny" type="submit" name="approve" value="false">Cancel</button></form>`, keepOne ? KEEP_ONE_SCRIPT : null);
+        `<button class="deny" type="submit" name="approve" value="false">Cancel</button></form>`, keepOne ? KEEP_ONE_SCRIPT : null, codeFlow, context.redirectOrigin);
 }
 
 function done(context) {
