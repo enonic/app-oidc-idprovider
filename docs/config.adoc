@@ -284,7 +284,17 @@ consent.client.0.enabled=(true|false, optional, defaults to true)
 
 TIP: For more scopes or clients, iterate the counter (`consent.scope.1.id`, `consent.client.1.id`, ...). A client that registers itself, as MCP clients do, needs no entry here.
 
-The Enonic CLI logs in as the client `enonic-cli` and needs no entry either: a client that is not registered may use every flow. If you register it, to set a scope or a grant lifetime for instance, list the flows it uses: `consent.client.0.grantTypes=urn:ietf:params:oauth:grant-type:device_code authorization_code refresh_token`. `authorization_code` is what `enonic login --browser` uses, with a loopback redirect.
+XP refuses a client it does not know, so a client that does not register itself needs an entry. The Enonic CLI logs in as `enonic-cli` and is one of them:
+
+[source,properties]
+----
+consent.client.0.id=enonic-cli
+consent.client.0.displayName=Enonic CLI
+consent.client.0.uri=https://developer.enonic.com/docs/enonic-cli
+consent.client.0.grantTypes=urn:ietf:params:oauth:grant-type:device_code authorization_code refresh_token
+----
+
+`device_code` is what `enonic login` uses, `authorization_code` what `enonic login --browser` uses with a loopback redirect, and `refresh_token` keeps the login.
 
 == endSession
 
