@@ -284,6 +284,16 @@ consent.client.0.enabled=(true|false, optional, defaults to true)
 
 TIP: For more scopes or clients, iterate the counter (`consent.scope.1.id`, `consent.client.1.id`, ...). A client that registers itself, as MCP clients do, needs no entry here.
 
+XP refuses a client it does not know, so a client that does not register itself needs an entry. The Enonic CLI is the exception: XP knows `enonic-cli` for every ID provider, with device login (`enonic login`), the authorization code flow with a loopback redirect (`enonic login --browser`) and refresh tokens. An entry for `enonic-cli` overrides XP's, for instance to cap its scopes or set a grant lifetime; list the flows it may use in `grantTypes`, as an entry replaces XP's grants too. XP's is a default client; where XP's `system.properties` sets `xp.defaultCliClient = false` there is none, and the CLI logs in only on an ID provider with such an entry:
+
+[source,properties]
+----
+consent.client.0.id=enonic-cli
+consent.client.0.displayName=Enonic CLI
+consent.client.0.grantTypes=urn:ietf:params:oauth:grant-type:device_code authorization_code refresh_token
+consent.client.0.grantTtl=P7D
+----
+
 == endSession
 
 OpenID Connect Front-Channel Logout is optional and might not be supported by your authentication server. You can check if the endpoint is available in the OpenID Configuration (`.well-known/openid-configuration`) under the field `end_session_endpoint`.
