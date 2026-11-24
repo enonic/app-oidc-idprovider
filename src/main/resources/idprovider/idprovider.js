@@ -7,7 +7,6 @@ const preconditions = require('/lib/preconditions');
 const authLib = require('/lib/xp/auth');
 const portalLib = require('/lib/xp/portal');
 const jwtLib = require('/lib/jwt');
-const oauthConsentPage = require('/lib/oauthConsentPage');
 
 function redirectToAuthorizationEndpoint() {
     const idProviderConfig = configLib.getIdProviderConfig();
@@ -211,12 +210,6 @@ exports.GET = function (req) {
         return {status: 403};
     }
     return handleAuthenticationResponse(req);
-};
-
-// XP's device login (RFC 8628): XP serves the endpoints and issues the tokens; this id provider
-// only renders the verification page from the data XP hands it as req.oauthConsent
-exports.oauthConsent = function (req) {
-    return oauthConsentPage.render(req.oauthConsent);
 };
 
 exports.logout = logout;

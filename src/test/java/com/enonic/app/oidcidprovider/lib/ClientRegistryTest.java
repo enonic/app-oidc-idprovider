@@ -4,12 +4,12 @@ import org.junit.jupiter.api.Test;
 
 import com.enonic.xp.testing.ScriptTestSupport;
 
-public class ConsentRegistryTest
+public class ClientRegistryTest
     extends ScriptTestSupport
 {
     private void run( final String function )
     {
-        runFunction( "/lib/consentRegistry-test.js", function );
+        runFunction( "/lib/clientRegistry-test.js", function );
     }
 
     @Test

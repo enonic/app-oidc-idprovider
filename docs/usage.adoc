@@ -72,9 +72,9 @@ NOTE: `myoidcprovider` in the example above must match the name you used in the 
 
 === Device login for CLIs and other browserless clients
 
-Enonic XP serves the OAuth device authorization flow (RFC 8628) for this ID provider's users: a client asks XP for a code, the user signs in through this ID provider as usual and approves the code on a verification page, and XP issues its own access and refresh tokens. This app provides the page the user sees; everything else is XP's, configured per virtual host in `com.enonic.xp.web.vhost.cfg`. See https://developer.enonic.com/docs/platform/stable/security/access-tokens[access tokens and device login] in the XP documentation.
+Enonic XP serves the OAuth device authorization flow (RFC 8628) for this ID provider's users: a client asks XP for a code, the user signs in through this ID provider as usual and approves the code on a verification page, and XP issues its own access and refresh tokens. The page the user sees is the `system` ID provider's, so that ID provider must be enabled on the host too; everything else is XP's, configured per virtual host in `com.enonic.xp.web.vhost.cfg`. See https://developer.enonic.com/docs/platform/stable/security/access-tokens[access tokens and device login] in the XP documentation.
 
-Enable the `device`, `code` and `register` flows on the host where users approve, and `autologin` with an `audience` on the host where the tokens are used. The scopes the ID provider declares, see <<config#consent, scopes and clients>>, say what a client may ask for and the roles each scope gives; the token gets the roles of the scopes the user keeps. Without declared scopes, a client asks for none and the token carries the user's full memberships.
+Enable the `device`, `code` and `register` flows on the host where users approve, and `autologin` with an `audience` on the host where the tokens are used. The scopes the installed applications declare in their API descriptors say what a client may ask for and the roles each scope gives; the token gets the roles of the scopes the user keeps. Clients are declared in this app's configuration, see <<config#clients, clients>>. Without declared scopes, a client asks for none and the token carries the user's full memberships.
 
 .Example: approve on the admin host, use on the API host
 [source,properties]
@@ -84,6 +84,9 @@ mapping.admin.source = /
 mapping.admin.target = /admin
 mapping.admin.idProvider.myoidcprovider = default
 mapping.admin.idProvider.myoidcprovider.flows = login,logout,device,code,register
+# The consent page is the system ID provider's; its flow list keeps its own login off this host
+mapping.admin.idProvider.system = enabled
+mapping.admin.idProvider.system.flows = consent
 
 mapping.api.host = api.example.com
 mapping.api.source = /
@@ -95,7 +98,7 @@ mapping.api.audience = api
 
 A client obtains its code at `+https://xp.example.com/_/idprovider/myoidcprovider/device/code+` and its tokens at `+.../token+`.
 
-Bearer tokens of your OpenID provider keep working through autologin. With `autoLogin.allowedAudience=@@{vhost.audience}` the host's audience and the ID provider's scopes apply to them too, see <<config#tokens-through-xp, tokens through XP>>.
+Bearer tokens of your OpenID provider keep working through autologin. With `autoLogin.allowedAudience=@@{vhost.audience}` the host's audience and the declared scopes apply to them too, see <<config#tokens-through-xp, tokens through XP>>.
 
 == Redirect/Callback URI
 
