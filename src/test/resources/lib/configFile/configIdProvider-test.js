@@ -100,22 +100,15 @@ exports.testValidConfig = () => {
 
                 'idprovider.myidp.acceptLeeway': '2',
 
-                'idprovider.myidp.consent.scope.0.id': 'content:read',
-                'idprovider.myidp.consent.scope.0.title': 'Read content',
-                'idprovider.myidp.consent.scope.0.description': 'See content in every project',
-                'idprovider.myidp.consent.scope.0.roles': 'role:cms.project.site.viewer  role:cms.cm.app',
-                'idprovider.myidp.consent.scope.1.id': 'profile',
-                'idprovider.myidp.consent.scope.1.required': 'true',
-                'idprovider.myidp.consent.scope.2.title': 'No id, dropped',
-                'idprovider.myidp.consent.client.0.id': 'claude',
-                'idprovider.myidp.consent.client.0.displayName': 'Claude',
-                'idprovider.myidp.consent.client.0.uri': 'https://claude.ai',
-                'idprovider.myidp.consent.client.0.grantTypes': 'authorization_code refresh_token',
-                'idprovider.myidp.consent.client.0.redirectUris': 'https://claude.ai/api/mcp/auth_callback',
-                'idprovider.myidp.consent.client.0.scope': 'content:read profile',
-                'idprovider.myidp.consent.client.0.resource': 'https://example.com/api/mcp',
-                'idprovider.myidp.consent.client.0.grantTtl': 'P30D',
-                'idprovider.myidp.consent.client.0.enabled': 'false',
+                'idprovider.myidp.client.0.id': 'claude',
+                'idprovider.myidp.client.0.displayName': 'Claude',
+                'idprovider.myidp.client.0.uri': 'https://claude.ai',
+                'idprovider.myidp.client.0.grantTypes': 'authorization_code refresh_token',
+                'idprovider.myidp.client.0.redirectUris': 'https://claude.ai/api/mcp/auth_callback',
+                'idprovider.myidp.client.0.scope': 'com.example.app:orders:read com.example.app:orders:write',
+                'idprovider.myidp.client.0.resource': 'https://example.com/api/mcp',
+                'idprovider.myidp.client.0.grantTtl': 'P30D',
+                'idprovider.myidp.client.0.enabled': 'false',
             }
         }
     });
@@ -124,18 +117,12 @@ exports.testValidConfig = () => {
 
     const config = configProvider.getIdProviderConfig('myidp');
 
-    test.assertJsonEquals({
-        scopes: [
-            {id: 'content:read', title: 'Read content', description: 'See content in every project',
-             roles: ['role:cms.project.site.viewer', 'role:cms.cm.app'], required: false},
-            {id: 'profile', title: null, description: null, roles: [], required: true},
-        ],
-        clients: [
-            {id: 'claude', displayName: 'Claude', uri: 'https://claude.ai', logoUri: null, policyUri: null, tosUri: null,
-             grantTypes: ['authorization_code', 'refresh_token'], redirectUris: ['https://claude.ai/api/mcp/auth_callback'],
-             scope: ['content:read', 'profile'], resource: ['https://example.com/api/mcp'], grantTtl: 'P30D', enabled: false},
-        ],
-    }, config.consent);
+    test.assertJsonEquals([
+        {id: 'claude', displayName: 'Claude', uri: 'https://claude.ai', logoUri: null, policyUri: null, tosUri: null,
+         grantTypes: ['authorization_code', 'refresh_token'], redirectUris: ['https://claude.ai/api/mcp/auth_callback'],
+         scope: ['com.example.app:orders:read', 'com.example.app:orders:write'], resource: ['https://example.com/api/mcp'],
+         grantTtl: 'P30D', enabled: false},
+    ], config.clients);
 
     test.assertEquals('displayName', config.displayName);
     test.assertEquals('description', config.description);
@@ -239,7 +226,7 @@ exports.testDefaultConfigWithRequiredOptions = () => {
     test.assertNull(config.groups);
 
     test.assertEquals(1, config.acceptLeeway);
-    test.assertJsonEquals({scopes: [], clients: []}, config.consent);
+    test.assertJsonEquals([], config.clients);
 };
 
 exports.testGroupsClaimWithoutMappings = () => {

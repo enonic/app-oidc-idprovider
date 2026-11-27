@@ -4,8 +4,7 @@ const wellKnownService = require('/lib/configFile/wellKnownService');
 const END_SESSION_ADDITIONAL_PARAMETERS_PATTERN = '^idprovider\.[a-zA-Z0-9_-]+\.endSession\.additionalParameters\.(\\d+)\.(key|value)$';
 const ADDITIONAL_ENDPOINTS = "^idprovider\.[a-zA-Z0-9_-]+\.additionalEndpoints\.(\\d+)\.(name|url)$";
 const GROUPS_MAPPING_PATTERN = '^idprovider\.[a-zA-Z0-9_-]+\.groups\.mapping\.(\\d+)\.(value|group)$';
-const CONSENT_SCOPE_PATTERN = '^idprovider\.[a-zA-Z0-9_-]+\.consent\.scope\.(\\d+)\.(id|title|description|roles|required)$';
-const CONSENT_CLIENT_PATTERN = '^idprovider\.[a-zA-Z0-9_-]+\.consent\.client\.(\\d+)\.(id|displayName|uri|logoUri|policyUri|tosUri|grantTypes|redirectUris|scope|resource|grantTtl|enabled)$';
+const CLIENT_PATTERN = '^idprovider\.[a-zA-Z0-9_-]+\.client\.(\\d+)\.(id|displayName|uri|logoUri|policyUri|tosUri|grantTypes|redirectUris|scope|resource|grantTtl|enabled)$';
 
 const parseStringArray = value => value ? value.split(' ').filter(v => !!v) : [];
 const firstAtsToDollar = value => value ? value.replace(/@@\{/g, '${') : value;
@@ -64,7 +63,7 @@ exports.getIdProviderConfig = function (idProviderName) {
             applyGroups: rawIdProviderConfig[`${idProviderKeyBase}.autoLogin.applyGroups`] === 'true' || false,
         },
         groups: parseGroups(rawIdProviderConfig, idProviderKeyBase, idProviderName),
-        consent: parseConsent(rawIdProviderConfig, idProviderKeyBase, idProviderName),
+        clients: parseClients(rawIdProviderConfig, idProviderKeyBase, idProviderName),
         userEventPrefix: rawIdProviderConfig[`${idProviderKeyBase}.userEventPrefix`] || app.name,
         userEventMode: rawIdProviderConfig[`${idProviderKeyBase}.userEventMode`] || 'local',
         acceptLeeway: parseLong(rawIdProviderConfig[`${idProviderKeyBase}.acceptLeeway`], 1),
@@ -234,31 +233,14 @@ function parseGroups(rawConfig, idProviderKeyBase, idProviderName) {
     };
 }
 
-// The scopes and clients XP registers with the ID provider for its own tokens: what a client may
-// ask for, and who a client is. Lists are space-separated, like the other lists in this file.
-function parseConsent(rawConfig, idProviderKeyBase, idProviderName) {
-    const scopes = extractPropertiesToArray(rawConfig, `${idProviderKeyBase}.consent.scope.`, CONSENT_SCOPE_PATTERN)
+// The clients XP registers with the ID provider for its own tokens: who a client is and what it
+// may ask for. Lists are space-separated, like the other lists in this file.
+function parseClients(rawConfig, idProviderKeyBase, idProviderName) {
+    return extractPropertiesToArray(rawConfig, `${idProviderKeyBase}.client.`, CLIENT_PATTERN)
         .filter(entry => {
             if (!entry || !entry.id) {
                 if (entry) {
-                    log.warning(`Ignoring consent.scope entry without 'id' for ID Provider '${idProviderName}'.`);
-                }
-                return false;
-            }
-            return true;
-        })
-        .map(entry => ({
-            id: entry.id,
-            title: entry.title || null,
-            description: entry.description || null,
-            roles: parseStringArray(entry.roles),
-            required: entry.required === 'true',
-        }));
-    const clients = extractPropertiesToArray(rawConfig, `${idProviderKeyBase}.consent.client.`, CONSENT_CLIENT_PATTERN)
-        .filter(entry => {
-            if (!entry || !entry.id) {
-                if (entry) {
-                    log.warning(`Ignoring consent.client entry without 'id' for ID Provider '${idProviderName}'.`);
+                    log.warning(`Ignoring client entry without 'id' for ID Provider '${idProviderName}'.`);
                 }
                 return false;
             }
@@ -278,7 +260,6 @@ function parseConsent(rawConfig, idProviderKeyBase, idProviderName) {
             grantTtl: entry.grantTtl || null,
             enabled: entry.enabled !== 'false',
         }));
-    return {scopes: scopes, clients: clients};
 }
 
 function extractPropertiesToArray(rawConfig, basePropertyPath, propertyPattern) {

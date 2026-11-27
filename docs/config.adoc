@@ -215,17 +215,15 @@ autoLogin.allowedIssuer=(space separated strings) // <6>
 [#tokens-through-xp]
 === Tokens through XP
 
-With `autoLogin.allowedAudience=@@{vhost.audience}`, XP decides what a verified token may do here, by the same rules as for its own tokens. This needs XP 8.2 or later: an older XP declares no audiences, so in this mode it accepts no upstream token at all. The virtual host that receives the token accepts the audiences it declares in `com.enonic.xp.web.vhost.cfg` (`+mapping.<name>.audience+`), its own URL, and a URL under it that the request is at or below - the endpoint a client names when it asks for a token for what it calls; a token for any other audience is refused, and no user is created or changed. The token must also name an <<#autologin, allowed issuer>>, the provider's own unless others are listed. XP's issuer name, which XP's own tokens may carry, is not an audience for an upstream token. The token's scopes are mapped to roles through the ID provider's <<#consent, scopes>>: the user then gets only the roles of the scopes the token carries. Without scopes the user keeps their full memberships.
+With `autoLogin.allowedAudience=@@{vhost.audience}`, XP decides what a verified token may do here, by the same rules as for its own tokens. This needs XP 8.2 or later: an older XP declares no audiences, so in this mode it accepts no upstream token at all. The virtual host that receives the token accepts the audiences it declares in `com.enonic.xp.web.vhost.cfg` (`+mapping.<name>.audience+`), its own URL, and a URL under it that the request is at or below - the endpoint a client names when it asks for a token for what it calls; a token for any other audience is refused, and no user is created or changed. The token must also name an <<#autologin, allowed issuer>>, the provider's own unless others are listed. XP's issuer name, which XP's own tokens may carry, is not an audience for an upstream token. The token's scopes take effect in the APIs that accept scopes: such an API refuses a token that carries none of the scopes it accepts, a token without scopes included. XP's management APIs accept XP's own scopes, such as `+read:repo+` or `+admin+`; an application's API accepts the scopes its descriptor lists, XP's or an application's (`+<application>:<name>+`). For that, the provider must issue the scopes under those ids. Everywhere else XP leaves the scopes alone: the request runs with the user's memberships, and a controller checks a scope itself, with `authLib.hasScope`.
 
 The placeholder cannot be combined with an audience list.
 
-.Accepting tokens issued for an API, with their scopes narrowed to roles
+.Accepting tokens issued for an API
 [source,properties]
 ----
 # com.enonic.app.oidcidprovider.cfg
 idprovider.myoidcprovider.autoLogin.allowedAudience=@@{vhost.audience}
-idprovider.myoidcprovider.consent.scope.0.id=content:read
-idprovider.myoidcprovider.consent.scope.0.roles=role:cms.project.site.viewer
 ----
 
 [source,properties]
@@ -241,57 +239,45 @@ mapping.api.audience = https://service.example.com/api
 
 The audience of an ID token is the client id; the audience of an access token is the API it was issued for. Declare on the host the one for the kind of token it receives.
 
-[#consent]
-== Scopes and clients for XP's tokens
+[#clients]
+== Clients for XP's tokens
 
-XP 8.2 and later issues its own access tokens to command-line tools and other clients of this ID provider's users, after the user approves on a consent page this app renders. What a client may ask for, and who a client is, are registered with the ID provider in XP. The configuration can declare both, and the app registers them when it starts, with `autoinit=true`: an entry is created if missing and brought up to date if present, and entries declared elsewhere are left alone. See https://developer.enonic.com/docs/platform/stable/security/access-tokens[access tokens] in the platform documentation for what scopes and clients are.
+XP 8.2 and later issues its own access tokens to command-line tools and other clients of this ID provider's users, after the user approves on XP's consent page. This app has no consent page of its own: XP shows the one of the `system` ID provider, which must be enabled on the virtual host that serves the `device` or `code` flow. What a client may ask for are XP's scopes and those the installed applications define in their application descriptors, as far as an API where the token will be used accepts them. Who a client is, is registered with the ID provider in XP. The configuration can declare clients, and the app registers them when it starts, with `autoinit=true`: a client is created if missing and brought up to date if present, and clients declared elsewhere are left alone. See https://developer.enonic.com/docs/platform/stable/security/access-tokens[access tokens] in the platform documentation for what scopes and clients are.
 
 .com.enonic.app.oidcidprovider.cfg
 [source,properties]
 ----
-# Scopes a client may ask for
-consent.scope.0.id=(string, required) // <1>
-consent.scope.0.title=(string, optional) // <2>
-consent.scope.0.description=(string, optional)
-consent.scope.0.roles=(space-separated role keys, optional) // <3>
-consent.scope.0.required=(true|false, optional, defaults to false) // <4>
-
-# Clients, registered by hand
-consent.client.0.id=(string, required) // <5>
-consent.client.0.displayName=(string, optional)
-consent.client.0.uri=(string, optional) // <6>
-consent.client.0.logoUri=(string, optional)
-consent.client.0.policyUri=(string, optional)
-consent.client.0.tosUri=(string, optional)
-consent.client.0.grantTypes=(space-separated, optional) // <7>
-consent.client.0.redirectUris=(space-separated, optional) // <8>
-consent.client.0.scope=(space-separated scope ids, optional) // <9>
-consent.client.0.resource=(space-separated, optional)
-consent.client.0.grantTtl=(ISO 8601 duration, optional) // <10>
-consent.client.0.enabled=(true|false, optional, defaults to true)
+client.0.id=(string, required) // <1>
+client.0.displayName=(string, optional)
+client.0.uri=(string, optional) // <2>
+client.0.logoUri=(string, optional)
+client.0.policyUri=(string, optional)
+client.0.tosUri=(string, optional)
+client.0.grantTypes=(space-separated, optional) // <3>
+client.0.redirectUris=(space-separated, optional) // <4>
+client.0.scope=(space-separated scope ids, optional) // <5>
+client.0.resource=(space-separated, optional)
+client.0.grantTtl=(ISO 8601 duration, optional) // <6>
+client.0.enabled=(true|false, optional, defaults to true)
 ----
 
-<1> The scope's id: what a client sends in `scope` and what the token carries. Printable ASCII without spaces, quotes or backslashes.
-<2> The title and the description the consent page shows. The id when there is no title.
-<3> The roles a token granted this scope is restricted to. With none, the scope is a label that restricts nothing by itself.
-<4> A required scope cannot be dropped by the user when a client asks for it.
-<5> The client id, as the client sends it in `+client_id+`.
-<6> The client's website, logo, privacy policy and terms of service, linked from the consent page.
-<7> The flows the client may use: `+urn:ietf:params:oauth:grant-type:device_code+`, `+authorization_code+`, `+refresh_token+`. A flow not listed is refused to it.
-<8> The redirect URIs the client may be sent an authorization code to, matched exactly. Loopback addresses need no registration.
-<9> The most scopes and audiences the client may ask for, and what it gets when it names none. Omit for any.
-<10> How long a grant to the client lives, such as `P30D`. Omit for XP's default.
+<1> The client id, as the client sends it in `+client_id+`.
+<2> The client's website, logo, privacy policy and terms of service, linked from the consent page.
+<3> The flows the client may use: `+urn:ietf:params:oauth:grant-type:device_code+`, `+authorization_code+`, `+refresh_token+`. A flow not listed is refused to it.
+<4> The redirect URIs the client may be sent an authorization code to, matched exactly. Loopback addresses need no registration.
+<5> The most scopes and audiences the client may ask for, and what it gets when it names none. Omit for any.
+<6> How long a grant to the client lives, such as `P30D`. Omit for XP's default.
 
-TIP: For more scopes or clients, iterate the counter (`consent.scope.1.id`, `consent.client.1.id`, ...). A client that registers itself, as MCP clients do, needs no entry here.
+TIP: For more clients, iterate the counter (`client.1.id`, ...). A client that registers itself, as MCP clients do, needs no entry here.
 
 XP refuses a client it does not know, so a client that does not register itself needs an entry. The Enonic CLI is the exception: XP knows `enonic-cli` for every ID provider, with device login (`enonic login`), the authorization code flow with a loopback redirect (`enonic login --browser`) and refresh tokens. An entry for `enonic-cli` overrides XP's, for instance to cap its scopes or set a grant lifetime; list the flows it may use in `grantTypes`, as an entry replaces XP's grants too. XP's is a default client; where XP's `system.properties` sets `xp.defaultCliClient = false` there is none, and the CLI logs in only on an ID provider with such an entry:
 
 [source,properties]
 ----
-consent.client.0.id=enonic-cli
-consent.client.0.displayName=Enonic CLI
-consent.client.0.grantTypes=urn:ietf:params:oauth:grant-type:device_code authorization_code refresh_token
-consent.client.0.grantTtl=P7D
+client.0.id=enonic-cli
+client.0.displayName=Enonic CLI
+client.0.grantTypes=urn:ietf:params:oauth:grant-type:device_code authorization_code refresh_token
+client.0.grantTtl=P7D
 ----
 
 == endSession
@@ -380,24 +366,19 @@ idprovider.<name>.usePkce=(true|false)
 # Rules
 idprovider.<name>.rules.forceEmailVerification=(true|false)
 
-# Scopes and clients for XP's tokens, see <<#consent, above>>
-idprovider.<name>.consent.scope.<n>.id=(string)
-idprovider.<name>.consent.scope.<n>.title=(string)
-idprovider.<name>.consent.scope.<n>.description=(string)
-idprovider.<name>.consent.scope.<n>.roles=(space separated role keys)
-idprovider.<name>.consent.scope.<n>.required=(true|false)
-idprovider.<name>.consent.client.<n>.id=(string)
-idprovider.<name>.consent.client.<n>.displayName=(string)
-idprovider.<name>.consent.client.<n>.uri=(string)
-idprovider.<name>.consent.client.<n>.logoUri=(string)
-idprovider.<name>.consent.client.<n>.policyUri=(string)
-idprovider.<name>.consent.client.<n>.tosUri=(string)
-idprovider.<name>.consent.client.<n>.grantTypes=(space separated)
-idprovider.<name>.consent.client.<n>.redirectUris=(space separated)
-idprovider.<name>.consent.client.<n>.scope=(space separated scope ids)
-idprovider.<name>.consent.client.<n>.resource=(space separated)
-idprovider.<name>.consent.client.<n>.grantTtl=(ISO 8601 duration)
-idprovider.<name>.consent.client.<n>.enabled=(true|false)
+# Clients for XP's tokens, see <<#clients, above>>
+idprovider.<name>.client.<n>.id=(string)
+idprovider.<name>.client.<n>.displayName=(string)
+idprovider.<name>.client.<n>.uri=(string)
+idprovider.<name>.client.<n>.logoUri=(string)
+idprovider.<name>.client.<n>.policyUri=(string)
+idprovider.<name>.client.<n>.tosUri=(string)
+idprovider.<name>.client.<n>.grantTypes=(space separated)
+idprovider.<name>.client.<n>.redirectUris=(space separated)
+idprovider.<name>.client.<n>.scope=(space separated scope ids)
+idprovider.<name>.client.<n>.resource=(space separated)
+idprovider.<name>.client.<n>.grantTtl=(ISO 8601 duration)
+idprovider.<name>.client.<n>.enabled=(true|false)
 
 # User mappings
 idprovider.<name>.useUserinfo=(true|false)
